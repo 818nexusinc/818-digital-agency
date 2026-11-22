@@ -16,5 +16,5 @@
     { "handle": "filesystem" },
     { "src": "/(.*)", "dest": "/api/index.php" }
   ],
-  "crons": [{ "path": "/cron", "schedule": "*/5 * * * *" }]
+  "crons": [{ "path": "/cron", "schedule": "0 9 * * *" }]
 }

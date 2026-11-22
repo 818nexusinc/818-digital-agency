@@ -48,7 +48,7 @@ This creates the tables, seeds the catalog, agents and workflows, and returns a 
 - Resend: `https://<domain>/api/resend-webhook.php`
 
 ## Vercel-specific limits
-- **Cron frequency:** `vercel.json` runs every 5 minutes, which needs a **Pro** plan. Hobby allows one run per day. On Hobby, use an external scheduler (cron-job.org) to call `GET /cron` with header `Authorization: Bearer <CRON_SECRET>` every few minutes.
+- **Cron frequency:** `vercel.json` runs once a day (09:00 UTC) so it deploys on the Hobby plan. On Pro, change the schedule to `*/5 * * * *`. On Hobby, use an external scheduler (cron-job.org) to call `GET /cron` with header `Authorization: Bearer <CRON_SECRET>` every few minutes.
 - **Upload size:** Vercel caps request bodies at about 4.5 MB, so customer uploads are limited to that on Vercel (10 MB on cPanel).
 - **Backups:** the in-app backup writes to `/tmp` and isn't durable. Use your database provider's automated backups.
 - **Archived admin tools** (`/classic` webmail and the 20i panel) only run on cPanel.
