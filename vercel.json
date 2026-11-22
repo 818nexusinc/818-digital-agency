@@ -10,11 +10,37 @@
     }
   },
   "routes": [
-    { "src": "/api/resend-webhook\\.php", "dest": "/api/resend-webhook.php" },
-    { "src": "/(.*)\\.(php|htaccess|txt\\.example)$", "dest": "/api/index.php" },
-    { "src": "/(assets|fonts|media)/(.*)", "headers": { "Cache-Control": "public, max-age=2592000" }, "continue": true },
-    { "handle": "filesystem" },
-    { "src": "/(.*)", "dest": "/api/index.php" }
+    {
+      "src": "/api/resend-webhook\\.php",
+      "dest": "/api/resend-webhook.php"
+    },
+    {
+      "src": "^/(.*/)?$",
+      "dest": "/api/index.php"
+    },
+    {
+      "src": "/(.*)\\.(php|htaccess|txt\\.example)$",
+      "dest": "/api/index.php"
+    },
+    {
+      "src": "/(assets|fonts|media)/(.*)",
+      "headers": {
+        "Cache-Control": "public, max-age=2592000"
+      },
+      "continue": true
+    },
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/api/index.php"
+    }
   ],
-  "crons": [{ "path": "/cron", "schedule": "0 9 * * *" }]
+  "crons": [
+    {
+      "path": "/cron",
+      "schedule": "0 9 * * *"
+    }
+  ]
 }

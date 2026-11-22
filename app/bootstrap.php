@@ -28,6 +28,8 @@ require APP_ROOT . '/src/helpers.php';
 App\Env::load(APP_ROOT . '/.env');
 // Serverless hosts (Vercel) only allow writes to /tmp; everything durable lives in the database there.
 define('ON_VERCEL', (bool)getenv('VERCEL'));
+// On Vercel, default APP_URL to the production domain so links, sitemap and emails never say localhost.
+if (ON_VERCEL && !getenv('APP_URL') && ($vh = getenv('VERCEL_PROJECT_PRODUCTION_URL') ?: getenv('VERCEL_URL'))) putenv('APP_URL=https://' . $vh);
 define('STORAGE_ROOT', App\Env::get('STORAGE_PATH') ?: (ON_VERCEL ? sys_get_temp_dir() . '/818-storage' : APP_ROOT . '/storage'));
 foreach (['logs', 'locks', 'cache', 'backups', 'uploads', 'sessions'] as $__d) if (!is_dir(STORAGE_ROOT . '/' . $__d)) @mkdir(STORAGE_ROOT . '/' . $__d, 0750, true);
 date_default_timezone_set('UTC');
