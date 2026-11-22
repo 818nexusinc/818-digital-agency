@@ -1,0 +1,7 @@
+Options -Indexes
+<FilesMatch "\.(json|log|txt|md)$">
+  Require all denied
+</FilesMatch>
+<Files "_guard.php">
+  Require all denied
+</Files>

@@ -1,0 +1,7 @@
+<?php $badge = function ($s) { include APP_ROOT . '/views/partials/status.php'; }; ?>
+<div class="topbar"><h1>Support</h1></div>
+<div class="grid g2" style="align-items:start"><form class="panel" method="post" action="/portal/support"><?= App\Csrf::field() ?><h2>New request</h2>
+  <div class="field"><label for="cat">Topic</label><select id="cat" name="category"><?php foreach (App\Tickets::CATEGORIES as $c): ?><option value="<?= $c ?>"><?= e(label($c)) ?></option><?php endforeach; ?></select></div>
+  <div class="field"><label for="s">Subject</label><input id="s" name="subject" type="text" required></div><div class="field"><label for="b">Details</label><textarea id="b" name="body" required></textarea></div><button class="btn btn-primary">Send</button>
+  <p class="hint">Our AI support agent usually replies first. Billing, refund and sensitive matters go straight to a person.</p></form>
+  <div class="panel"><h2>Your requests</h2><?php if (!$tickets): ?><div class="empty">No support requests.</div><?php endif; ?><?php foreach ($tickets as $t): ?><a href="/portal/support/<?= e($t['number']) ?>" style="display:block;color:inherit;padding:10px 0;border-bottom:1px solid var(--line-2)"><div class="row spread"><b><?= e($t['subject']) ?></b><?php $badge($t['status']); ?></div><span class="small muted"><?= e($t['number']) ?> · <?= e(substr($t['updated_at'], 0, 10)) ?></span></a><?php endforeach; ?></div></div>

@@ -1,0 +1,4 @@
+<div class="topbar"><div><h1>AI workspace</h1><p class="muted" style="margin:4px 0 0">Ask about your projects and orders, request changes, or start something new. The assistant opens on the right.</p></div></div>
+<div class="grid g3"><button class="card card-link" type="button" data-chat="What's the latest on my projects?" style="text-align:left;font:inherit;cursor:pointer"><h3>Project status</h3><p class="muted small">Get a plain-language update</p></button>
+<button class="card card-link" type="button" data-chat="I'd like to request a change to my website" style="text-align:left;font:inherit;cursor:pointer"><h3>Request a change</h3><p class="muted small">Revisions and updates</p></button>
+<button class="card card-link" type="button" data-chat="What else would help my business grow?" style="text-align:left;font:inherit;cursor:pointer"><h3>Next steps</h3><p class="muted small">Honest recommendations</p></button></div>

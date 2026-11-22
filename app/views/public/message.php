@@ -1,0 +1,1 @@
+<section class="section"><div class="wrap center" style="max-width:640px"><h1><?= e($title) ?></h1><p class="lead" style="margin:0 auto"><?= e($message) ?></p><p style="margin-top:20px"><a class="btn btn-ghost" href="/">Home</a></p></div></section>

@@ -1,0 +1,2 @@
+<section class="section"><div class="wrap" style="max-width:440px"><form class="card" method="post" action="/reset/<?= e($token) ?>"><?= App\Csrf::field() ?>
+  <h1 style="font-size:1.5rem">Choose a new password</h1><div class="field"><label for="pw">New password</label><input id="pw" name="password" type="password" required minlength="10" autocomplete="new-password"></div><button class="btn btn-primary" style="width:100%">Save password</button></form></div></section>

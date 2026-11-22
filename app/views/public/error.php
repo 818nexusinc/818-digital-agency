@@ -1,0 +1,2 @@
+<section class="section"><div class="wrap center" style="max-width:640px"><span class="eyebrow"><?= (int)$status ?></span><h1 style="margin-top:8px"><?= e($title) ?></h1><p class="lead" style="margin:0 auto"><?= e($message) ?></p>
+<div class="row" style="justify-content:center;margin-top:20px"><a class="btn btn-primary" href="/">Home</a><a class="btn btn-ghost" href="/services">Services</a></div></div></section>

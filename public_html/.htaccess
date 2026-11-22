@@ -1,0 +1,44 @@
+# 818 Digital Agency — Apache/LiteSpeed rules (cPanel / 20i)
+Options -Indexes
+DirectoryIndex index.php
+
+# Keep the PHP handler your host configured for the previous site (PHP 8.1+ required).
+AddHandler application/x-httpd-php85 .php
+<IfModule LiteSpeed>
+  php_value phpversion 8.5
+  CacheLookup off
+</IfModule>
+
+# Never serve data, secrets, backups, logs or dotfiles from the web root.
+<FilesMatch "(^\.|\.(log|sql|gz|sqlite|env|md|lock|bak|ini)$|^(config|overrides|email-log|nx818_cms_content|composer|package)\.json$)">
+  Require all denied
+</FilesMatch>
+
+RewriteEngine On
+# Old client-docs folder (public PDFs) is retired — documents are served by the app after an ownership check.
+RewriteRule ^client-docs/ - [F,L]
+RewriteRule ^(_app|private)/ - [F,L]
+
+# Static assets that exist on disk are served directly.
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteCond %{REQUEST_URI} \.(css|js|png|jpe?g|gif|svg|webp|mp4|ico|woff2?|ttf|eot|txt)$ [NC]
+RewriteRule ^ - [L]
+
+# Hardened legacy API endpoints (admin-only, see api/_guard.php) are real files.
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteCond %{REQUEST_URI} ^/api/[a-z0-9\-]+\.php$ [NC]
+RewriteRule ^ - [L]
+
+# Everything else goes to the front controller (including /sitemap.xml, /robots.txt, /llms.txt).
+RewriteCond %{REQUEST_URI} !^/index\.php
+RewriteRule ^ /index.php [L,QSA]
+
+<IfModule mod_headers.c>
+  <FilesMatch "\.(css|js|woff2?|ttf|svg|png|jpe?g|webp|mp4|ico)$">
+    Header always set Cache-Control "public, max-age=2592000"
+  </FilesMatch>
+  Header always set X-Content-Type-Options "nosniff"
+</IfModule>
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css application/javascript application/json text/plain image/svg+xml application/xml
+</IfModule>

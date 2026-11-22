@@ -1,0 +1,17 @@
+<?php $badge = function ($s) { include APP_ROOT . '/views/partials/status.php'; }; ?>
+<div class="topbar"><div><h1>Welcome<?= $c['name'] ? ', ' . e(explode(' ', $c['name'])[0]) : '' ?></h1><p class="muted" style="margin:4px 0 0">Everything about your business with 818, in one place.</p></div><a class="btn btn-primary" href="/services">Order a service</a></div>
+<?php if ($pending || $proposals): ?><div class="panel" style="border-color:#fcd9a0;background:#fffbf3"><h2>Action needed</h2>
+  <?php foreach ($pending as $p): ?><div class="row spread" style="padding:6px 0"><span><b><?= e($p['title']) ?></b> — <?= $p['status'] === 'awaiting_requirements' ? 'we need a few details to start' : 'waiting for your input' ?></span><a class="btn btn-primary btn-sm" href="/portal/projects/<?= e($p['number']) ?><?= $p['status'] === 'awaiting_requirements' ? '/requirements' : '' ?>">Open</a></div><?php endforeach; ?>
+  <?php foreach ($proposals as $p): ?><div class="row spread" style="padding:6px 0"><span>Proposal <b><?= e($p['number']) ?></b>: <?= e($p['title']) ?></span><a class="btn btn-ghost btn-sm" href="/proposal/<?= e($p['public_token']) ?>">Review</a></div><?php endforeach; ?>
+</div><?php endif; ?>
+<div class="kpis"><div class="kpi"><div class="l">Active projects</div><div class="v"><?= count(array_filter($projects, fn($p) => !in_array($p['status'], ['completed', 'cancelled'], true))) ?></div></div>
+  <div class="kpi"><div class="l">Active subscriptions</div><div class="v"><?= count($subs) ?></div></div><div class="kpi"><div class="l">Open support requests</div><div class="v"><?= count($tickets) ?></div></div>
+  <div class="kpi"><div class="l">Lifetime spend</div><div class="v"><?= money((int)$c['lifetime_value_cents']) ?></div></div></div>
+<div class="grid g2">
+  <div class="panel"><h2>Projects</h2><?php if (!$projects): ?><div class="empty">No projects yet. They appear here automatically after you order.</div><?php endif; ?>
+    <?php foreach (array_slice($projects, 0, 6) as $p): ?><a href="/portal/projects/<?= e($p['number']) ?>" style="display:block;color:inherit;padding:10px 0;border-bottom:1px solid var(--line-2)"><div class="row spread"><b><?= e($p['title']) ?></b><?php $badge($p['status']); ?></div><div class="progress" style="margin-top:8px"><span style="width:<?= (int)$p['progress'] ?>%"></span></div></a><?php endforeach; ?></div>
+  <div class="panel"><h2>Recent orders</h2><?php if (!$orders): ?><div class="empty">No orders yet.</div><?php endif; ?>
+    <?php foreach ($orders as $o): ?><div class="row spread" style="padding:8px 0;border-bottom:1px solid var(--line-2)"><a href="/portal/orders/<?= e($o['number']) ?>"><?= e($o['number']) ?></a><span><?= money((int)$o['total_cents']) ?></span><?php $badge($o['status']); ?></div><?php endforeach; ?>
+    <?php if ($subs): ?><h2 style="margin-top:18px">Upcoming renewals</h2><?php foreach ($subs as $s): ?><div class="row spread small" style="padding:4px 0"><span><?= money((int)$s['amount_cents']) ?> / period</span><span class="muted">renews <?= e(substr((string)$s['current_period_end'], 0, 10)) ?></span></div><?php endforeach; endif; ?></div>
+</div>
+<div class="panel"><div class="row spread"><h2 style="margin:0">Need something?</h2><div class="row"><button class="btn btn-ghost btn-sm" type="button" data-chat="What's the status of my projects?">Ask the assistant</button><a class="btn btn-ghost btn-sm" href="/portal/support">Open a support request</a></div></div></div>

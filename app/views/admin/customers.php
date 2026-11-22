@@ -1,0 +1,5 @@
+<?php $badge = function ($s) { include APP_ROOT . '/views/partials/status.php'; }; ?>
+<div class="topbar"><h1>Customers</h1><form class="row" method="get"><input type="search" name="q" value="<?= e($q) ?>" placeholder="Search name, email, business"><button class="btn btn-ghost btn-sm">Search</button></form></div>
+<?php if (!$rows): ?><div class="empty">No customers yet.</div><?php else: ?><div class="table-wrap"><table><thead><tr><th>Customer</th><th>Business</th><th>Status</th><th>Source</th><th>Lifetime value</th><th>Consent</th><th>Since</th></tr></thead><tbody>
+<?php foreach ($rows as $c): ?><tr><td><a href="/admin/customers/<?= (int)$c['id'] ?>"><b><?= e($c['name'] ?: '—') ?></b></a><div class="small muted"><?= e($c['email']) ?></div></td><td><?= e($c['business_name']) ?></td><td><?php $badge($c['status']); ?></td><td class="small"><?= e($c['lead_source']) ?></td><td><?= money((int)$c['lifetime_value_cents']) ?></td><td class="small"><?= $c['consent_marketing'] ? 'Marketing ✓' : '—' ?></td><td class="small"><?= e(substr($c['created_at'], 0, 10)) ?></td></tr><?php endforeach; ?>
+</tbody></table></div><?php endif; ?>

@@ -1,0 +1,15 @@
+<?php $badge = function ($s) { include APP_ROOT . '/views/partials/status.php'; }; ?>
+<div class="topbar"><div><a class="small" href="/admin/customers">← Customers</a><h1><?= e($c['name'] ?: $c['email']) ?></h1><span class="muted small"><?= e($c['email']) ?> · <?= e($c['phone']) ?> · <?= e($c['business_name']) ?> · <?= e($c['location']) ?></span></div><?php $badge($c['status']); ?></div>
+<div class="grid g2" style="align-items:start"><div>
+  <form class="panel" method="post" action="/admin/customers/<?= (int)$c['id'] ?>"><?= App\Csrf::field() ?><h2>CRM</h2><div class="grid g2"><div class="field"><label for="st">Status</label><select id="st" name="status"><?php foreach (App\Crm::STATUSES as $s): ?><option<?= $c['status'] === $s ? ' selected' : '' ?>><?= $s ?></option><?php endforeach; ?></select></div>
+    <div class="field"><label for="tg">Tags (comma-separated)</label><input id="tg" name="tags" type="text" value="<?= e(implode(', ', jdec($c['tags']))) ?>"></div></div>
+    <div class="field"><label for="nt">Add note</label><textarea id="nt" name="note" style="min-height:70px"></textarea></div><button class="btn btn-primary btn-sm">Save</button>
+    <?php if ($c['notes']): ?><pre style="margin-top:12px;background:var(--surface);color:var(--ink)"><?= e($c['notes']) ?></pre><?php endif; ?>
+    <p class="small muted">Lifetime value <?= money((int)$c['lifetime_value_cents']) ?> · marketing consent <?= $c['consent_marketing'] ? 'yes (' . e($c['consent_at']) . ')' : 'no' ?> · memory <?= $c['memory_opt_in'] ? 'on' : 'off' ?> · source <?= e($c['lead_source']) ?></p></form>
+  <div class="panel"><h2>Leads</h2><?php foreach ($leads as $l): ?><div class="small" style="padding:6px 0;border-bottom:1px solid var(--line-2)"><?php $badge($l['status']); ?> score <?= (int)$l['score'] ?> · <?= e(substr($l['created_at'], 0, 10)) ?> — <?= e(str_limit((string)$l['summary'], 200)) ?></div><?php endforeach; ?>
+    <?php if (!$leads): ?><p class="small muted">None.</p><?php endif; ?></div>
+  <div class="panel"><h2>Projects</h2><?php foreach ($projects as $p): ?><div class="row spread small" style="padding:5px 0"><a href="/admin/projects/<?= e($p['number']) ?>"><?= e($p['title']) ?></a><?php $badge($p['status']); ?></div><?php endforeach; ?><?php if (!$projects): ?><p class="small muted">None.</p><?php endif; ?></div>
+  <div class="panel"><h2>Conversations</h2><?php foreach ($convs as $cv): ?><div class="small"><?= e($cv['agent_slug']) ?> · <?= e(substr($cv['updated_at'], 0, 16)) ?><?= $cv['handoff_requested'] ? ' <span class="badge b-amber">handoff</span>' : '' ?></div><?php endforeach; ?>
+    <?php if ($memories): ?><h2 style="margin-top:12px">Customer memory</h2><?php foreach ($memories as $m): ?><div class="small"><b><?= e($m['mkey']) ?>:</b> <?= e($m['mvalue']) ?></div><?php endforeach; endif; ?></div>
+</div>
+<div class="panel"><h2>Communication &amp; activity timeline</h2><?php if (!$timeline): ?><div class="empty">No activity.</div><?php endif; ?><ul class="timeline"><?php foreach ($timeline as $i): ?><li><time><?= e($i['at']) ?> · <?= e($i['kind']) ?></time><?= e($i['text']) ?></li><?php endforeach; ?></ul></div></div>

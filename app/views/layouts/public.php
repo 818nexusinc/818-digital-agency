@@ -1,0 +1,60 @@
+<?php
+use App\{Cart, Settings, Seo, Integrations};
+$desc = $description ?? Settings::get('seo.default_description');
+$fullTitle = ($title ?? '') ? $title . ' | ' . Settings::get('company.name') : Settings::get('company.name');
+$canon = url($path ?? '/');
+$cartCount = count(Cart::lines());
+$nav = ['/services/category/registration' => 'Incorporate', '/services/category/management' => 'Manage a company', '/services/category/websites' => 'Websites', '/services' => 'All services', '/how-it-works' => 'How it works'];
+?><!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title><?= e($fullTitle) ?></title>
+<meta name="description" content="<?= e(str_limit((string)$desc, 160)) ?>">
+<link rel="canonical" href="<?= e($canon) ?>">
+<?php if (!empty($noindex)): ?><meta name="robots" content="noindex,nofollow"><?php endif; ?>
+<meta property="og:type" content="website"><meta property="og:title" content="<?= e($fullTitle) ?>"><meta property="og:description" content="<?= e(str_limit((string)$desc, 200)) ?>"><meta property="og:url" content="<?= e($canon) ?>"><meta property="og:site_name" content="<?= e(Settings::get('company.name')) ?>">
+<meta name="twitter:card" content="summary"><meta name="theme-color" content="#0b1530">
+<?php if ($v = Integrations::secret('search_console', 'verification')): ?><meta name="google-site-verification" content="<?= e($v) ?>"><?php endif; ?>
+<meta name="csrf" content="<?= e($csrf ?? '') ?>">
+<link rel="alternate" type="text/plain" href="/llms.txt" title="LLM guide"><link rel="alternate" type="application/json" href="/services.json" title="Service catalog">
+<link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
+<link rel="preload" href="/fonts/libre-caslon-text-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="/fonts/hanken-grotesk-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/assets/css/app.css?v=<?= APP_VERSION ?>"><link rel="stylesheet" href="/assets/css/site.css?v=<?= APP_VERSION ?>">
+<?php foreach (($jsonld ?? []) as $ld) echo Seo::jsonLd($ld); ?>
+</head>
+<body class="site">
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header"><div class="wrap nav">
+  <a class="brand" href="/" aria-label="818 Digital Agency home"><?php include APP_ROOT . '/views/partials/logo.php'; ?><span class="wm"><b>818 Digital Agency</b><span>by 818 Nexus Inc.</span></span></a>
+  <nav class="nav-links" id="site-nav" aria-label="Main">
+    <?php foreach ($nav as $href => $label): ?><a href="<?= $href ?>"<?= ($path ?? '') === $href ? ' aria-current="page"' : '' ?>><?= e($label) ?></a><?php endforeach; ?>
+  </nav>
+  <div class="nav-cta">
+    <a class="cart-pill" href="/cart" aria-label="Cart (<?= $cartCount ?> items)"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6h15l-1.5 9h-12z"/><path d="M6 6 5 3H2"/><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/></svg><?php if ($cartCount): ?><span class="n"><?= $cartCount ?></span><?php endif; ?></a>
+    <?php if (!empty($user)): ?><a class="btn btn-ghost btn-sm" href="<?= App\Auth::isStaff($user) ? '/admin' : '/portal' ?>"><?= App\Auth::isStaff($user) ? 'Control Tower' : 'My portal' ?></a>
+    <?php else: ?><a class="btn btn-ghost btn-sm" href="/login">Sign in</a><?php endif; ?>
+    <a class="btn btn-primary btn-sm" href="/start">Tell us what you need</a>
+    <button class="menu-btn" data-toggle="site-nav" aria-expanded="false" aria-controls="site-nav" aria-label="Menu">☰</button>
+  </div>
+</div></header>
+<main id="main">
+<?php $fl = App\Session::takeFlash(); if ($fl): ?><div class="wrap" style="padding-top:18px"><?php foreach ($fl as [$t, $m]): ?><div class="alert alert-<?= $t === 'error' ? 'error' : 'success' ?>" role="status"><?= e($m) ?></div><?php endforeach; ?></div><?php endif; ?>
+<?= $content ?>
+</main>
+<footer class="site-footer"><div class="wrap">
+  <div class="foot-grid">
+    <div><a class="brand" href="/" style="color:#fff"><span class="wm"><b style="color:#fff">818 Digital Agency</b><span style="color:#97a6c4">by 818 Nexus Inc.</span></span></a>
+      <p style="margin-top:14px;max-width:34ch">Business registration, domains, email, websites and custom software for Canadian entrepreneurs — guided by AI, accountable to people.</p>
+      <p><?= e(Settings::get('company.legal')) ?> · <?= e(Settings::get('company.city')) ?><br><a href="mailto:<?= e(Settings::get('company.email')) ?>"><?= e(Settings::get('company.email')) ?></a></p></div>
+    <div><h4>Services</h4><ul><?php foreach (App\Catalog::CATEGORIES as $k => $n): if ($k === 'addon') continue; ?><li><a href="/services/category/<?= $k ?>"><?= e($n) ?></a></li><?php endforeach; ?></ul></div>
+    <div><h4>Company</h4><ul><li><a href="/about">About</a></li><li><a href="/how-it-works">How it works</a></li><li><a href="/blog">Blog</a></li><li><a href="/funding">Funding opportunities</a></li><li><a href="/faq">FAQ</a></li><li><a href="/contact">Contact</a></li></ul></div>
+    <div><h4>Trust</h4><ul><li><a href="/legal/privacy">Privacy</a></li><li><a href="/legal/terms">Terms</a></li><li><a href="/legal/refunds">Refunds</a></li><li><a href="/legal/cookies">Cookies</a></li><li><a href="/legal/ai">How we use AI</a></li><li><a href="/llms.txt">AI-readable guide</a></li></ul></div>
+  </div>
+  <div class="foot-bottom"><span>© <?= gmdate('Y') ?> <?= e(Settings::get('company.legal')) ?>. All prices in CAD.</span><span>Not a law firm · government fees noted per service</span></div>
+</div></footer>
+<?php include APP_ROOT . '/views/partials/chat.php'; ?>
+<div class="cookie" id="cookie" hidden><b>Cookies</b><p class="small" style="margin:6px 0 10px">We use one essential cookie to keep you signed in and remember your cart. No advertising trackers. <a href="/legal/cookies">Details</a></p><button class="btn btn-dark btn-sm" data-consent="essential">OK</button></div>
+<script src="/assets/js/app.js?v=<?= APP_VERSION ?>" nonce="<?= e($nonce ?? '') ?>" defer></script>
+</body>
+</html>

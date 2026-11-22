@@ -1,0 +1,2 @@
+<section class="section"><div class="wrap" style="max-width:440px"><form class="card" method="post" action="/forgot"><?= App\Csrf::field() ?>
+  <h1 style="font-size:1.5rem">Reset your password</h1><div class="field"><label for="em">Email</label><input id="em" name="email" type="email" required></div><button class="btn btn-primary" style="width:100%">Email me a reset link</button></form></div></section>

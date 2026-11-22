@@ -1,0 +1,8 @@
+<?php $badge = function ($s) { include APP_ROOT . '/views/partials/status.php'; }; ?>
+<div class="topbar"><div><a class="small" href="/portal/orders">← Orders</a><h1>Order <?= e($o['number']) ?></h1></div><?php $badge($o['status']); ?></div>
+<div class="grid g2"><div class="panel"><h2>Items</h2><?php foreach ($items as $i): ?><div class="row spread" style="padding:6px 0;border-bottom:1px solid var(--line-2)"><span><?= e($i['name']) ?> <span class="muted small">(<?= e(label($i['billing'])) ?>)</span></span><b><?= money((int)$i['unit_cents'] + (int)$i['setup_cents']) ?></b></div><?php endforeach; ?>
+  <div class="row spread" style="margin-top:10px"><span>Total paid / due</span><span class="price"><?= money((int)$o['total_cents']) ?></span></div>
+  <?php if ($o['status'] === 'awaiting_payment'): ?><div class="alert alert-info" style="margin-top:12px">We'll email your invoice. Work starts when payment is received.</div><?php endif; ?></div>
+  <div class="panel"><h2>Timeline</h2><ul class="timeline"><li><time><?= e($o['created_at']) ?> UTC</time>Order placed</li><?php if ($o['paid_at']): ?><li><time><?= e($o['paid_at']) ?> UTC</time>Payment received</li><?php endif; ?>
+    <?php foreach ($projects as $p): ?><li><time><?= e($p['created_at']) ?> UTC</time>Project opened: <a href="/portal/projects/<?= e($p['number']) ?>"><?= e($p['title']) ?></a> — <?= e(label($p['status'])) ?></li><?php endforeach; ?></ul>
+    <?php if ($invoices): ?><h2 style="margin-top:14px">Receipts</h2><?php foreach ($invoices as $iv): ?><div class="small"><?= e($iv['number']) ?> · <?= money((int)$iv['amount_cents']) ?> · <?= e(label($iv['status'])) ?></div><?php endforeach; endif; ?></div></div>

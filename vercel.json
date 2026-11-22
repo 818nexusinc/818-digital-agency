@@ -1,0 +1,20 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "outputDirectory": "public_html",
+  "functions": {
+    "api/*.php": {
+      "runtime": "vercel-php@0.7.3",
+      "maxDuration": 60,
+      "includeFiles": "{app/**,public_html/index.php,public_html/api/**}",
+      "excludeFiles": "{app/storage/**,app/.env,tests/**,docs/**}"
+    }
+  },
+  "routes": [
+    { "src": "/api/resend-webhook\\.php", "dest": "/api/resend-webhook.php" },
+    { "src": "/(.*)\\.(php|htaccess|txt\\.example)$", "dest": "/api/index.php" },
+    { "src": "/(assets|fonts|media)/(.*)", "headers": { "Cache-Control": "public, max-age=2592000" }, "continue": true },
+    { "handle": "filesystem" },
+    { "src": "/(.*)", "dest": "/api/index.php" }
+  ],
+  "crons": [{ "path": "/cron", "schedule": "*/5 * * * *" }]
+}
