@@ -19,7 +19,7 @@ $cartCount = count(Cart::lines());
 <link rel="alternate" type="text/plain" href="/llms.txt" title="LLM guide"><link rel="alternate" type="application/json" href="/services.json" title="Service catalog">
 <link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
 
-<link rel="preconnect" href="https://api.fontshare.com"><link rel="preconnect" href="https://cdn.fontshare.com" crossorigin><link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=sentient@1,2&amp;display=swap"><link rel="stylesheet" href="/assets/css/app.css?v=<?= APP_VERSION ?>"><link rel="stylesheet" href="/assets/css/site.css?v=<?= APP_VERSION ?>"><link rel="stylesheet" href="/assets/css/v8.css?v=<?= APP_VERSION ?>"><link rel="stylesheet" href="/assets/css/v9.css?v=<?= APP_VERSION ?>">
+<link rel="preconnect" href="https://api.fontshare.com"><link rel="preconnect" href="https://cdn.fontshare.com" crossorigin><link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=sentient@1,2&amp;display=swap"><link rel="stylesheet" href="/assets/css/app.css?v=<?= APP_VERSION ?>"><link rel="stylesheet" href="/assets/css/site.css?v=<?= APP_VERSION ?>"><link rel="stylesheet" href="/assets/css/v8.css?v=<?= APP_VERSION ?>"><link rel="stylesheet" href="/assets/css/v9.css?v=<?= APP_VERSION ?>"><link rel="stylesheet" href="/assets/css/v10.css?v=<?= APP_VERSION ?>">
 <?php foreach (array_merge($jsonld ?? [], App\View::$shared['ld'] ?? []) as $ld) if ($ld) echo Seo::jsonLd($ld); ?>
 <meta property="og:image" content="<?= e(url('/media/opening-day-poster.webp')) ?>">
 </head>

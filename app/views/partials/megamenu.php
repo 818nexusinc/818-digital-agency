@@ -7,7 +7,7 @@ include_once APP_ROOT . '/views/partials/icons.php';
 $fp = function (string $slug, string $suffix = '') { $s = Catalog::find($slug); $p = $s ? Catalog::fromPrice($s) : null; return $p === null ? 'Custom quote' : 'From ' . money($p) . $suffix; };
 $menus = [
   'register' => ['label' => 'Register Business', 'title' => 'Make it official.', 'sub' => 'Every province and federal. Government fees included.',
-    'all' => ['/register', 'Compare structures'],
+    'all' => ['/register', 'Explore Register Business'],
     'items' => [
       ['nuans', 'search', 'NUANS Name Search', 'Check your name is free.', $fp('nuans')],
       ['sole_prop', 'user', 'Sole Proprietorship', 'Simplest. Fastest. One owner.', $fp('sole_prop')],
@@ -16,7 +16,7 @@ $menus = [
       ['cooperative', 'network', 'Co-operative', 'Member-owned.', $fp('cooperative')],
     ]],
   'manage' => ['label' => 'Manage Business', 'title' => 'Stay in good standing.', 'sub' => 'We file the paperwork. You run the business.',
-    'all' => ['/manage-business', 'All management services'],
+    'all' => ['/manage-business', 'Explore Manage Business'],
     'items' => [
       ['bm_annual', 'calendar', 'Annual Returns', 'Filed on time, every year.', $fp('bm_annual')],
       ['bm_changes', 'edit', 'Corporate Changes', 'Address, directors, officers.', $fp('bm_changes')],
@@ -24,7 +24,7 @@ $menus = [
       ['biz_name', 'text', 'Business Name Services', 'Renew or change a name.', 'Priced by province'],
     ]],
   'web' => ['label' => 'Web Services', 'title' => 'Get found online.', 'sub' => 'Domain, email, website and custom software.',
-    'all' => ['/services', 'All services and prices'],
+    'all' => ['/web-services', 'Explore Web Services'],
     'items' => [
       ['domain_register', 'globe', 'Domain Name', '.ca, .com and more.', $fp('domain_register', '/yr')],
       ['email_starter', 'mail', 'Business Email', 'you@yourbusiness.ca', $fp('email_starter', '/mo')],

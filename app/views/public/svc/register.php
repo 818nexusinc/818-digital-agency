@@ -3,7 +3,7 @@ use App\Catalog;
 include_once APP_ROOT . '/views/partials/icons.php';
 $min = function (string $slug) { $s = Catalog::find($slug); $p = $s ? Catalog::fromPrice($s) : null; return $p; };
 $nuans = $min('nuans'); $sole = $min('sole_prop'); $part = $min('partnership'); $corp = $min('corp_numbered'); $coop = $min('cooperative');
-$hero = ['tone' => 'blue', 'pills' => ['Every province + federal', 'From ' . money(min(array_filter([$sole, $part, $corp])))],
+$hero = ['landing' => true, 'tone' => 'blue', 'pills' => ['Every province + federal', 'From ' . money(min(array_filter([$sole, $part, $corp])))],
   'title' => 'Your business, officially registered.', 'sub' => 'Pick a structure, answer a few questions and we file it with the registry. Government fees included.',
   'actions' => [['#structures', 'Choose your structure', true], ['/register/nuans', 'NUANS name search (' . money($nuans) . ')']],
   'media' => ['video' => 'team-talk'], 'chips' => [['bolt', 'Worked on immediately', 'As soon as your order is in'], ['shield', 'Filed with the registry', 'Status in your portal']]];

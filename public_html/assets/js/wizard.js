@@ -237,6 +237,7 @@
       list.slice(0, 5).forEach(row);
     }
     $('[data-dom-form]', box).addEventListener('submit', function (e) { e.preventDefault(); search(inp.value); });
+    var q0 = new URLSearchParams(location.search).get('q'); if (q0) { inp.value = q0.slice(0, 80); search(inp.value); }
     $$('[data-tld]', box).forEach(function (b) { b.addEventListener('click', function () { var base = (inp.value.trim() || 'mybusiness').split('.')[0]; inp.value = base + '.' + b.dataset.tld; search(inp.value); }); });
   });
 

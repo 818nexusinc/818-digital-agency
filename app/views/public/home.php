@@ -50,17 +50,21 @@ $paths = [
       <div class="ch-cta"><a class="btn btn-light btn-lg" href="/register"><?= e(t('Register from')) ?> <?= e(money($regFrom)) ?></a><a class="btn btn-outline-light btn-lg" href="/register/nuans" data-name-link="/register/nuans"><?= e(t('Check the name first')) ?></a></div>
       <p class="fine"><?= e(t('Government fees included. Filed with the registry as soon as your order is in.')) ?></p>
     </div>
-    <figure class="sheet" aria-label="<?= e(t('Preview of your corporate name')) ?>">
-      <div class="sh-top"><span><?= e(t('Draft')) ?></span><span><?= e(t('Preview, not a government document')) ?></span></div>
-      <p class="sh-k"><?= e(t('Corporation name')) ?></p>
-      <p class="sh-name"><span data-name-out>Maple &amp; Pine</span> <span data-end-out>Inc.</span></p>
-      <dl class="sh-dl">
-        <div><dt><?= e(t('Registry')) ?></dt><dd data-jur-out><?= e(t('New Brunswick')) ?></dd></div>
-        <div><dt><?= e(t('Directors')) ?></dt><dd><?= e(t('You, and anyone you add')) ?></dd></div>
-        <div><dt><?= e(t('Corporation number')) ?></dt><dd><?= e(t('Issued by the registry')) ?></dd></div>
-      </dl>
-      <div class="stamp" aria-hidden="true"><span><?= e(t('Ready to file')) ?></span></div>
-    </figure>
+    <div class="aoi-wrap">
+      <img class="aoi-bg" src="/media/paperwork.webp" alt="" loading="lazy" width="1400" height="934">
+      <figure class="sheet aoi" aria-label="<?= e(t('Preview of your articles of incorporation')) ?>">
+        <div class="aoi-head"><p class="aoi-k"><?= e(t('Draft')) ?> · <span data-jur-out><?= e(t('New Brunswick')) ?></span></p><p class="aoi-t"><?= e(t('Articles of Incorporation')) ?></p></div>
+        <ol class="aoi-list">
+          <li><span><?= e(t('Name of the corporation')) ?></span><b class="aoi-name"><span data-name-out>Maple &amp; Pine</span> <span data-end-out>Inc.</span></b></li>
+          <li><span><?= e(t('Classes and maximum number of shares')) ?></span><b><?= e(t('Common shares, unlimited')) ?></b></li>
+          <li><span><?= e(t('Restrictions on share transfers')) ?></span><b><?= e(t('Directors must approve')) ?></b></li>
+          <li><span><?= e(t('Number of directors')) ?></span><b><?= e(t('Minimum 1, maximum 10')) ?></b></li>
+          <li><span><?= e(t('Restrictions on the business')) ?></span><b><?= e(t('None')) ?></b></li>
+        </ol>
+        <p class="aoi-foot"><?= e(t('Preview, not a government document')) ?></p>
+        <div class="stamp" aria-hidden="true"><span><?= e(t('Ready to file')) ?></span></div>
+      </figure>
+    </div>
   </div>
 </section>
 
@@ -94,7 +98,8 @@ $paths = [
         <li><a href="/email"><?= e(t('Business email')) ?></a><b><?= e($from($fp('email_starter'), 'mo')) ?></b></li>
         <li><a href="/website"><?= e(t('Website, hosted and maintained')) ?></a><b><?= e($from($fp('website_launch'), 'mo')) ?></b></li>
       </ul>
-      <a class="btn btn-light btn-lg" href="/website"><?= e(t('Build my website')) ?></a>
+      <form class="dmini" action="/domain" method="get" role="search"><label class="sr" for="dm-q"><?= e(t('Search a domain')) ?></label><span class="dm-www">www.</span><input id="dm-q" name="q" type="text" placeholder="mapleandpine.ca" autocomplete="off" autocapitalize="none" spellcheck="false" data-dm><button class="btn btn-light" type="submit"><?= e(t('Search')) ?></button></form>
+      <a class="btn btn-outline-light btn-lg" href="/web-services"><?= e(t('Start Web Services')) ?></a>
     </div>
     <div class="stack" aria-hidden="true">
       <div class="st-url"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="u">www.<b data-slug-out>mapleandpine</b>.ca</span></div>

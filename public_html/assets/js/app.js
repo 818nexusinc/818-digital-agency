@@ -282,6 +282,7 @@
       var jo = $('[data-jur-out]'); if (jo && jur) jo.textContent = jur.options[jur.selectedIndex].text;
       $$('[data-name-link]').forEach(function (a) { a.href = a.getAttribute('data-name-link') + (bn.value.trim() ? '?name=' + encodeURIComponent(bn.value.trim() + ' ' + end) : ''); });
       if (sheet) sheet.classList.toggle('signed', bn.value.trim().length > 1);
+      var dm = $('[data-dm]'); if (dm) dm.placeholder = slug(v) + '.ca';
     };
     bn.addEventListener('input', paint); if (jur) jur.addEventListener('change', paint);
     $$('[data-end]').forEach(function (r) { r.addEventListener('change', paint); });
@@ -356,5 +357,16 @@
     var rvo2 = new IntersectionObserver(function (es) { es.forEach(function (en) { if (en.isIntersecting) { en.target.classList.add('in'); rvo2.unobserve(en.target); } }); }, { threshold: 0.08, rootMargin: '0px 0px -30px 0px' });
     later.forEach(function (el) { rvo2.observe(el); });
     $$('.sh-frame').forEach(function (f) { f.classList.add('rv-img'); rvo2.observe(f); });
+  }
+
+  /* Menu: a soft pill glides to the item under the pointer, in that business's colour. */
+  var ml = $('.mn-list');
+  if (ml && window.matchMedia('(min-width:1241px)').matches) {
+    var glide = document.createElement('li'); glide.className = 'mn-glide'; glide.setAttribute('aria-hidden', 'true'); ml.appendChild(glide);
+    var moveTo = function (it) { if (!it) { glide.style.opacity = 0; return; } var b = $('.mn-btn', it), r = b.getBoundingClientRect(), lr = $('.site-header').getBoundingClientRect();
+      glide.style.cssText = 'opacity:1;width:' + r.width + 'px;height:' + r.height + 'px;transform:translate(' + (r.left - lr.left) + 'px,' + (r.top - lr.top) + 'px);background:' + getComputedStyle(it).getPropertyValue('--acc-soft'); };
+    $$('.mn-item', ml).forEach(function (it) { it.addEventListener('mouseenter', function () { moveTo(it); }); it.addEventListener('focusin', function () { moveTo(it); }); });
+    ml.addEventListener('mouseleave', function () { var open = $('.mn-btn[aria-expanded=true]', ml); moveTo(open ? open.closest('.mn-item') : $('.mn-btn.on', ml) ? $('.mn-btn.on', ml).closest('.mn-item') : null); });
+    var on = $('.mn-btn.on', ml); if (on) setTimeout(function () { moveTo(on.closest('.mn-item')); }, 50);
   }
 })();

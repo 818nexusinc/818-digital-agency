@@ -9,7 +9,7 @@ $data = ['reg' => $reg, 'bm' => $c('bm_annual'), 'tlds' => $tlds, 'email' => ['e
   'tiers' => App\Wizard::BUNDLE_TIERS];
 $provs = ['FED' => 'Federal'] + Catalog::PROVINCES; unset($provs['FED']); $provs = ['FED' => 'Federal'] + $provs;
 $pill = fn($name, $val, $label, $checked = false, $dis = false) => '<label class="pill"><input type="radio" name="' . $name . '" value="' . e($val) . '"' . ($checked ? ' checked' : '') . ($dis ? ' disabled' : '') . '><span>' . e($label) . '</span></label>';
-$hero = ['tone' => 'amber', 'title' => 'Bundle and save up to 15%.', 'sub' => 'Pick what you need. The more you add, the more you save.',
+$hero = ['landing' => true, 'tone' => 'amber', 'title' => 'Bundle and save up to 15%.', 'sub' => 'Pick what you need. The more you add, the more you save.',
   'media' => ['img' => 'partners'], 'chips' => [['stack', '2 services: 5% off', 'Up to 15% for 5+'], ['check', 'One dashboard', 'Everything in one place']]];
 include APP_ROOT . '/views/partials/svc/hero.php';
 ?>

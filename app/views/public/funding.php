@@ -1,6 +1,6 @@
 <?php
 include_once APP_ROOT . '/views/partials/icons.php';
-$hero = ['tone' => 'blue', 'pills' => ['Federal & regional programs'], 'title' => 'Funding is out there. Find yours.', 'sub' => 'Grants, loans and procurement programs for Canadian entrepreneurs, linked to each official page.',
+$hero = ['landing' => true, 'tone' => 'blue', 'pills' => ['Federal & regional programs'], 'title' => 'Funding is out there. Find yours.', 'sub' => 'Grants, loans and procurement programs for Canadian entrepreneurs, linked to each official page.',
   'media' => ['img' => 'team-deal'], 'chips' => [['cash', 'Official sources', 'Links to every program'], ['check', 'Get registered first', 'Most programs require it']]];
 include APP_ROOT . '/views/partials/svc/hero.php';
 $progs = [

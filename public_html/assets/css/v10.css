@@ -1,0 +1,99 @@
+/* 818 Digital Agency · v10 layer
+   Modern pillar colours, a bigger fluid menu, landing heroes in each business colour,
+   the articles-of-incorporation draft, the homepage domain search and a roomier "Start here". */
+
+/* ── Menu: bigger, fluid ─────────────────────────────────────────── */
+.site .site-header .hd{height:84px}
+.site .mn-list{height:84px;position:relative}
+.site .mn-btn{height:48px!important;padding:0 20px!important;font-size:16px!important;font-weight:500;gap:10px;position:relative;z-index:1;background:transparent!important;transition:color .3s}
+.site .mn-btn:hover,.site .mn-btn[aria-expanded=true],.site .mn-btn.on{color:var(--acc-ink)!important}
+html[data-tone=dark] .site .mn-btn:hover,html[data-tone=dark] .site .mn-btn[aria-expanded=true]{color:var(--acc-ink)!important}
+.mn-dot{width:8px;height:8px;transition:transform .35s cubic-bezier(.3,1.6,.5,1)}
+.site .mn-btn:hover .mn-dot,.site .mn-btn[aria-expanded=true] .mn-dot{transform:scale(1.6)}
+.mn-glide{position:absolute;left:0;top:0;border-radius:999px;pointer-events:none;opacity:0;list-style:none;z-index:0;
+  transition:transform .45s cubic-bezier(.2,.8,.2,1),width .45s cubic-bezier(.2,.8,.2,1),background-color .3s,opacity .25s}
+.site .mega{animation:megaIn2 .35s cubic-bezier(.2,.8,.2,1)}
+@keyframes megaIn2{from{opacity:0;transform:translateY(-10px);clip-path:inset(0 0 100% 0)}to{opacity:1;transform:none;clip-path:inset(0 0 0 0)}}
+.site .mega-grid li{opacity:0;transform:translateY(10px);animation:mcIn .45s cubic-bezier(.2,.8,.2,1) forwards}
+.site .mega-grid li:nth-child(2){animation-delay:.04s}.site .mega-grid li:nth-child(3){animation-delay:.08s}.site .mega-grid li:nth-child(4){animation-delay:.12s}.site .mega-grid li:nth-child(5){animation-delay:.16s}
+@keyframes mcIn{to{opacity:1;transform:none}}
+.site .mega-card{padding:24px 22px!important}
+.site .mega-card .mc-ic{width:46px!important;height:46px!important;border-radius:14px!important;transition:background .3s,color .3s,transform .4s cubic-bezier(.3,1.6,.5,1)}
+.site .mega-card:hover .mc-ic{transform:rotate(-6deg) scale(1.06)}
+.site .mc-name{font-size:17.5px!important}
+.site .mega-lead{padding:44px 40px!important}
+.site .mega-title{font-size:2.2rem!important}
+@media(max-width:1279px){.site .mn-btn{padding:0 13px!important;font-size:15px!important}}
+@media(max-width:1240px){.site .site-header .hd{height:68px}.site .site-header .navbar{inset:68px 0 0 0}.site .mn-btn{height:auto!important;font-size:1.3rem!important;padding:18px 4px!important}.mn-glide{display:none}.site .mega-grid li{opacity:1;transform:none;animation:none}}
+
+/* ── Landing heroes: same colour as the business on the homepage ── */
+.site .svc-hero.landing{background:var(--land-bg)!important}
+.site .svc-hero.land-dark h1,.site .svc-hero.land-dark .sh-sub,.site .svc-hero.land-dark .sh-pills li,.site .svc-hero.land-dark .sh-cap,.site .svc-hero.land-dark .sh-cap b{color:#fff!important}
+.site .svc-hero.land-dark .sh-sub{opacity:.88}
+.site .svc-hero.land-dark .sh-pills li{border-color:rgba(255,255,255,.3);opacity:.85}
+.site .svc-hero.land-dark .sh-cap span{border-color:rgba(255,255,255,.3)}
+.site .svc-hero.land-dark .btn-primary{background:#fff;border-color:#fff;color:var(--acc-ink)}
+.site .svc-hero.land-dark .btn-primary:hover{background:var(--acc-ink);border-color:var(--acc-ink);color:#fff}
+.site .svc-hero.land-dark .btn-ghost{color:#fff;border-color:rgba(255,255,255,.5)}
+.site .svc-hero.land-dark .btn-ghost:hover{border-color:#fff;color:#fff;background:rgba(255,255,255,.1)}
+.site .svc-hero.land-dark .sh-media:before{background:var(--acc-ink)}
+.site .svc-hero.land-light .sh-media:before{background:var(--acc-deep)}
+.site .svc-hero.land-light h1{color:var(--acc-ink)}
+html:has(.svc-hero.land-dark) .site-header{--fg:#fff;--bg-inv:#10141c}
+html:has(.svc-hero.land-dark) body:not(.scrolled):not(.nav-open) .site-header .mega{--fg:#10141c}
+html:has(.svc-hero.land-dark) body.scrolled .site-header{--fg:#10141c;--bg-inv:#fff}
+
+/* ── Register chapter: articles of incorporation on paperwork ─────── */
+.aoi-wrap{position:relative;padding:40px 0 40px 60px}
+.aoi-bg{position:absolute;right:-40px;top:0;width:78%;height:100%;object-fit:cover;border-radius:12px;opacity:.55;filter:saturate(.6) contrast(1.05);mix-blend-mode:luminosity}
+.story .sheet.aoi{position:relative;background:#fffefb;border:0;padding:40px 44px 34px;border-radius:4px;transform:rotate(-1.5deg);box-shadow:0 2px 0 #ece9e0,0 50px 80px -40px rgba(10,12,40,.55);background-image:none}
+.story .sheet.aoi:before{inset:12px;border:1px solid #e4e0d3}
+.story .sheet.aoi.signed{transform:rotate(0)}
+.aoi-head{text-align:center;padding-bottom:20px;border-bottom:2px solid #10141c;margin-bottom:6px;position:relative}
+.aoi-k{margin:0;font-size:12.5px;letter-spacing:.02em;color:#6b6656}
+.aoi-t{margin:6px 0 0;font-size:clamp(1.4rem,2.2vw,2rem);letter-spacing:-.02em;color:#10141c;font-weight:450}
+.aoi-list{list-style:none;counter-reset:a;margin:0;padding:0;position:relative}
+.aoi-list li{counter-increment:a;display:grid;grid-template-columns:28px 1fr;grid-template-rows:auto auto;column-gap:8px;padding:12px 0;border-bottom:1px solid #ebe7dc}
+.aoi-list li:before{content:counter(a);grid-row:span 2;font-size:13px;color:#8a8473;padding-top:1px;font-variant-numeric:tabular-nums}
+.aoi-list span{font-size:12.5px;color:#7a7462}
+.aoi-list b{font-weight:450;font-size:15.5px;color:#10141c;margin-top:3px}
+.aoi-list b.aoi-name{font-size:clamp(1.3rem,2vw,1.8rem);letter-spacing:-.03em;line-height:1.1}
+.aoi-list b.aoi-name [data-name-out]{color:var(--acc)}
+.aoi-foot{margin:16px 0 0;font-size:12px;color:#8a8473;position:relative}
+.story .sheet.aoi .stamp{position:absolute;right:30px;bottom:26px;margin:0;background:none}
+@media(max-width:900px){.aoi-wrap{padding:20px 0}.aoi-bg{right:0;width:100%}.story .sheet.aoi{padding:28px 22px}}
+
+/* ── Web chapter: domain search ──────────────────────────────────── */
+.dmini{display:flex;align-items:center;gap:6px;margin:34px 0 0;max-width:520px;background:rgba(255,255,255,.14);border:1.5px solid rgba(255,255,255,.35);border-radius:999px;padding:6px 6px 6px 22px;transition:border-color .3s,background .3s}
+.dmini:focus-within{border-color:#fff;background:rgba(255,255,255,.2)}
+.dm-www{color:rgba(255,255,255,.7);font-size:16px}
+.dmini input{flex:1;min-width:0;border:0!important;background:transparent!important;color:#fff;font:inherit;font-size:17px;padding:10px 0!important;box-shadow:none!important;outline:0}
+.dmini input::placeholder{color:rgba(255,255,255,.55)}
+.dmini .btn{padding:12px 22px}
+.story .ch-web .ch-copy>.btn{margin-top:18px}
+
+/* ── Start here: roomier, nothing cut off ────────────────────────── */
+.paths{height:min(78vh,700px);min-height:600px;gap:12px}
+.path{flex:1 1 0;min-width:96px}
+.path.on,.path:focus-within{flex:4.2 1 0}
+.path-in{padding:34px 34px 30px}
+.path h3{font-size:clamp(1.5rem,2vw,2.2rem);white-space:normal}
+.path:not(.on) h3{white-space:nowrap;font-size:clamp(1.2rem,1.5vw,1.6rem)}
+.path-l{font-size:17px}
+.path ul a{padding:14px 0;font-size:16.5px;gap:24px}
+.path ul a span{min-width:0}
+.path ul b{white-space:nowrap}
+@media(max-width:1100px){.path.on,.path:focus-within{flex:5 1 0}.path{min-width:72px}}
+@media(max-width:900px){.paths{height:auto;min-height:0}.path{min-width:0}.path:not(.on) h3{white-space:normal}}
+
+/* ── Chooser and sections pick up the fresher palette ─────────────── */
+.chooser{border-top-color:var(--acc)}
+.cz:hover,.cz-on{background:var(--acc-soft)}
+.site .close-cta{background:var(--acc-deep)}
+body[data-pillar=manage] .close-cta,body[data-pillar=bundle] .close-cta{background:var(--acc-ink)}
+.site .mn-list{position:static!important}
+.aoi-list b span{font-size:inherit!important;color:inherit;letter-spacing:inherit}
+.aoi-list b.aoi-name [data-name-out]{color:var(--acc)!important}
+.paths{height:clamp(580px,70vh,660px);min-height:0}
+@media(max-width:1400px) and (min-width:1241px){.site .mn-btn{padding:0 13px!important;font-size:15.5px!important}}
+@media(max-width:1320px) and (min-width:1241px){.site .nav-cta .btn-ghost{display:none}.site .mn-btn{padding:0 11px!important;font-size:15px!important}}

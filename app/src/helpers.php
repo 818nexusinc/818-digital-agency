@@ -98,19 +98,19 @@ function js_dict(): string
 
 /* ── Business pillars: each main business has its own colour, used on the homepage, in its submenu and on its pages. */
 const PILLARS = [
-    'register' => ['name' => 'Register Business', 'home' => '/register', 'acc' => '#3346d3', 'soft' => '#eef0ff', 'deep' => '#3346d3', 'ink' => '#141d5c'],
-    'manage'   => ['name' => 'Manage Business', 'home' => '/manage-business', 'acc' => '#0b8063', 'soft' => '#e3f6ef', 'deep' => '#0d8a6b', 'ink' => '#073d30'],
-    'web'      => ['name' => 'Web Services', 'home' => '/website', 'acc' => '#c0275f', 'soft' => '#ffecf3', 'deep' => '#c92f67', 'ink' => '#4d0d26'],
-    'bundle'   => ['name' => 'Bundle & Save', 'home' => '/bundle', 'acc' => '#a35c00', 'soft' => '#fff4dc', 'deep' => '#b66a05', 'ink' => '#3d2400'],
-    'opps'     => ['name' => 'Opportunities', 'home' => '/opportunities', 'acc' => '#c62a3c', 'soft' => '#ffedef', 'deep' => '#cf3346', 'ink' => '#4d0c16'],
-    'brand'    => ['name' => '818 Digital Agency', 'home' => '/', 'acc' => '#1e44c8', 'soft' => '#eef2fd', 'deep' => '#10141c', 'ink' => '#10141c'],
+    'register' => ['name' => 'Register Business', 'home' => '/register', 'acc' => '#4f46e5', 'soft' => '#eef2ff', 'deep' => '#4f46e5', 'ink' => '#312e81', 'tone' => 'dark'],
+    'manage'   => ['name' => 'Manage Business', 'home' => '/manage-business', 'acc' => '#047857', 'soft' => '#e7f8f0', 'deep' => '#059669', 'ink' => '#064e3b', 'tone' => 'light'],
+    'web'      => ['name' => 'Web Services', 'home' => '/web-services', 'acc' => '#be185d', 'soft' => '#fdf0f6', 'deep' => '#db2777', 'ink' => '#831843', 'tone' => 'dark'],
+    'bundle'   => ['name' => 'Bundle & Save', 'home' => '/bundle', 'acc' => '#c2410c', 'soft' => '#fff4ea', 'deep' => '#ea580c', 'ink' => '#7c2d12', 'tone' => 'light'],
+    'opps'     => ['name' => 'Opportunities', 'home' => '/opportunities', 'acc' => '#be123c', 'soft' => '#fff1f3', 'deep' => '#e11d48', 'ink' => '#881337', 'tone' => 'dark'],
+    'brand'    => ['name' => '818 Digital Agency', 'home' => '/', 'acc' => '#1e44c8', 'soft' => '#eef2fd', 'deep' => '#0f172a', 'ink' => '#0f172a', 'tone' => 'dark'],
 ];
 function pillar(string $path): string
 {
     return match (true) {
         str_starts_with($path, '/register') => 'register',
         str_starts_with($path, '/manage-business') => 'manage',
-        in_array(strtok($path, '/') ?: '', ['domain', 'email', 'website', 'web-application'], true) => 'web',
+        in_array(strtok($path, '/') ?: '', ['domain', 'email', 'website', 'web-application', 'web-services'], true) => 'web',
         $path === '/bundle' => 'bundle',
         in_array($path, ['/opportunities', '/funding'], true) => 'opps',
         default => 'brand',

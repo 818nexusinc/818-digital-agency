@@ -2,7 +2,7 @@
 use App\Catalog;
 include_once APP_ROOT . '/views/partials/icons.php';
 $fromP = function (string $slug) { $s = Catalog::find($slug); return $s ? Catalog::fromPrice($s) : null; };
-$hero = ['tone' => 'blue', 'pills' => ['Every province + federal', 'Deadline reminders'],
+$hero = ['landing' => true, 'tone' => 'blue', 'pills' => ['Every province + federal', 'Deadline reminders'],
   'title' => 'Stay in good standing. Without the paperwork.', 'sub' => 'Annual returns, corporate changes and official documents, filed for you.',
   'actions' => [['#services', 'View all services', true]],
   'media' => ['img' => 'docs-typing'], 'chips' => [['calendar', 'Never miss a deadline', 'Reminders before it is due'], ['certificate', 'Official documents', 'Ordered from the registry']]];

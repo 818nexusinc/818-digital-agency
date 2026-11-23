@@ -4,8 +4,9 @@
             'media' => ['img' => name] | ['video' => name, 'poster' => name], 'chips' => [[icon, title, sub], …], 'proof' => [text, …]] */
 include_once APP_ROOT . '/views/partials/icons.php';
 $hm = $hero['media'] ?? null;
+$land = !empty($hero['landing']); $lp = PILLARS[pillar($path ?? '/')] ?? PILLARS['brand'];
 ?>
-<section class="svc-hero tone-h-<?= e($hero['tone'] ?? 'blue') ?><?= $hm ? ' split' : '' ?>"><div class="wrap">
+<section class="svc-hero tone-h-<?= e($hero['tone'] ?? 'blue') ?><?= $hm ? ' split' : '' ?><?= $land ? ' landing land-' . $lp['tone'] : '' ?>"<?= $land ? ' style="--land-bg:' . ($lp['tone'] === 'dark' ? $lp['deep'] : $lp['soft']) . '"' : '' ?>><div class="wrap">
   <div class="sh-text">
     <?php if (!empty($hero['back'])): ?><a class="sh-back" href="<?= e($hero['back'][0]) ?>">← <?= e(t($hero['back'][1])) ?></a><?php endif; ?>
     <?php if (!empty($hero['pills'])): ?><ul class="sh-pills"><?php foreach ($hero['pills'] as $hp): ?><li><?= e(t($hp)) ?></li><?php endforeach; ?></ul><?php endif; ?>

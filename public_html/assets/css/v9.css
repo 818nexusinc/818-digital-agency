@@ -45,7 +45,7 @@ body[data-pillar=brand] .btn-primary:hover{background:#1e44c8;border-color:#1e44
 .site .mc-name{font-size:16.5px!important}
 
 @media(max-width:1279px){.site .mn-btn{padding:0 11px!important;font-size:14.5px!important}.site .nav-cta .btn-ghost{display:none}}
-@media(max-width:1180px){
+@media(max-width:1240px){
   .site .site-header .hd{padding:0 20px;height:64px}
   .site .mn-list{justify-content:flex-start}
   .site .mega-grid{grid-template-columns:1fr!important;padding:0 0 12px!important}
@@ -163,7 +163,7 @@ body[data-pillar=brand] .btn-primary:hover{background:#1e44c8;border-color:#1e44
 @media(max-width:960px){.site .sh-media:before{aspect-ratio:1/1;max-width:452px}}
 .site .menu-btn{width:auto!important;height:40px;padding:0 14px!important;border-radius:999px!important;gap:8px;white-space:nowrap;font-size:14.5px}
 .site .menu-btn .ic{width:18px;height:18px}
-@media(max-width:1180px){.site .mn-list{height:auto!important;width:100%}.site .site-header .navbar .mainnav{flex:none}}
+@media(max-width:1240px){.site .mn-list{height:auto!important;width:100%}.site .site-header .navbar .mainnav{flex:none}}
 
 /* ── About ───────────────────────────────────────────────────────── */
 .about2{padding:110px 0}
