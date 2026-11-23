@@ -31,6 +31,12 @@ final class SecurityCheck
         if (Db::$driver === 'mysql') $add('Configuration', 'Encrypted database connection', Db::$tls === 'none' ? 'fail' : 'pass',
             ['verified' => 'TLS with a verified certificate.', 'encrypted' => 'TLS encrypted.', 'none' => 'Not encrypted: data travels to the database in plain text.'][Db::$tls] ?? 'Unknown.',
             'Enable SSL for MySQL on the database server (or ask the host to), then set DB_SSL=require in Vercel.', 'high');
+        if (Env::bool('DB_DISABLED')) {
+            $pr = Db::probeMysql();
+            $add('Configuration', 'Parked database connection test', $pr['ok'] ? 'pass' : 'fail',
+                $pr['ok'] ? "Connected to {$pr['target']} (MySQL {$pr['version']}, {$pr['tables']} tables, {$pr['ms']} ms). Ready to switch on." : "Could not connect to {$pr['target']}: {$pr['error']}",
+                $pr['ok'] ? '' : ($pr['hint'] ?? 'Check the database settings in Vercel.'), 'high');
+        }
         $url = url('/');
         $add('Configuration', 'HTTPS address', str_starts_with($url, 'https://') ? 'pass' : 'fail', 'Site address: ' . $url, 'Set APP_URL to the https:// address of the production domain.', 'high');
         $add('Configuration', 'Production domain', str_contains($url, '.vercel.app') ? 'warn' : 'pass',

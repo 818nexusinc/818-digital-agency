@@ -14,6 +14,9 @@ final class Db
     {
         if (self::$pdo) return self::$pdo;
         $dsn = Env::get('DB_DSN');
+        // DB_DISABLED=1 parks the database settings (values kept) and runs in preview mode, e.g. while a new database is being connected.
+        $parked = Env::bool('DB_DISABLED');
+        if ($parked) $dsn = 'sqlite:' . STORAGE_ROOT . '/app.sqlite';
         if (!$dsn) {
             $host = Env::get('DB_HOST', 'localhost');
             $name = Env::get('DB_NAME', '');
@@ -61,6 +64,30 @@ final class Db
                 }
             }
         } finally { if ($lock) { flock($lock, LOCK_UN); fclose($lock); } }
+    }
+
+    /** Try the MySQL settings from DB_HOST/DB_PORT/DB_NAME/DB_USER/DB_PASS without switching to them. Never returns the password. */
+    public static function probeMysql(): array
+    {
+        $host = (string)Env::get('DB_HOST', 'localhost'); $port = (int)Env::get('DB_PORT', '3306') ?: 3306; $name = (string)Env::get('DB_NAME', '');
+        if ($name === '') return ['ok' => false, 'target' => '', 'error' => 'DB_NAME is not set.'];
+        $target = "{$host}:{$port}/{$name}";
+        if (in_array(strtolower($host), ['localhost', '127.0.0.1', '::1'], true)) return ['ok' => false, 'target' => $target, 'error' => 'DB_HOST is set to localhost. That only works on the database server itself; use the remote hostname or IP shown in My20i → Remote MySQL Access.'];
+        $t0 = microtime(true);
+        try {
+            $pdo = new PDO("mysql:host={$host};port={$port};dbname={$name};charset=utf8mb4", Env::get('DB_USER'), Env::get('DB_PASS'), [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_TIMEOUT => 6]);
+            $ver = (string)$pdo->query('SELECT VERSION()')->fetchColumn();
+            $tables = (int)$pdo->query('SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE()')->fetchColumn();
+            return ['ok' => true, 'target' => $target, 'version' => $ver, 'tables' => $tables, 'ms' => (int)((microtime(true) - $t0) * 1000)];
+        } catch (\PDOException $e) {
+            $m = $e->getMessage(); $hint = '';
+            if (str_contains($m, 'refused')) $hint = 'The server is reachable but nothing accepts connections on that port: MySQL is not listening publicly, or a firewall blocks it. Enable Remote MySQL Access in My20i and check the port.';
+            elseif (str_contains($m, 'timed out') || str_contains($m, 'timeout')) $hint = 'No answer: a firewall is dropping the connection. Remote access must allow any IP (%).';
+            elseif (str_contains($m, 'Access denied')) $hint = 'The server answered but rejected the username/password, or the user is not allowed from remote hosts (add % in Remote MySQL Access).';
+            elseif (str_contains($m, 'getaddrinfo') || str_contains($m, 'Name or service')) $hint = 'The hostname does not exist. Copy it again from My20i.';
+            elseif (str_contains($m, 'Unknown database')) $hint = 'Connected, but the database name is wrong. Copy it exactly, including any prefix.';
+            return ['ok' => false, 'target' => $target, 'error' => preg_replace('/using password: \w+/', '', $m), 'hint' => $hint];
+        }
     }
 
     /** Encryption of the database connection: 'verified', 'encrypted', 'none' or '' (not MySQL). */
