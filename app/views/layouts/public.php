@@ -4,7 +4,6 @@ $desc = $description ?? Settings::get('seo.default_description');
 $fullTitle = ($title ?? '') ? $title . ' | ' . Settings::get('company.name') : Settings::get('company.name');
 $canon = url($path ?? '/');
 $cartCount = count(Cart::lines());
-$nav = ['/services/category/registration' => 'Incorporate', '/services/category/management' => 'Manage a company', '/services/category/websites' => 'Websites', '/services' => 'All services', '/how-it-works' => 'How it works'];
 ?><!doctype html>
 <html lang="en">
 <head>
@@ -14,30 +13,30 @@ $nav = ['/services/category/registration' => 'Incorporate', '/services/category/
 <link rel="canonical" href="<?= e($canon) ?>">
 <?php if (!empty($noindex)): ?><meta name="robots" content="noindex,nofollow"><?php endif; ?>
 <meta property="og:type" content="website"><meta property="og:title" content="<?= e($fullTitle) ?>"><meta property="og:description" content="<?= e(str_limit((string)$desc, 200)) ?>"><meta property="og:url" content="<?= e($canon) ?>"><meta property="og:site_name" content="<?= e(Settings::get('company.name')) ?>">
-<meta name="twitter:card" content="summary"><meta name="theme-color" content="#0b1530">
+<meta name="twitter:card" content="summary"><meta name="theme-color" content="#ffffff">
 <?php if ($v = Integrations::secret('search_console', 'verification')): ?><meta name="google-site-verification" content="<?= e($v) ?>"><?php endif; ?>
 <meta name="csrf" content="<?= e($csrf ?? '') ?>">
 <link rel="alternate" type="text/plain" href="/llms.txt" title="LLM guide"><link rel="alternate" type="application/json" href="/services.json" title="Service catalog">
 <link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
-<link rel="preload" href="/fonts/libre-caslon-text-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="/fonts/hanken-grotesk-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/hanken-grotesk-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/assets/css/app.css?v=<?= APP_VERSION ?>"><link rel="stylesheet" href="/assets/css/site.css?v=<?= APP_VERSION ?>">
 <?php foreach (($jsonld ?? []) as $ld) echo Seo::jsonLd($ld); ?>
 </head>
 <body class="site">
 <a class="skip" href="#main">Skip to content</a>
-<header class="site-header"><div class="wrap nav">
-  <a class="brand" href="/" aria-label="818 Digital Agency home"><?php include APP_ROOT . '/views/partials/logo.php'; ?><span class="wm"><b>818 Digital Agency</b><span>by 818 Nexus Inc.</span></span></a>
-  <nav class="nav-links" id="site-nav" aria-label="Main">
-    <?php foreach ($nav as $href => $label): ?><a href="<?= $href ?>"<?= ($path ?? '') === $href ? ' aria-current="page"' : '' ?>><?= e($label) ?></a><?php endforeach; ?>
-  </nav>
-  <div class="nav-cta">
-    <a class="cart-pill" href="/cart" aria-label="Cart (<?= $cartCount ?> items)"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6h15l-1.5 9h-12z"/><path d="M6 6 5 3H2"/><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/></svg><?php if ($cartCount): ?><span class="n"><?= $cartCount ?></span><?php endif; ?></a>
-    <?php if (!empty($user)): ?><a class="btn btn-ghost btn-sm" href="<?= App\Auth::isStaff($user) ? '/admin' : '/portal' ?>"><?= App\Auth::isStaff($user) ? 'Control Tower' : 'My portal' ?></a>
-    <?php else: ?><a class="btn btn-ghost btn-sm" href="/login">Sign in</a><?php endif; ?>
-    <a class="btn btn-primary btn-sm" href="/start">Tell us what you need</a>
-    <button class="menu-btn" data-toggle="site-nav" aria-expanded="false" aria-controls="site-nav" aria-label="Menu">☰</button>
-  </div>
-</div></header>
+<header class="site-header">
+  <div class="topbar"><div class="wrap nav">
+    <a class="brand" href="/" aria-label="818 Digital Agency home"><?php include APP_ROOT . '/views/partials/logo.php'; ?><span class="wm"><b>818 Digital Agency</b><span>by 818 Nexus Inc.</span></span></a>
+    <div class="nav-cta">
+      <a class="util-link" href="/how-it-works">How it works</a>
+      <a class="cart-pill" href="/cart" aria-label="Cart (<?= $cartCount ?> items)"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6h15l-1.5 9h-12z"/><path d="M6 6 5 3H2"/><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/></svg><?php if ($cartCount): ?><span class="n"><?= $cartCount ?></span><?php endif; ?></a>
+      <?php if (!empty($user)): ?><a class="btn btn-primary btn-sm" href="<?= App\Auth::isStaff($user) ? '/admin' : '/portal' ?>"><?= App\Auth::isStaff($user) ? 'Control Tower' : 'My portal' ?></a>
+      <?php else: ?><a class="btn btn-ghost btn-sm" href="/login">Log in</a><a class="btn btn-primary btn-sm" href="/register">Create account</a><?php endif; ?>
+      <button class="menu-btn" data-toggle="site-navbar" aria-expanded="false" aria-controls="site-navbar" aria-label="Menu"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg><span>Menu</span></button>
+    </div>
+  </div></div>
+  <div class="navbar" id="site-navbar"><div class="wrap"><?php include APP_ROOT . '/views/partials/megamenu.php'; ?></div></div>
+</header>
 <main id="main">
 <?php $fl = App\Session::takeFlash(); if ($fl): ?><div class="wrap" style="padding-top:18px"><?php foreach ($fl as [$t, $m]): ?><div class="alert alert-<?= $t === 'error' ? 'error' : 'success' ?>" role="status"><?= e($m) ?></div><?php endforeach; ?></div><?php endif; ?>
 <?= $content ?>

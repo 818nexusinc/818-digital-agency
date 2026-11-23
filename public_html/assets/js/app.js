@@ -199,6 +199,19 @@
     window.addEventListener('scroll', upd, { passive: true }); upd();
   }
 
+  /* Mega menu (same structure as the original site): hover or click to open, one at a time; Esc or outside click closes. */
+  var megas = $$('[data-mega]'), wide = window.matchMedia('(min-width: 961px)'), mt;
+  function closeAll(except) { megas.forEach(function (li) { if (li === except) return; var b = $('.mn-btn', li), p = $('.mega', li); b.setAttribute('aria-expanded', 'false'); p.hidden = true; }); }
+  function openM(li) { closeAll(li); $('.mn-btn', li).setAttribute('aria-expanded', 'true'); $('.mega', li).hidden = false; }
+  megas.forEach(function (li) {
+    var b = $('.mn-btn', li);
+    b.addEventListener('click', function () { if (b.getAttribute('aria-expanded') === 'true') closeAll(); else openM(li); });
+    li.addEventListener('mouseenter', function () { if (!wide.matches) return; clearTimeout(mt); mt = setTimeout(function () { openM(li); }, 90); });
+    li.addEventListener('mouseleave', function () { if (!wide.matches) return; clearTimeout(mt); mt = setTimeout(closeAll, 220); });
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { var open = megas.filter(function (li) { return !$('.mega', li).hidden; })[0]; closeAll(); if (open) $('.mn-btn', open).focus(); } });
+  document.addEventListener('click', function (e) { if (!e.target.closest('[data-mega]')) closeAll(); });
+
   /* Cookie notice: the site sets only an essential session cookie. Analytics stays off until an owner enables it (see Integration Hub). */
   var ck = $('#cookie');
   function consent() { try { return localStorage.getItem('nx818_cookie_consent'); } catch (e) { return 'essential'; } }
