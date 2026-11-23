@@ -4,7 +4,7 @@ include_once APP_ROOT . '/views/partials/svc/wz.php';
 include_once APP_ROOT . '/views/partials/icons.php';
 $svc = Catalog::find('nuans'); $p = Catalog::price($svc, []); $cents = $p['unit_cents'] ?? 4250;
 $provs = ['FED' => 'Federal (CBCA): all provinces'] + Catalog::PROVINCES; unset($provs['FED']); $provs = ['FED' => 'Federal (CBCA): all provinces'] + $provs;
-$hero = ['tone' => 'violet', 'pills' => ['Official NUANS report', 'Valid 90 days'],
+$hero = ['form' => true, 'tone' => 'violet', 'pills' => ['Official NUANS report', 'Valid 90 days'],
   'title' => 'Check your name before you commit.', 'sub' => 'An official NUANS report for named corporations, delivered to your portal and inbox.',
   'media' => ['img' => 'email-typing'], 'chips' => [['search', $svc['timeline'] ?? 'Same day', 'Typical turnaround'], ['certificate', 'Government compatible', 'Valid for 90 days']]];
 include APP_ROOT . '/views/partials/svc/hero.php';
@@ -22,7 +22,7 @@ include APP_ROOT . '/views/partials/svc/hero.php';
     <?php endforeach; ?>
   </div>
 </div></section>
-<section class="svc-body" id="order"><div class="wrap">
+<section class="svc-body" id="start" id="order"><div class="wrap">
 <?= wz_open(['Details', 'Names', 'Review'], ['data-endpoint' => '/order/add']) ?>
   <input type="hidden" name="slug" value="nuans">
   <?= wz_step(0, 'Applicant information', '<p class="muted">Your details for the order confirmation and invoice.</p><div class="grid2">'

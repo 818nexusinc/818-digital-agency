@@ -1,11 +1,11 @@
 <?php
 use App\Catalog;
 $svc = Catalog::find('domain_register'); $tlds = $svc['options']['tlds'] ?? [];
-$hero = ['tone' => 'teal', 'pills' => ['Domain registration', 'Automatic DNS'], 'title' => 'Claim your name online.', 'sub' => 'Search, register and we connect it to your email and website.',
+$hero = ['form' => true, 'tone' => 'teal', 'pills' => ['Domain registration', 'Automatic DNS'], 'title' => 'Claim your name online.', 'sub' => 'Search, register and we connect it to your email and website.',
   'media' => ['img' => 'laptop'], 'chips' => [['globe', '.ca, .com and more', 'Live availability check'], ['shield', 'WHOIS privacy', 'Where the registry allows']]];
 include APP_ROOT . '/views/partials/svc/hero.php';
 ?>
-<section class="sec" style="padding:36px 0 20px"><div class="wrap narrow">
+<section class="sec dom-sec" id="start"><div class="wrap narrow">
   <?php include APP_ROOT . '/views/partials/svc/domain_tool.php'; ?>
 </div></section>
 <?php $faqs = [

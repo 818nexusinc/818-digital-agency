@@ -1,4 +1,4 @@
-<section class="section tight"><div class="wrap" style="max-width:960px">
+<section class="section tight"><div class="wrap">
   <h1>Your cart</h1>
   <?php if (!$t['lines']): ?><div class="empty">Your cart is empty. <a href="/services">Browse services</a> or <button class="btn btn-ghost btn-sm" type="button" data-chat="">ask the assistant</button> to build a package for you.</div>
   <?php else: ?>

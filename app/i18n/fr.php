@@ -1,6 +1,9 @@
 <?php
 /* French (Canada) UI strings. English is the key. Generated from the rendered site; edit freely. */
 return [
+  'Ask a question' => 'Poser une question',
+  'Start with a NUANS name search' => 'Commencer par une recherche NUANS',
+  'Start here: check your name' => 'Commencez ici : vérifiez votre nom',
   'Explore Register Business' => 'Découvrir Enregistrer l’entreprise',
   'Explore Manage Business' => 'Découvrir Gérer l’entreprise',
   'Explore Web Services' => 'Découvrir les Services Web',

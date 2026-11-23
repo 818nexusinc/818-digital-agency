@@ -2,7 +2,7 @@
 use App\Catalog;
 include_once APP_ROOT . '/views/partials/svc/wz.php';
 $svc = Catalog::find('partnership'); $pp = $svc['province_prices'] ?? [];
-$hero = ['tone' => 'blue', 'pills' => ['2+ partners', $svc['timeline'] ?? '1–3 business days'],
+$hero = ['form' => true, 'tone' => 'blue', 'pills' => ['2+ partners', $svc['timeline'] ?? '1–3 business days'],
   'title' => 'Build it together.', 'sub' => 'Register a general or limited partnership, with flexible profit sharing between owners.',
   'media' => ['img' => 'handshake'], 'chips' => [['users', 'Two or more owners', 'General or limited'], ['text', 'Agreement template', 'Included with your order']]];
 include APP_ROOT . '/views/partials/svc/hero.php';
@@ -13,7 +13,7 @@ $partner = wz_field('owners[{i}][first]', 'First name *', 'text', ['data-rule' =
   . wz_field('owners[{i}][share]', 'Share % *', 'number', ['min' => 1, 'max' => 100, 'step' => 'any', 'placeholder' => '50'])
   . wz_select('owners[{i}][kind]', 'Partner type', ['general' => 'General partner', 'limited' => 'Limited partner'], ['data-show-parent' => 'lp']);
 ?>
-<section class="svc-body"><div class="wrap">
+<section class="svc-body" id="start"><div class="wrap">
 <?= wz_open(['Province & type', 'Partners', 'Business details', 'Review'], ['data-endpoint' => '/order/add']) ?>
   <input type="hidden" name="slug" value="partnership">
   <?= wz_step(0, 'Province & partnership type', wz_provinces('province', $pp, 'Select province', false, 'NB')

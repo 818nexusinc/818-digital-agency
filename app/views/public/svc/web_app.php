@@ -3,11 +3,11 @@ include_once APP_ROOT . '/views/partials/svc/wz.php';
 $types = [['portal', 'Client / customer portal', 'Logins, documents, messages and self-service for your customers.'], ['booking', 'Booking & scheduling system', 'Online appointments, calendar sync, reminders and payments.'], ['crm', 'CRM / sales pipeline', 'Leads, deals, follow-ups and reporting in one place.'],
   ['inventory', 'Inventory & stock management', 'Track products and orders, set reorder alerts, sync sales channels.'], ['ecommerce', 'E-commerce store', 'A custom online store with payments and order management.'], ['marketplace', 'Marketplace / multi-vendor', 'Sellers, listings, buyer and seller dashboards, commissions and payouts.'],
   ['membership', 'Membership & subscription site', 'Gated content, plans, member directories and automated billing.'], ['reporting', 'Reporting & analytics dashboard', 'KPIs, charts, custom reports and exports for your data.'], ['workflow', 'Operations / workflow automation', 'Replace spreadsheets and manual steps with an app.'], ['custom', 'Custom / other', 'Have a unique idea? Describe it and we’ll scope it.']];
-$hero = ['tone' => 'amber', 'pills' => ['Free consultation', 'Written quote'], 'title' => 'Software built around how you work.', 'sub' => 'Booking systems, client portals, dashboards and internal tools.',
+$hero = ['form' => true, 'tone' => 'amber', 'pills' => ['Free consultation', 'Written quote'], 'title' => 'Software built around how you work.', 'sub' => 'Booking systems, client portals, dashboards and internal tools.',
   'media' => ['video' => 'team-laptop'], 'chips' => [['laptop', 'Free consultation', 'Scope it together'], ['text', 'Written quote', 'Fixed before we start']]];
 include APP_ROOT . '/views/partials/svc/hero.php';
 ?>
-<section class="svc-body"><div class="wrap">
+<section class="svc-body" id="start"><div class="wrap">
 <?= wz_open(['Choose app type', 'Your details', 'Review'], ['data-endpoint' => '/order/quote', 'data-kind' => 'web_app']) ?>
   <?= wz_step(0, 'What type of web application do you need?', '<p class="muted">Pick the closest match. You can describe it in detail on the next step.</p>' . wz_cards('app_type', 'App type', $types), false, 'Continue to details') ?>
   <?= wz_step(1, 'Tell us about your project', '<div class="grid2">'

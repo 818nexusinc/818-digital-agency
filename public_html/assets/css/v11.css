@@ -1,0 +1,97 @@
+/* 818 Digital Agency · v11 layer
+   Inner-page headers (breadcrumb, clear first step, facts bar), refined mega menus,
+   animated menu hovers, one content width, and the domain search field. */
+
+/* ── One content width on every page ─────────────────────────────── */
+.site main .wrap,.site .site-footer .wrap,.site .close-cta .wrap{max-width:var(--w,1440px)!important;padding-left:48px!important;padding-right:48px!important;box-sizing:border-box}
+@media(max-width:900px){.site main .wrap,.site .site-footer .wrap,.site .close-cta .wrap{padding-left:20px!important;padding-right:20px!important}}
+.site .svc-body>.wrap,.site .chooser,.site .dom-box,.site .wz{width:100%;box-sizing:border-box}
+
+/* ── Inner page header ───────────────────────────────────────────── */
+.site .svc-hero.split{padding:calc(var(--hh,84px) + 28px) 0 0!important}
+.site .svc-hero.split>.wrap:first-child{align-items:center;gap:72px;padding-bottom:56px}
+.crumbs{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:0 0 34px;font-size:14px}
+.crumbs a{color:color-mix(in srgb,var(--acc-ink) 70%,transparent)!important;position:relative}
+.crumbs a:after{content:"";position:absolute;left:0;right:0;bottom:-3px;height:1.5px;background:currentColor;transform:scaleX(0);transform-origin:left;transition:transform .3s}
+.crumbs a:hover:after{transform:none}
+.crumbs span{color:color-mix(in srgb,var(--acc-ink) 35%,transparent)}
+.crumbs b{font-weight:500;color:var(--acc-ink)}
+.site .svc-hero .sh-pills{margin-bottom:18px}
+.site .svc-hero h1{font-size:clamp(2.7rem,5vw,5.2rem)!important;max-width:13ch}
+.site .sh-sub{font-size:clamp(1.1rem,1.35vw,1.3rem)!important;max-width:32em;margin-top:22px!important;line-height:1.5}
+.site .svc-hero .hero-actions{margin-top:38px}
+.site .svc-hero .hero-actions .btn-primary{box-shadow:0 14px 30px -14px color-mix(in srgb,var(--acc) 70%,transparent)}
+.site .sh-frame{aspect-ratio:4/4.2!important}
+.site .sh-media:before{aspect-ratio:4/4.2!important}
+
+/* facts bar: the key numbers at a glance */
+.hero-facts{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(var(--fc,2),minmax(0,1fr));border-top:1px solid color-mix(in srgb,var(--acc-ink) 14%,transparent)}
+.hero-facts li{display:flex;align-items:center;gap:16px;padding:24px 28px 26px 0}
+.hero-facts li+li{padding-left:28px;border-left:1px solid color-mix(in srgb,var(--acc-ink) 14%,transparent)}
+.hf-ic{flex:none;width:44px;height:44px;border-radius:14px;display:grid;place-items:center;background:color-mix(in srgb,var(--acc) 12%,#fff);color:var(--acc)}
+.hf-ic svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.6}
+.hero-facts b{display:block;font-size:16.5px;font-weight:500;color:var(--acc-ink)}
+.hero-facts small{display:block;font-size:14.5px;color:color-mix(in srgb,var(--acc-ink) 62%,transparent);margin-top:2px}
+.svc-hero.land-dark .crumbs a,.svc-hero.land-dark .crumbs b,.svc-hero.land-dark .crumbs span{color:#fff!important}
+.svc-hero.land-dark .crumbs span{opacity:.5}
+.svc-hero.land-dark .hero-facts,.svc-hero.land-dark .hero-facts li+li{border-color:rgba(255,255,255,.22)}
+.svc-hero.land-dark .hero-facts b{color:#fff}.svc-hero.land-dark .hero-facts small{color:rgba(255,255,255,.75)}
+.svc-hero.land-dark .hf-ic{background:rgba(255,255,255,.16);color:#fff}
+.svc-hero.land-dark .hero-actions .btn-primary{box-shadow:0 14px 30px -14px rgba(0,0,0,.4)}
+@media(max-width:960px){.site .svc-hero.split>.wrap:first-child{gap:36px;padding-bottom:36px}.hero-facts{grid-template-columns:1fr}.hero-facts li+li{padding-left:0;border-left:0;border-top:1px solid color-mix(in srgb,var(--acc-ink) 14%,transparent)}.crumbs{margin-bottom:22px}}
+
+/* ── Domain search: input and button inside one rounded field ─────── */
+.site .dom-box{padding:36px 40px!important;border-radius:20px!important;border:1px solid #e7e9ee}
+.site .dom-box h3{font-size:1.4rem;font-weight:450;letter-spacing:-.02em}
+.site .dom-search{display:flex!important;align-items:center;gap:8px;border:1.5px solid #d9dde5;border-radius:999px;padding:6px 6px 6px 24px;background:#fff;transition:border-color .25s,box-shadow .25s;max-width:none}
+.site .dom-search:focus-within{border-color:var(--acc);box-shadow:0 0 0 5px color-mix(in srgb,var(--acc) 14%,transparent)}
+.site .dom-search input{flex:1;min-width:0;border:0!important;box-shadow:none!important;background:transparent!important;padding:12px 0!important;font-size:1.15rem!important;outline:0;height:auto}
+.site .dom-search .btn{flex:none;padding:14px 28px;margin:0}
+.site .tld-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:18px}
+.site .tld-row span{font-size:14px;color:#6b7280;margin-right:4px}
+.site .tld-row button{border:1px solid #e3e6ec;background:#fff;border-radius:999px;padding:7px 14px;font:inherit;font-size:14px;cursor:pointer;transition:border-color .2s,background .2s,color .2s}
+.site .tld-row button:hover{border-color:var(--acc);color:var(--acc);background:var(--acc-soft)}
+.site .tld-row small{color:#6b7280;margin-left:4px}
+.site .dom-note{margin-top:18px;border-radius:12px;font-size:14.5px}
+@media(max-width:600px){.site .dom-box{padding:24px 18px!important}.site .dom-search{padding-left:16px}.site .dom-search .btn{padding:12px 18px}}
+
+/* ── Mega menus: same layout, more polish ────────────────────────── */
+.site .mega{border-top:0;box-shadow:0 50px 80px -40px rgba(10,14,40,.35),0 1px 0 rgba(10,14,40,.06)}
+.site .mega-lead{position:relative;overflow:hidden;background:linear-gradient(150deg,var(--acc-deep),color-mix(in srgb,var(--acc-deep) 70%,#000))!important}
+.site .mega-lead:after{content:"";position:absolute;right:-70px;bottom:-70px;width:220px;height:220px;border-radius:50%;border:40px solid rgba(255,255,255,.08);pointer-events:none}
+.site .mega-lead>*{position:relative;z-index:1}
+.site .mega-grid{padding:16px 0 16px 16px!important}
+.site .mega-grid li{border-left:0!important}
+.site .mega-card{position:relative;border-radius:16px!important;overflow:hidden}
+.site .mega-card:before{content:"";position:absolute;left:0;top:18px;bottom:18px;width:3px;border-radius:3px;background:var(--acc);transform:scaleY(0);transition:transform .35s cubic-bezier(.2,.8,.2,1)}
+.site .mega-card:hover:before,.site .mega-card:focus-visible:before{transform:none}
+.site .mega-card:hover,.site .mega-card:focus-visible{background:linear-gradient(180deg,var(--acc-soft),#fff)!important;transform:translateY(-3px)!important}
+.site .mega-card .mc-ic{background:var(--acc-soft)!important;color:var(--acc)!important}
+.site .mega-card:hover .mc-ic{background:var(--acc)!important;color:#fff!important}
+.site .mc-name{transition:color .25s}
+.site .mega-card:hover .mc-name{color:var(--acc-ink)}
+.site .mc-badge{display:inline-flex!important;align-self:flex-start;padding:5px 11px!important;border-radius:999px;background:var(--acc-soft)!important;color:var(--acc)!important;font-size:13.5px!important;transition:background .25s,color .25s}
+.site .mega-card:hover .mc-badge{background:var(--acc)!important;color:#fff!important}
+.site .mega-all{transition:transform .25s,box-shadow .25s}
+.site .mega-all:hover{transform:translateY(-2px);box-shadow:0 10px 20px -10px rgba(0,0,0,.4)}
+
+/* ── Menu hovers: animated, never underlined ─────────────────────── */
+.site .site-footer a{position:relative;display:inline-block;transition:color .25s,transform .25s}
+.site .site-footer a:hover{color:var(--acc,#1e44c8);transform:translateX(4px);text-decoration:none!important}
+.site .site-footer ul a:before{content:"";position:absolute;left:-14px;top:50%;width:6px;height:6px;border-radius:50%;background:currentColor;transform:translateY(-50%) scale(0);transition:transform .25s}
+.site .site-footer ul a:hover:before{transform:translateY(-50%) scale(1)}
+.site .mn-btn,.site .mn-btn:hover{text-decoration:none!important}
+@media(max-width:1240px){
+  .site .site-header .mn-btn{transition:padding .3s,color .3s}
+  .site .site-header .mn-btn:hover{padding-left:12px!important;color:var(--acc)!important}
+  .site .mega-card:hover{transform:none!important}
+}
+
+@media(prefers-reduced-motion:reduce){.crumbs a:after,.site .mega-card,.site .mega-card:before,.site .site-footer a,.site .site-footer ul a:before{transition:none}}
+
+/* ── Performance: skip rendering far-off sections until needed; GPU-friendly motion only ── */
+html:not(:has(.story)) .site main>section:nth-child(n+3),.site .site-footer{content-visibility:auto;contain-intrinsic-size:auto 900px}
+.ch-bg,.st-site video,.path img{transform:translateZ(0)}
+@media(max-width:760px){.ch-open .ch-bg{object-position:50% 40%}}
+.hero-facts{width:100%;max-width:none!important}
+.site .svc-hero.split>.wrap:first-child{padding-bottom:40px}

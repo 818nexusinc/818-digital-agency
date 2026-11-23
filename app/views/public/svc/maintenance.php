@@ -8,11 +8,11 @@ $cards = '';
 foreach ($feat as $s => $list) { $x = Catalog::find($s); $c = Catalog::price($x, [])['unit_cents'] ?? 0; $n = preg_replace('/^Website /', '', $x['name']);
   $cards .= '<label class="ocard plan">' . ($s === 'maintenance_protect' ? '<span class="oc-flag">Most popular</span>' : '') . '<input type="radio" name="slug" value="' . $s . '" required data-label="Plan" data-text="' . e($n) . '" data-cents="' . $c . '" data-line="' . e($n) . '" data-per="/mo"' . ($s === 'maintenance_care' ? ' checked' : '') . '><span class="oc-top"><b>' . e($n) . '</b></span><span class="plan-price"><b>' . e(money($c)) . '</b>/month</span><ul class="oc-list">';
   foreach ($list as $li) $cards .= '<li>' . e($li) . '</li>'; $cards .= '</ul></label>'; }
-$hero = ['tone' => 'violet', 'pills' => ['Cancel anytime'], 'title' => 'Your website, looked after.', 'sub' => 'Backups, updates, security patches and content edits, every month.',
+$hero = ['form' => true, 'tone' => 'violet', 'pills' => ['Cancel anytime'], 'title' => 'Your website, looked after.', 'sub' => 'Backups, updates, security patches and content edits, every month.',
   'media' => ['img' => 'developer'], 'chips' => [['refresh', 'Daily backups', 'Restore when you need it'], ['shield', 'Security patching', 'Plus uptime monitoring']]];
 include APP_ROOT . '/views/partials/svc/hero.php';
 ?>
-<section class="svc-body"><div class="wrap">
+<section class="svc-body" id="start"><div class="wrap">
 <?= wz_open(['Plan', 'Your website', 'Review'], ['data-endpoint' => '/order/add']) ?>
   <?= wz_step(0, 'Choose a plan', '<fieldset class="cards three" data-label="Plan"><legend class="sr">Plan</legend><div class="card-grid">' . $cards . '</div><p class="fe"></p></fieldset>') ?>
   <?= wz_step(1, 'About your website', '<div class="grid2">'

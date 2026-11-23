@@ -1,4 +1,4 @@
-<section class="section tight"><div class="wrap grid g2" style="align-items:start;max-width:1040px">
+<section class="section tight"><div class="wrap grid g2" style="align-items:start">
   <form class="card" method="post" action="/checkout"><?= App\Csrf::field() ?>
     <h1 style="font-size:1.6rem">Checkout</h1>
     <?php if (!$user): ?>

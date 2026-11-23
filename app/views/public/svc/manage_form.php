@@ -23,12 +23,12 @@ $K = [
     'extra' => fn() => wz_field('current_name', 'Current registered business name *', 'text', ['data-rule' => 'bizname']) . '<div data-show="change_type=change">' . wz_field('entity[proposed_name]', 'New business name *', 'text', ['data-rule' => 'bizname']) . '</div>'],
 ];
 $k = $K[$mkind]; $svc = Catalog::find($k['slug']); $cents = empty($k['province_priced']) ? (Catalog::price($svc, [])['unit_cents'] ?? null) : null;
-$hero = ['tone' => $k['tone'], 'icon' => $k['icon'], 'back' => ['/manage-business', 'All business management services'], 'title' => $k['title'], 'sub' => $k['sub'], 'media' => ['img' => ['annual-returns' => 'desk-smile', 'corporate-changes' => 'signing', 'corporate-documents' => 'docs-typing', 'name-services' => 'owner-boxes'][$mkind] ?? 'laptop'], 'chips' => [['shield', 'Filed with the registry', 'Status in your portal'], ['bolt', 'Started immediately', 'As soon as your order is in']]];
+$hero = ['form' => true, 'tone' => $k['tone'], 'icon' => $k['icon'], 'title' => $k['title'], 'sub' => $k['sub'], 'media' => ['img' => ['annual-returns' => 'desk-smile', 'corporate-changes' => 'signing', 'corporate-documents' => 'docs-typing', 'name-services' => 'owner-boxes'][$mkind] ?? 'laptop'], 'chips' => [['shield', 'Filed with the registry', 'Status in your portal'], ['bolt', 'Started immediately', 'As soon as your order is in']]];
 include APP_ROOT . '/views/partials/svc/hero.php';
 $priceBadge = $cents !== null ? money($cents) : '';
 $opts = array_map(fn($o) => [$o[0], $o[1], $o[2], $priceBadge], $k['opts']);
 ?>
-<section class="svc-body"><div class="wrap">
+<section class="svc-body" id="start"><div class="wrap">
 <?= wz_open(['Choose a service', 'Details', 'Review'], ['data-endpoint' => '/order/add']) ?>
   <input type="hidden" name="slug" value="<?= e($k['slug']) ?>">
   <?= wz_step(0, 'Choose a service', '<p class="muted">Select the service you need. The fields you need appear on the next step.</p>' . wz_cards('change_type', 'Service', $opts, '')

@@ -5,11 +5,11 @@ $min = function (string $slug) { $s = Catalog::find($slug); $p = $s ? Catalog::f
 $nuans = $min('nuans'); $sole = $min('sole_prop'); $part = $min('partnership'); $corp = $min('corp_numbered'); $coop = $min('cooperative');
 $hero = ['landing' => true, 'tone' => 'blue', 'pills' => ['Every province + federal', 'From ' . money(min(array_filter([$sole, $part, $corp])))],
   'title' => 'Your business, officially registered.', 'sub' => 'Pick a structure, answer a few questions and we file it with the registry. Government fees included.',
-  'actions' => [['#structures', 'Choose your structure', true], ['/register/nuans', 'NUANS name search (' . money($nuans) . ')']],
+  'actions' => [['/register/nuans', 'Start with a NUANS name search', true], ['#structures', 'Choose your structure']],
   'media' => ['video' => 'team-talk'], 'chips' => [['bolt', 'Worked on immediately', 'As soon as your order is in'], ['shield', 'Filed with the registry', 'Status in your portal']]];
 include APP_ROOT . '/views/partials/svc/hero.php';
 $cols = [
-  ['Just checking a name', 'NUANS Name Search', $nuans, 'one-time', ['Official report, same day', 'Valid 90 days', 'Needed for named corporations'], '/register/nuans', 'Search a name'],
+  ['Start here: check your name', 'NUANS Name Search', $nuans, 'one-time', ['Official report, same day', 'Valid 90 days', 'Needed for named corporations'], '/register/nuans', 'Search a name'],
   ['Just me, starting out', 'Sole Proprietorship', $sole, 'gov. fee included', ['Fastest and simplest', 'No NUANS needed', 'Any province'], '/register/sole-proprietorship', 'Register'],
   ['Two or more owners', 'Partnership', $part, 'gov. fee included', ['General or limited', 'Agreement template', 'Any province'], '/register/partnership', 'Register'],
   ['Ready to grow', 'Corporation', $corp, 'gov. fee included', ['Limited liability', 'Provincial or federal', 'Named or numbered'], '/register/corporation', 'Incorporate'],

@@ -9,11 +9,11 @@ $data = ['reg' => $reg, 'bm' => $c('bm_annual'), 'tlds' => $tlds, 'email' => ['e
   'tiers' => App\Wizard::BUNDLE_TIERS];
 $provs = ['FED' => 'Federal'] + Catalog::PROVINCES; unset($provs['FED']); $provs = ['FED' => 'Federal'] + $provs;
 $pill = fn($name, $val, $label, $checked = false, $dis = false) => '<label class="pill"><input type="radio" name="' . $name . '" value="' . e($val) . '"' . ($checked ? ' checked' : '') . ($dis ? ' disabled' : '') . '><span>' . e($label) . '</span></label>';
-$hero = ['landing' => true, 'tone' => 'amber', 'title' => 'Bundle and save up to 15%.', 'sub' => 'Pick what you need. The more you add, the more you save.',
+$hero = ['landing' => true, 'actions' => [['#start', 'Build your bundle', true], ['/contact', 'Ask a question']], 'tone' => 'amber', 'title' => 'Bundle and save up to 15%.', 'sub' => 'Pick what you need. The more you add, the more you save.',
   'media' => ['img' => 'partners'], 'chips' => [['stack', '2 services: 5% off', 'Up to 15% for 5+'], ['check', 'One dashboard', 'Everything in one place']]];
 include APP_ROOT . '/views/partials/svc/hero.php';
 ?>
-<section class="svc-body"><div class="wrap">
+<section class="svc-body" id="start"><div class="wrap">
 <form class="bun" data-bundle="<?= e(jenc($data)) ?>" novalidate>
   <div class="wz" style="padding:20px 22px">
     <div class="bun-bar"><b>Registration province</b><div class="pillset"><?php foreach ($provs as $k => $n): $has = array_filter(array_column($reg, $k), fn($v) => $v !== null); ?><?= $pill('province', $k, $k, $k === 'NB', !$has) ?><?php endforeach; ?></div></div>

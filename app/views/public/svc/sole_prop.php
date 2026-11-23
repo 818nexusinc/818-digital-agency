@@ -4,12 +4,12 @@ include_once APP_ROOT . '/views/partials/svc/wz.php';
 $svc = Catalog::find('sole_prop'); $pp = $svc['province_prices'] ?? [];
 $from = $pp ? min(array_filter($pp, fn($v) => $v !== null)) : null;
 $months = ['Dec 31', 'Jan 31', 'Feb 28', 'Mar 31', 'Apr 30', 'May 31', 'Jun 30', 'Jul 31', 'Aug 31', 'Sep 30', 'Oct 31', 'Nov 30'];
-$hero = ['tone' => 'teal', 'pills' => ['Simplest structure', $svc['timeline'] ?? '1–3 business days'],
+$hero = ['form' => true, 'tone' => 'teal', 'pills' => ['Simplest structure', $svc['timeline'] ?? '1–3 business days'],
   'title' => 'Go solo. Get registered.', 'sub' => 'The fastest, lowest-cost way to make your business official. Ideal for freelancers and consultants.',
   'media' => ['img' => 'cafe-laptop'], 'chips' => [['clock', $svc['timeline'] ?? '1–3 business days', 'Typical registry time'], ['check', 'Government fee included', 'No surprise costs']]];
 include APP_ROOT . '/views/partials/svc/hero.php';
 ?>
-<section class="svc-body"><div class="wrap">
+<section class="svc-body" id="start"><div class="wrap">
 <?= wz_open(['Province', 'Owner', 'Business', 'Review'], ['data-endpoint' => '/order/add']) ?>
   <input type="hidden" name="slug" value="sole_prop">
   <?= wz_step(0, 'Province & business name', wz_provinces('province', $pp, 'Select province', false, 'NB')

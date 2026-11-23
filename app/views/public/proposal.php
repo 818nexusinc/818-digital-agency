@@ -1,4 +1,4 @@
-<section class="section tight"><div class="wrap" style="max-width:880px">
+<section class="section tight"><div class="wrap">
   <div class="row spread"><div><span class="eyebrow">Proposal <?= e($p['number']) ?> · v<?= (int)$p['version'] ?></span><h1 style="margin-top:8px"><?= e($p['title']) ?></h1></div><span class="badge <?= $p['status'] === 'accepted' ? 'b-green' : ($p['status'] === 'expired' || $p['status'] === 'superseded' ? 'b-red' : 'b-blue') ?>"><?= e(label($p['status'])) ?></span></div>
   <p class="muted">Prepared for <?= e($cust['business_name'] ?? $cust['name'] ?? 'you') ?> · valid until <?= e(substr((string)$p['expires_at'], 0, 10)) ?></p>
   <?php if ($p['scope']): ?><div class="card flat"><h2 style="font-size:1.1rem">Scope</h2><p><?= nl2br(e($p['scope'])) ?></p></div><?php endif; ?>

@@ -15,11 +15,11 @@ foreach ($feat as $s => $list) {
 }
 $pages = ['Home', 'About us', 'Services', 'Contact', 'Our team', 'Gallery / portfolio', 'Testimonials', 'FAQ', 'Blog', 'Pricing', 'Booking', 'Careers'];
 $pageChecks = '<div class="chk-grid">'; foreach ($pages as $i => $pg) $pageChecks .= '<label class="ck"><input type="checkbox" name="pages[]" value="' . e($pg) . '" data-label="Page" data-text="' . e($pg) . '"' . ($i < 4 ? ' checked' : '') . '><span><b>' . e($pg) . '</b></span></label>'; $pageChecks .= '</div>';
-$hero = ['tone' => 'sky', 'pills' => ['Mobile first', 'Hosting + SSL included'], 'title' => 'A website that wins you customers.', 'sub' => 'Designed, built, hosted and maintained for you.',
+$hero = ['form' => true, 'tone' => 'sky', 'pills' => ['Mobile first', 'Hosting + SSL included'], 'title' => 'A website that wins you customers.', 'sub' => 'Designed, built, hosted and maintained for you.',
   'media' => ['img' => 'phone-owner'], 'chips' => [['layout', 'Custom design', 'Built around your brand'], ['bolt', 'Hosting + SSL', 'Included from day one']]];
 include APP_ROOT . '/views/partials/svc/hero.php';
 ?>
-<section class="svc-body"><div class="wrap">
+<section class="svc-body" id="start"><div class="wrap">
 <?= wz_open(['Plan', 'Domain', 'Brief', 'Pages & features', 'Review'], ['data-endpoint' => '/order/add']) ?>
   <?= wz_step(0, 'Choose your plan', '<fieldset class="cards three" data-label="Plan"><legend class="sr">Plan</legend><div class="card-grid">' . $cards . '</div><p class="fe"></p></fieldset>', false, 'Next: domain') ?>
   <?= wz_step(1, 'Do you have a domain name?', wz_cards('have_domain', 'Your domain', [['yes', 'Yes, I have a domain', 'Enter it and we’ll point it to your new website.', '', ['checked' => true]], ['no', 'No, I need a domain', 'We’ll register a .ca domain and add it to your order.', '+' . money($caCents) . '/yr']], 'two')

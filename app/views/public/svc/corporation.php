@@ -4,7 +4,7 @@ include_once APP_ROOT . '/views/partials/svc/wz.php';
 $named = Catalog::find('corp_named'); $numbered = Catalog::find('corp_numbered');
 $by = ['field' => 'slug', 'maps' => ['corp_named' => $named['province_prices'] ?? [], 'corp_numbered' => $numbered['province_prices'] ?? []]];
 $provs = ['FED' => 'Federal'] + Catalog::PROVINCES; unset($provs['FED']);
-$hero = ['tone' => 'amber', 'pills' => ['Provincial or federal (CBCA)', 'Named or numbered'],
+$hero = ['form' => true, 'tone' => 'amber', 'pills' => ['Provincial or federal (CBCA)', 'Named or numbered'],
   'title' => 'Incorporate in minutes. We handle the filing.', 'sub' => 'Answer a few questions. We prepare your articles of incorporation and file them right away.',
   'media' => ['img' => 'signing'], 'chips' => [['shield', 'Limited liability', 'Protect personal assets'], ['bolt', 'Started immediately', 'No extra paperwork']]];
 include APP_ROOT . '/views/partials/svc/hero.php';
@@ -20,7 +20,7 @@ $director = wz_field('directors[{i}][first]', 'First name *', 'text', ['data-rul
   . '<label class="ck wide" style="grid-column:1/-1"><input type="checkbox" name="directors[{i}][resident_canadian]" value="1" data-label="Resident Canadian" data-text="Yes" checked><span><b>Resident Canadian</b><small>Some jurisdictions require a minimum number of resident Canadian directors.</small></span></label>'
   . '<input type="hidden" name="directors[{i}][incorporator]" value="1">';
 ?>
-<section class="svc-body"><div class="wrap">
+<section class="svc-body" id="start"><div class="wrap">
 <?= wz_open(['Jurisdiction', 'Name', 'Directors', 'Shares', 'Office', 'Add-ons', 'Your details', 'Review'], ['data-endpoint' => '/order/add']) ?>
   <?= wz_step(0, 'Step 1: Choose jurisdiction', '<p class="note-box"><b>Federal (CBCA)</b> lets you operate under your name anywhere in Canada. <b>Provincial</b> is simpler and usually cheaper if you operate in one province.</p>'
       . wz_cards('slug', 'Named or numbered?', [['corp_named', 'Named corporation', 'Your chosen name, e.g. Maple Leaf Consulting Inc. Includes the required NUANS name search.', '', ['data-text' => 'Named', 'checked' => true]], ['corp_numbered', 'Numbered corporation', 'A number assigned by the registry, e.g. 1234567 N.B. Inc. Fastest option; you can add a trade name later.', '', ['data-text' => 'Numbered']]], 'two')

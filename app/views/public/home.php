@@ -26,7 +26,7 @@ $paths = [
 
 <div class="story">
 <section class="ch ch-open ch-idea" <?= $attr(0) ?>>
-  <video class="ch-bg" autoplay muted loop playsinline preload="auto" poster="/media/opening-day-poster.webp" aria-hidden="true" data-autoplay><source src="/media/opening-day.mp4" type="video/mp4"></video>
+  <video class="ch-bg" autoplay muted loop playsinline preload="auto" poster="/media/opening-day-poster.webp" aria-hidden="true" data-autoplay><source src="/media/opening-day-m.mp4" type="video/mp4" media="(max-width: 760px) and (orientation: portrait)"><source src="/media/opening-day.mp4" type="video/mp4"></video>
   <div class="wrap ch-in">
     <h1 class="st-in"><span class="ln"><span><?= e(t('Open for')) ?></span></span> <span class="ln"><span><?= e(t('business.')) ?></span></span></h1>
     <p class="st-in"><?= e(t('Register it. Get it online. Keep it compliant. One Canadian team does it all.')) ?></p>
@@ -47,11 +47,11 @@ $paths = [
           <fieldset class="nm-end"><legend><?= e(t('Ending')) ?></legend><?php foreach (['Inc.', 'Ltd.', 'Corp.'] as $k => $en): ?><label><input type="radio" name="hm_end" value="<?= $en ?>"<?= $k ? '' : ' checked' ?> data-end><span><?= $en ?></span></label><?php endforeach; ?></fieldset>
         </div>
       </div>
-      <div class="ch-cta"><a class="btn btn-light btn-lg" href="/register"><?= e(t('Register from')) ?> <?= e(money($regFrom)) ?></a><a class="btn btn-outline-light btn-lg" href="/register/nuans" data-name-link="/register/nuans"><?= e(t('Check the name first')) ?></a></div>
+      <div class="ch-cta"><a class="btn btn-light btn-lg" href="/register/nuans" data-name-link="/register/nuans"><?= e(t('Check the name first')) ?></a><a class="btn btn-outline-light btn-lg" href="/register"><?= e(t('Register from')) ?> <?= e(money($regFrom)) ?></a></div>
       <p class="fine"><?= e(t('Government fees included. Filed with the registry as soon as your order is in.')) ?></p>
     </div>
     <div class="aoi-wrap">
-      <img class="aoi-bg" src="/media/paperwork.webp" alt="" loading="lazy" width="1400" height="934">
+      <img class="aoi-bg" src="/media/paperwork.webp" alt="" loading="lazy" decoding="async" width="1400" height="934">
       <figure class="sheet aoi" aria-label="<?= e(t('Preview of your articles of incorporation')) ?>">
         <div class="aoi-head"><p class="aoi-k"><?= e(t('Draft')) ?> · <span data-jur-out><?= e(t('New Brunswick')) ?></span></p><p class="aoi-t"><?= e(t('Articles of Incorporation')) ?></p></div>
         <ol class="aoi-list">
@@ -151,7 +151,7 @@ $paths = [
     <div class="paths">
     <?php foreach ($paths as $k => [$p, $img, $line, $links]): ?>
       <article class="path<?= $k === 0 ? ' on' : '' ?>" style="<?= pillar_css($p) ?>" tabindex="0">
-        <img src="/media/<?= e($img) ?>.webp" alt="" loading="lazy" width="1400" height="934">
+        <img src="/media/<?= e($img) ?>.webp" alt="" loading="lazy" decoding="async" width="1400" height="934">
         <div class="path-in">
           <p class="path-n"><?= sprintf('%02d', $k + 1) ?></p>
           <h3><a href="<?= e(PILLARS[$p]['home']) ?>"><?= e(t(PILLARS[$p]['name'])) ?></a></h3>

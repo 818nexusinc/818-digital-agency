@@ -4,7 +4,7 @@ include_once APP_ROOT . '/views/partials/svc/wz.php';
 $plans = [];
 foreach (['email_starter' => 'Starter', 'email_business' => 'Business', 'email_team' => 'Team'] as $s => $n) { $x = Catalog::find($s); $p = Catalog::price($x, []); $plans[$s] = [$x, $p['unit_cents'] ?? 0, $n]; }
 $dom = Catalog::find('domain_register'); $caCents = (int)($dom['options']['tlds']['ca'] ?? 0);
-$hero = ['tone' => 'orange', 'pills' => ['Your own domain', 'Webmail & mobile'], 'title' => 'Email that looks like a business.', 'sub' => 'Professional mailboxes on your domain, set up for you after payment.',
+$hero = ['form' => true, 'tone' => 'orange', 'pills' => ['Your own domain', 'Webmail & mobile'], 'title' => 'Email that looks like a business.', 'sub' => 'Professional mailboxes on your domain, set up for you after payment.',
   'media' => ['img' => 'notes'], 'chips' => [['mail', 'you@yourbusiness.ca', 'On every device'], ['shield', 'Spam filtering', 'Included']]];
 include APP_ROOT . '/views/partials/svc/hero.php';
 $cardOpts = [];
@@ -12,7 +12,7 @@ foreach ($plans as $s => [$x, $c, $n]) $cardOpts[] = [$s, $n, $x['summary'], mon
 $mailbox = wz_field('mailboxes[{i}][prefix]', 'Address *', 'text', ['data-rule' => 'prefix', 'placeholder' => 'info'], 'Before the @ sign')
   . wz_field('mailboxes[{i}][name]', 'Display name *', 'text', ['placeholder' => 'Jane Smith']);
 ?>
-<section class="svc-body"><div class="wrap">
+<section class="svc-body" id="start"><div class="wrap">
 <?= wz_open(['Domain', 'Plan', 'Mailboxes', 'Review'], ['data-endpoint' => '/order/add']) ?>
   <?= wz_step(0, 'Do you have a domain name?', '<p class="muted">Professional email needs a domain (e.g. you@yourcompany.ca). If you don’t have one yet, we’ll register it with your email.</p>'
       . wz_cards('have_domain', 'Your domain', [['yes', 'Yes, I have a domain', 'Enter your existing domain and we’ll set up email on it.', '', ['checked' => true]], ['no', 'No, I need a domain', 'We’ll register a .ca domain and set up email on it, all in one order.', '+' . money($caCents) . '/yr']], 'two')

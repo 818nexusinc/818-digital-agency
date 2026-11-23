@@ -1,5 +1,5 @@
 <?php $pre = preg_replace('/[^a-z0-9_]/', '', (string)($_GET['service'] ?? '')); ?>
-<section class="section tight"><div class="wrap" style="max-width:860px">
+<section class="section tight"><div class="wrap">
   <span class="eyebrow">Get started</span><h1 style="margin-top:8px">Tell us what you need</h1>
   <p class="lead">Prefer a conversation? <button class="btn btn-ghost btn-sm" type="button" data-chat="">Use the AI assistant</button>. Or fill this in, and we'll come back with a plan and a written proposal.</p>
   <form class="card" method="post" action="/start" style="margin-top:20px"><?= App\Csrf::field() ?>
