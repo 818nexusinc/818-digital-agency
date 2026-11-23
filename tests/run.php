@@ -546,5 +546,51 @@ tcase('filing tools are scoped to the task\'s project', function () {
 });
 
 @unlink($db);
+echo "\nGrowth tools\n";
+tcase('chat visitor details become one lead per conversation', function () {
+    $_SERVER['REMOTE_ADDR'] = '10.9.9.1';
+    $r = ChatService::handle(null, "Hi, I'm Dana Roy, dana.roy@example.org, 506-555-7788. I want a website.", ['path' => '/website']);
+    $pid = $r['conversation_id'] ?? Db::val('SELECT public_id FROM conversations ORDER BY id DESC LIMIT 1');
+    ChatService::handle($pid, 'Also my email is dana.roy@example.org again', ['path' => '/website']);
+    $n = (int)Db::val("SELECT COUNT(*) FROM leads l JOIN customers c ON c.id = l.customer_id WHERE c.email = 'dana.roy@example.org' AND l.source = 'ai_chat'");
+    eq($n, 1, 'one chat lead');
+    eq(Db::val("SELECT phone FROM customers WHERE email = 'dana.roy@example.org'"), '506-555-7788');
+});
+tcase('unfinished form drafts save, strip secrets and convert', function () {
+    $_SERVER['REMOTE_ADDR'] = '10.9.9.2';
+    $d = App\FormDrafts::save(['form' => 'corp_numbered', 'path' => '/register/corporation', 'step' => 2, 'steps' => 7, 'data' => ['contact' => ['email' => 'lee@example.org', 'phone' => '5065550000'], 'card' => '4242424242424242', 'password' => 'x']]);
+    $row = Db::one('SELECT * FROM form_drafts WHERE token = ?', [$d['token']]);
+    eq($row['email'], 'lee@example.org'); ok(!str_contains($row['data'], '4242'), 'card stripped'); ok(!str_contains($row['data'], 'password'), 'password stripped');
+    App\FormDrafts::save(['token' => $d['token'], 'form' => 'corp_numbered', 'step' => 3, 'steps' => 7, 'data' => []]);
+    eq((int)Db::val('SELECT step FROM form_drafts WHERE token = ?', [$d['token']]), 3);
+    $lead = App\FormDrafts::toLead((int)$row['id'], 'test');
+    ok($lead['id'] > 0); eq(Db::val('SELECT status FROM form_drafts WHERE id = ?', [$row['id']]), 'followed_up');
+    $d2 = App\FormDrafts::save(['form' => 'nuans', 'step' => 0, 'steps' => 3, 'data' => []]); App\FormDrafts::complete($d2['token']);
+    eq(Db::val('SELECT status FROM form_drafts WHERE token = ?', [$d2['token']]), 'completed');
+});
+tcase('weekly blog engine writes a linked article once per week', function () {
+    Settings::set('blog.last_generated', ''); Settings::set('blog.enabled', '1'); Settings::set('blog.autopublish', '1');
+    $p = App\BlogEngine::weekly(); ok($p && $p['status'] === 'published', 'published');
+    ok(preg_match('/\]\(\/[a-z]/', $p['body']) === 1, 'has internal links'); ok(str_word_count($p['body']) >= 450, 'long enough');
+    ok(!empty(jdec($p['meta'])['social']['linkedin']), 'social copy');
+    eq(App\BlogEngine::weekly(), null, 'not twice in a week');
+    ok(str_contains(App\BlogEngine::rss(), $p['slug']), 'in RSS');
+});
+tcase('every AI agent passes the simulator and nothing persists', function () {
+    $before = [(int)Db::val('SELECT COUNT(*) FROM customers'), (int)Db::val('SELECT COUNT(*) FROM agent_tasks'), (int)Db::val('SELECT COUNT(*) FROM email_log')];
+    $res = App\Simulator::run();
+    eq(count($res), count(Agents::DEFS));
+    foreach ($res as $r) ok($r['ok'], $r['agent'] . ' failed: ' . $r['error'] . ' ' . json_encode($r['tools']));
+    eq([(int)Db::val('SELECT COUNT(*) FROM customers'), (int)Db::val('SELECT COUNT(*) FROM agent_tasks'), (int)Db::val('SELECT COUNT(*) FROM email_log')], $before, 'rolled back');
+    eq(App\Ai::$mock, null);
+});
+tcase('demo data loads and deletes cleanly without touching real rows', function () {
+    $real = (int)Db::val('SELECT COUNT(*) FROM customers');
+    $n = App\Demo::seed(); ok($n['customers'] === 8 && $n['posts'] === 3);
+    try { App\Demo::seed(); ok(false, 'second seed should be refused'); } catch (UserError $e) {}
+    ok(App\Demo::purge() > 30); eq((int)Db::val('SELECT COUNT(*) FROM customers'), $real); eq(App\Demo::count(), 0);
+    eq((int)Db::val("SELECT COUNT(*) FROM content_items WHERE slug LIKE 'demo-%'"), 0);
+});
+
 echo "\n" . ($fail ? "\033[31m{$fail} failed\033[0m, " : '') . "\033[32m{$pass} passed\033[0m\n";
 exit($fail ? 1 : 0);

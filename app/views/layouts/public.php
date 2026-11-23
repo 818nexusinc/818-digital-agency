@@ -19,7 +19,7 @@ $cartCount = count(Cart::lines());
 <link rel="alternate" type="text/plain" href="/llms.txt" title="LLM guide"><link rel="alternate" type="application/json" href="/services.json" title="Service catalog">
 <link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
 
-<link rel="preconnect" href="https://api.fontshare.com"><link rel="preconnect" href="https://cdn.fontshare.com" crossorigin><link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=sentient@1,2&amp;display=swap"><link rel="stylesheet" href="/assets/css/app.css?v=<?= APP_VERSION ?>"><link rel="stylesheet" href="/assets/css/site.css?v=<?= APP_VERSION ?>"><link rel="stylesheet" href="/assets/css/v8.css?v=<?= APP_VERSION ?>"><link rel="stylesheet" href="/assets/css/v9.css?v=<?= APP_VERSION ?>"><link rel="stylesheet" href="/assets/css/v10.css?v=<?= APP_VERSION ?>"><link rel="stylesheet" href="/assets/css/v11.css?v=<?= APP_VERSION ?>"><link rel="stylesheet" href="/assets/css/v12.css?v=<?= APP_VERSION ?>">
+<link rel="preconnect" href="https://api.fontshare.com"><link rel="preconnect" href="https://cdn.fontshare.com" crossorigin><link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=sentient@1,2&amp;display=swap"><link rel="stylesheet" href="/assets/css/app.css?v=<?= APP_VERSION ?>"><link rel="stylesheet" href="/assets/css/site.css?v=<?= APP_VERSION ?>"><link rel="stylesheet" href="/assets/css/v8.css?v=<?= APP_VERSION ?>"><link rel="stylesheet" href="/assets/css/v9.css?v=<?= APP_VERSION ?>"><link rel="stylesheet" href="/assets/css/v10.css?v=<?= APP_VERSION ?>"><link rel="stylesheet" href="/assets/css/v11.css?v=<?= APP_VERSION ?>"><link rel="stylesheet" href="/assets/css/v12.css?v=<?= APP_VERSION ?>"><link rel="stylesheet" href="/assets/css/v13.css?v=<?= APP_VERSION ?>">
 <?php foreach (array_merge($jsonld ?? [], App\View::$shared['ld'] ?? []) as $ld) if ($ld) echo Seo::jsonLd($ld); ?>
 <meta property="og:image" content="<?= e(url('/media/opening-day-poster.webp')) ?>">
 </head>
@@ -48,6 +48,7 @@ $cartCount = count(Cart::lines());
 <section class="close-cta" style="<?= pillar_css($pl) ?>"><div class="wrap"><p class="cc-k"><?= e(t(PILLARS[$pl]['name'])) ?></p><h2><?= e(t($cta[0])) ?></h2>
   <div class="cc-act"><a class="btn btn-light btn-lg" href="<?= ($path ?? '') === $cta[2] ? '#main' : e($cta[2]) ?>"><?= e(t($cta[1])) ?></a><a class="btn btn-outline-light btn-lg" href="/contact"><?= e(t('Talk to a person')) ?></a></div></div></section>
 <?php endif; ?>
+<?php include APP_ROOT . '/views/partials/newsletter.php'; ?>
 </main>
 <footer class="site-footer"><div class="wrap">
   <div class="foot-grid">

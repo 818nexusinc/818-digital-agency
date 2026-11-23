@@ -1,0 +1,62 @@
+/* v13: title-colour hovers, modern chapter rail, site-wide newsletter band that flows into the footer. */
+
+/* 1. "Start Web Services" and "Find funding": dark at rest, the chapter title colour on hover. */
+.story .ch-web .ch-copy .btn-primary,.story .ch-funding .ch-copy .btn-primary{background:#151a24;border-color:#151a24;color:#fff;transition:background .25s,border-color .25s,transform .25s,box-shadow .25s}
+.story .ch-web .ch-copy .btn-primary:hover,.story .ch-web .ch-copy .btn-primary:focus-visible,
+.story .ch-funding .ch-copy .btn-primary:hover,.story .ch-funding .ch-copy .btn-primary:focus-visible{background:var(--acc-ink);border-color:var(--acc-ink);color:#fff;transform:translateY(-2px);box-shadow:0 12px 26px -12px color-mix(in srgb,var(--acc-ink) 70%,transparent)}
+
+/* 2. Chapter rail: a slim glass capsule of dots. The current chapter stretches into a pill in its own colour;
+   labels appear as a tag beside the dot on hover and for the current chapter. */
+.site .rail{right:22px}
+.site .rail ol{padding:12px 9px!important;gap:6px!important;border-radius:999px;background:color-mix(in srgb,#fff 62%,transparent);
+  -webkit-backdrop-filter:blur(14px) saturate(1.4);backdrop-filter:blur(14px) saturate(1.4);border:1px solid color-mix(in srgb,#0f172a 9%,transparent);
+  box-shadow:0 10px 30px -14px rgba(15,23,42,.35);position:relative}
+.site .rail.on-dark ol{background:rgba(15,23,42,.38);border-color:rgba(255,255,255,.14)}
+.site .rail li{display:block}
+.site .rail a{position:relative;display:grid!important;place-items:center;width:14px;height:20px;padding:0!important;gap:0!important;color:inherit!important}
+.site .rail a:before,.site .rail a:after,.site .rail li a[aria-current]:after,.site .rail .rn{display:none!important}
+.site .rail .rd{display:block;width:7px;height:7px;border-radius:99px;background:color-mix(in srgb,#0f172a 28%,transparent);transition:height .35s cubic-bezier(.2,.8,.2,1),background .3s,width .3s}
+.site .rail.on-dark .rd{background:rgba(255,255,255,.42)}
+.site .rail a:hover .rd{background:var(--acc);width:8px;height:8px}
+.site .rail a[aria-current]{height:34px}
+.site .rail a[aria-current] .rd{height:26px;width:7px;background:var(--acc);box-shadow:0 0 0 4px color-mix(in srgb,var(--acc) 18%,transparent)}
+.site .rail.on-dark a[aria-current] .rd{background:#fff;box-shadow:0 0 0 4px rgba(255,255,255,.16)}
+.site .rail .rl{position:absolute;right:calc(100% + 16px);top:50%;transform:translate(6px,-50%)!important;opacity:0!important;pointer-events:none;white-space:nowrap;
+  font-size:13px;font-weight:500;letter-spacing:0;padding:6px 11px;border-radius:999px;background:#fff;color:#0f172a;box-shadow:0 8px 22px -10px rgba(15,23,42,.4);
+  transition:opacity .25s,transform .25s!important}
+.site .rail a:hover .rl,.site .rail a:focus-visible .rl{opacity:1!important;transform:translate(0,-50%)!important}
+.site .rail a[aria-current] .rl{background:var(--acc);color:#fff}
+.site .rail a:focus-visible{outline:2px solid var(--acc);outline-offset:4px;border-radius:8px}
+.site .rail .rail-bar{display:none}
+@media(prefers-reduced-motion:reduce){.site .rail .rd,.site .rail .rl{transition:none!important}}
+
+/* 3. Newsletter band on every page, the same midnight colour as the footer so the two read as one closing block. */
+.site{--close:#0e1730}
+.news-band,html:has(.story) main>section.news-band{background:var(--close)!important;color:#c9d3ea;padding:88px 0 72px;position:relative;isolation:isolate}
+.news-band:before{content:"";position:absolute;inset:0;z-index:-1;background:radial-gradient(60% 120% at 85% 0%,rgba(99,102,241,.22),transparent 60%),radial-gradient(50% 90% at 0% 100%,rgba(190,24,93,.12),transparent 60%)}
+.news-band .wrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:56px;align-items:end}
+.news-band h2{color:#fff;margin:0;font-size:clamp(2rem,3.4vw,3rem);letter-spacing:-.02em;line-height:1.05}
+.news-band p{margin:14px 0 0;max-width:46ch;color:#b7c2dc;font-size:17px}
+.news-band form{display:flex;gap:8px;padding:6px;border-radius:14px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14)}
+.news-band input[type=email]{flex:1;min-width:0;background:transparent!important;border:0!important;box-shadow:none!important;color:#fff;font-size:16px;padding:12px 14px}
+.news-band input[type=email]::placeholder{color:#8f9cbb}
+.news-band input[type=email]:focus{outline:0}
+.news-band form:focus-within{border-color:rgba(255,255,255,.4);background:rgba(255,255,255,.1)}
+.news-band .btn{background:#fff;color:#0e1730;border:0;border-radius:10px;padding:12px 22px;font-weight:600;transition:background .25s,color .25s}
+.news-band .btn:hover,.news-band .btn:focus-visible{background:var(--acc,#6366f1);color:#fff}
+.news-band small{display:block;margin-top:12px;color:#8f9cbb;font-size:13px}
+.news-band .nb-ok{color:#d1fae5;background:rgba(16,185,129,.14);border:1px solid rgba(16,185,129,.35);padding:14px 16px;border-radius:12px;margin:0}
+@media(max-width:900px){.news-band{padding:64px 0 52px}.news-band .wrap{grid-template-columns:1fr;gap:22px}.news-band form{flex-direction:column}.news-band .btn{width:100%}}
+
+/* The footer continues the same colour, separated by a hairline. */
+.site .site-footer,html:has(.story) .site-footer{background:var(--close)!important;color:#9fadc9;border-top:1px solid rgba(255,255,255,.08)}
+.site .site-footer .wm b{color:#fff!important}.site .site-footer .wm span{color:#8f9cbb!important}
+.site .site-footer h4{color:#fff}
+.site .site-footer a{color:#c9d3ea}
+.site .site-footer a:hover{color:#fff}
+.site .site-footer .foot-bottom{border-top-color:rgba(255,255,255,.1);color:#8f9cbb}
+/* The pillar closing band sits above; keep a clean edge between it and the newsletter. */
+.close-cta+.news-band{border-top:0}
+.wz-saved{margin:12px 0 0;font-size:13px;color:var(--muted,#667085)}.wz-saved:before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:#10b981;margin-right:8px;vertical-align:middle}
+
+.site .site-footer p{color:#a9b5cf}.site .site-footer .foot-bottom span{color:#8f9cbb}

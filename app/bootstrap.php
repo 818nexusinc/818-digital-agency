@@ -7,7 +7,7 @@ declare(strict_types=1);
  */
 
 define('APP_ROOT', __DIR__);
-define('APP_VERSION', '4.4.0');
+define('APP_VERSION', '4.5.0');
 
 spl_autoload_register(static function (string $class): void {
     if (!str_starts_with($class, 'App\\')) return;
@@ -17,7 +17,8 @@ spl_autoload_register(static function (string $class): void {
         'Rbac' => 'Security', 'DbSessionHandler' => 'Security', 'Totp' => 'Security', 'UserError' => 'Auth', 'Request' => 'Http', 'Router' => 'Http', 'View' => 'Http', 'HttpError' => 'Http', 'Redirected' => 'Http',
         'Settings' => 'Integrations', 'HttpFake' => 'Integrations', 'OfflineBrain' => 'Ai', 'AgentRunner' => 'Agents', 'AgentUnavailable' => 'Agents', 'BudgetExceeded' => 'Agents', 'AgentTimeout' => 'Agents', 'Domains' => 'Tools', 'ProviderDown' => 'Orchestrator', 'Backup' => 'Cron', 'Filings' => 'Filing', 'RegistryConnector' => 'Filing', 'RegistryConnectors' => 'Filing', 'AssistedConnector' => 'Filing', 'BcRegistryConnector' => 'Filing', 'Events' => 'Workflows', 'Approvals' => 'Orchestrator', 'Usage' => 'Orchestrator',
         'Kb' => 'Memory', 'Proposals' => 'Commerce', 'Cart' => 'Commerce', 'Orders' => 'Commerce', 'Catalog' => 'Commerce',
-        'Projects' => 'Delivery', 'Tickets' => 'Delivery', 'Documents' => 'Delivery', 'Crm' => 'Delivery'];
+        'Projects' => 'Delivery', 'Tickets' => 'Delivery', 'Documents' => 'Delivery', 'Crm' => 'Delivery',
+        'ChatLeads' => 'Growth', 'FormDrafts' => 'Growth', 'BlogEngine' => 'Growth', 'Demo' => 'Growth', 'Simulator' => 'Growth'];
     $rel = $map[$rel] ?? $rel;
     $file = APP_ROOT . '/src/' . $rel . '.php';
     if (is_file($file)) require $file;

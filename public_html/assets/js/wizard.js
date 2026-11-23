@@ -102,6 +102,7 @@
       if (bar) bar.style.width = (steps.length > 1 ? (cur / (steps.length - 1)) * 100 : 100) + '%';
       if ($('[data-wz-review]', steps[cur])) review($('[data-wz-review]', steps[cur]));
       if (mbar) { var mn = $('[data-wz-mnext]', mbar); mn.hidden = !!$('[data-wz-review]', steps[cur]); }
+      if (show.ready) saveDraft();
       var top = form.getBoundingClientRect().top + window.scrollY - 140;
       if (show.ready && window.scrollY > top) window.scrollTo({ top: top, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
       if (show.ready) { var first = $('h3', steps[cur]); if (first) { first.tabIndex = -1; first.focus({ preventScroll: true }); } }
@@ -142,6 +143,16 @@
     }
 
     /* collect into nested object: a[b][0][c] → {a:{b:[{c}]}} */
+    /* Unfinished forms are kept on our side so the team can help the visitor finish. */
+    var draftKey = 'nx818_draft_' + location.pathname, draftToken = '';
+    try { draftToken = sessionStorage.getItem(draftKey) || ''; } catch (e) {}
+    function saveDraft() {
+      var p = payload(), d = { token: draftToken, form: p.slug || form.dataset.form || '', path: location.pathname, step: cur, steps: steps.length, data: p.details || {} };
+      fetch('/order/draft', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-Token': csrf }, body: JSON.stringify(d), keepalive: true })
+        .then(function (r) { return r.json(); }).then(function (j) { if (j && j.token) { draftToken = j.token; try { sessionStorage.setItem(draftKey, j.token); } catch (e) {} var sv = $('.wz-saved', form); if (!sv) { sv = document.createElement('p'); sv.className = 'wz-saved'; sv.setAttribute('role', 'status'); form.appendChild(sv); } sv.textContent = T('Progress saved. You can come back and finish later.'); } }).catch(function () {});
+    }
+    var draftTimer = null;
+    form.addEventListener('focusout', function () { clearTimeout(draftTimer); draftTimer = setTimeout(function () { if (show.ready) saveDraft(); }, 1500); });
     function payload() {
       var out = { details: {}, addons: [] }, CTRL = { slug: 1, province: 1, tld: 1, domain: 1, agree: 1, kind: 1, website: 1, addon_tld: 1, addon_domain: 1 };
       $$('input,select,textarea', form).forEach(function (f) {
@@ -179,7 +190,7 @@
       if (!validStep(last)) return;
       for (var i = 0; i < steps.length - 1; i++) if (!validStep(steps[i])) { show(i); return; }
       var btn = $('[data-wz-submit]', form), label = btn.textContent; btn.disabled = true; btn.textContent = T('Working…');
-      fetch(form.dataset.endpoint || '/order/add', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-Token': csrf }, body: JSON.stringify(payload()) })
+      fetch(form.dataset.endpoint || '/order/add', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-Token': csrf }, body: JSON.stringify(Object.assign(payload(), { draft: draftToken })) })
         .then(function (r) { return r.json().then(function (j) { return [r.ok, j]; }); })
         .then(function (res) {
           var ok = res[0] && res[1].ok, j = res[1];

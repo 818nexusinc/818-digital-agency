@@ -41,8 +41,12 @@ final class Ai
     /**
      * Call a model with automatic fallback: primary → fallback model → offline.
      */
+    /** Scripted model used by the agent simulator. */
+    public static ?\Closure $mock = null;
+
     public static function complete(string $system, array $messages, array $tools, string $model, ?string $fallback, int $maxTokens, float $temperature, int $timeout = 60): array
     {
+        if (self::$mock) return (self::$mock)($system, $messages, $tools);
         $chain = array_values(array_unique(array_filter([$model, $fallback, 'offline'])));
         $lastErr = null;
         foreach ($chain as $m) {

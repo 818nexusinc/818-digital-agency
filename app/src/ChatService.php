@@ -38,6 +38,8 @@ final class ChatService
         if ((int)Db::val('SELECT COUNT(*) FROM messages WHERE conversation_id = ?', [$conv['id']]) > 80) throw new UserError('This conversation is very long — please start a new one.');
 
         Db::insert('messages', ['conversation_id' => $conv['id'], 'role' => 'user', 'content' => $message, 'meta' => jenc(['page' => $page['path'] ?? null]), 'created_at' => now()]);
+        // Contact details shared in chat become a lead, whether or not an AI provider is connected.
+        try { if (ChatLeads::fromMessage($conv, $message)) $conv['customer_id'] = Db::val('SELECT customer_id FROM conversations WHERE id = ?', [$conv['id']]); } catch (\Throwable $e) { Log::error('chat.lead_failed', ['error' => $e->getMessage()]); }
         $history = array_reverse(Db::all('SELECT role, content FROM messages WHERE conversation_id = ? ORDER BY id DESC LIMIT 14', [$conv['id']]));
         $msgs = [];
         foreach ($history as $h) {

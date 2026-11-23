@@ -83,3 +83,66 @@ body.con{--cbg:#f5f6fa;--cside:#fff;--cline:#e7eaf1;--cink:#0e1628;--cmut:#66708
 }
 @media(prefers-reduced-motion:reduce){.con .side,.con .kpi{transition:none}}
 @media(max-width:960px){.con .side:not(.open){box-shadow:none}.con .kpis{grid-template-columns:1fr 1fr;gap:10px}.con .kpi{padding:16px}.con .kpi .v{font-size:1.5rem}.c-crumb>:not(b){display:none}}
+
+/* ── Control Tower v6: greeting, "needs you today", one KPI strip, two calm columns ── */
+.tw{display:grid;gap:22px}
+.tw-hello{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap}
+.tw-date{margin:0 0 6px;color:var(--cmut);font-size:14px}
+.tw-hello h1{margin:0;font-size:clamp(28px,3vw,38px);letter-spacing:-.02em;line-height:1.1}
+.tw-sum{margin:8px 0 0;color:var(--cmut);font-size:15.5px}
+.tw-quick{display:flex;gap:8px;flex-wrap:wrap}
+.tw-status{display:flex;gap:8px;flex-wrap:wrap}
+.tw-pill{display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border-radius:999px;font-size:13.5px;text-decoration:none;border:1px solid var(--cline);background:#fff;color:var(--cink)}
+.tw-pill i{width:8px;height:8px;border-radius:50%;background:#94a3b8}
+.tw-pill.warn i{background:#f59e0b}.tw-pill.info i{background:#3b82f6}.tw-pill.demo{background:#fff7ed;border-color:#fed7aa}.tw-pill.demo i{background:#ea580c}
+.tw-pill:hover{border-color:var(--cink)}
+.tw-todo{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+.tw-card{--t:#64748b;display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto auto;column-gap:12px;row-gap:2px;align-items:center;padding:16px;border-radius:16px;background:#fff;border:1px solid var(--cline);text-decoration:none;color:var(--cink);transition:transform .2s,box-shadow .2s,border-color .2s;position:relative;overflow:hidden}
+.tw-card:before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--t);opacity:.25}
+.tw-card.has:before{opacity:1}
+.tw-card:hover{transform:translateY(-2px);box-shadow:0 12px 28px -18px rgba(15,23,42,.45);border-color:color-mix(in srgb,var(--t) 40%,var(--cline))}
+.tw-ic{grid-row:1/3;width:38px;height:38px;border-radius:11px;display:grid;place-items:center;background:color-mix(in srgb,var(--t) 12%,#fff);color:var(--t)}
+.tw-ic svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.8}
+.tw-card b{font-size:26px;line-height:1;font-weight:600;letter-spacing:-.02em}
+.tw-card:not(.has) b{color:#94a3b8}
+.tw-l{font-size:14px;font-weight:500}
+.tw-card small{grid-column:1/3;color:var(--cmut);font-size:12.5px;margin-top:8px;line-height:1.35}
+.t-amber{--t:#d97706}.t-violet{--t:#7c3aed}.t-blue{--t:#2563eb}.t-teal{--t:#0d9488}.t-red{--t:#dc2626}
+.tw-kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));background:#fff;border:1px solid var(--cline);border-radius:16px;overflow:hidden}
+.tw-kpis>div{padding:16px 18px;border-left:1px solid var(--cline);display:grid;gap:6px}
+.tw-kpis>div:first-child{border-left:0}
+.tw-kpis span{font-size:12.5px;color:var(--cmut)}
+.tw-kpis b{font-size:21px;font-weight:600;letter-spacing:-.01em}
+.tw-kpis em{font-style:normal;font-size:12px;color:#dc2626;font-weight:500;margin-left:4px}
+.tw-grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:18px;align-items:start}
+.tw-col{display:grid;gap:18px}
+.tw-p{margin:0!important;padding:20px 22px!important}
+.tw-ph{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:10px}
+.tw-ph h2{margin:0;font-size:19px}
+.tw-ph a{font-size:13.5px;color:var(--cacc);text-decoration:none}
+.tw-ph a:hover{text-decoration:underline}
+.tw-sub{font-size:13px;font-weight:600;color:var(--cmut);margin:16px 0 4px}
+.tw-row{display:flex;align-items:center;gap:12px;padding:10px 8px;margin:0 -8px;border-radius:10px;text-decoration:none;color:var(--cink);transition:background .15s}
+.tw-row:hover{background:var(--cbg)}
+.tw-row+.tw-row{border-top:1px solid var(--cline);border-radius:0}
+.tw-row:hover+.tw-row{border-top-color:transparent}
+.tw-av{flex:none;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-size:14px;font-weight:600;background:#e0e7ff;color:#3730a3}
+.tw-av.v{background:#ede9fe;color:#6d28d9}
+.tw-who{flex:1;min-width:0;display:grid;gap:2px}
+.tw-who b{font-weight:500;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tw-who small{color:var(--cmut);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tw-go{font-size:13px;color:#6d28d9;font-weight:500;white-space:nowrap}
+.tw-foot{margin:12px 0 0;font-size:13px;color:var(--cmut)}
+.tw-foot a{color:var(--cacc)}
+.tw-mini{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
+.tw-mini>div{background:var(--cbg);border-radius:12px;padding:10px 12px;display:grid;gap:4px}
+.tw-mini span{font-size:12px;color:var(--cmut)}.tw-mini b{font-size:18px;font-weight:600}
+.tw-mini .bad b{color:#dc2626}
+.tw-line{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:14px;padding:10px 0;border-top:1px solid var(--cline)}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#94a3b8;margin-right:8px;vertical-align:middle}
+.dot.ok{background:#10b981}.dot.bad{background:#dc2626}
+.bar{height:6px;border-radius:9px;background:var(--cline);overflow:hidden;margin-top:6px}.bar i{display:block;height:100%;background:var(--cacc);border-radius:9px}
+.pre{white-space:pre-wrap;font-size:12px;background:var(--cbg);padding:10px;border-radius:8px;max-height:220px;overflow:auto}
+@media(max-width:1280px){.tw-todo{grid-template-columns:repeat(3,minmax(0,1fr))}.tw-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.tw-kpis>div:nth-child(4){border-left:0}.tw-kpis>div:nth-child(n+4){border-top:1px solid var(--cline)}}
+@media(max-width:960px){.tw-grid{grid-template-columns:1fr}.tw-todo{grid-template-columns:repeat(2,minmax(0,1fr))}.tw-mini{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:560px){.tw-todo{grid-template-columns:1fr}.tw-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.tw-kpis>div{border-left:0!important;border-top:1px solid var(--cline)}}

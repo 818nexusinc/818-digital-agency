@@ -62,9 +62,13 @@ $r->get('/legal/{page}', function ($p) {
 $r->get('/blog', function () {
     View::page('public/blog', ['title' => 'Insights for Canadian entrepreneurs', 'posts' => Db::all("SELECT title, slug, excerpt, publish_at, updated_at FROM content_items WHERE kind = 'blog' AND status = 'published' ORDER BY COALESCE(publish_at, updated_at) DESC LIMIT 50")]);
 });
+$r->get('/blog/feed.xml', function () { header('Content-Type: application/rss+xml; charset=UTF-8'); header('Cache-Control: public, max-age=3600'); echo App\BlogEngine::rss(); });
 $r->get('/blog/{slug}', function ($p) {
     $post = Db::one("SELECT * FROM content_items WHERE slug = ? AND kind = 'blog' AND status = 'published'", [$p['slug']]) ?? throw new HttpError(404, 'Article not found.');
-    View::page('public/post', ['title' => $post['title'], 'description' => $post['excerpt'], 'post' => $post]);
+    $ld = ['@context' => 'https://schema.org', '@type' => 'Article', 'headline' => $post['title'], 'description' => $post['excerpt'], 'datePublished' => str_replace(' ', 'T', (string)($post['publish_at'] ?? $post['created_at'])) . 'Z',
+        'dateModified' => str_replace(' ', 'T', (string)$post['updated_at']) . 'Z', 'author' => ['@type' => 'Organization', 'name' => App\Settings::get('company.name')], 'publisher' => ['@type' => 'Organization', 'name' => App\Settings::get('company.name')],
+        'mainEntityOfPage' => url('/blog/' . $post['slug']), 'keywords' => (string)$post['keyword']];
+    View::page('public/post', ['title' => $post['title'], 'description' => $post['excerpt'], 'post' => $post, 'path' => '/blog/' . $post['slug'], 'jsonld' => [$ld, App\Seo::breadcrumbs(['Home' => '/', 'Blog' => '/blog', $post['title'] => '/blog/' . $post['slug']])]]);
 });
 
 $r->get('/contact', fn() => View::page('public/contact', ['title' => 'Contact us']));
@@ -140,13 +144,16 @@ $r->post('/subscribe', function () {
     Db::update('customers', ['consent_marketing' => 1, 'consent_at' => now()], 'id = ?', [$c['id']]); // express consent (CASL): they asked to be notified
     Db::run('DELETE FROM email_suppressions WHERE email = ? AND reason = ?', [$email, 'unsubscribed']);
     Audit::log('newsletter.subscribe', 'customer', (string)$c['id']);
-    View::redirect('/?subscribed=1#news');
+    $back = parse_url((string)($_SERVER['HTTP_REFERER'] ?? ''), PHP_URL_PATH) ?: '/';
+    if (!preg_match('#^/[a-z0-9/_-]*$#i', $back) || str_starts_with($back, '//')) $back = '/';
+    View::redirect($back . '?subscribed=1#news');
 });
 
 /* Form endpoints (JSON, CSRF-checked like every POST) */
-$r->post('/order/add', fn() => View::json(App\Wizard::add(Request::json())));
-$r->post('/order/bundle', fn() => View::json(App\Wizard::bundle(Request::json())));
-$r->post('/order/quote', fn() => View::json(App\Wizard::quote(Request::json())));
+$r->post('/order/add', function () { $in = Request::json(); $r = App\Wizard::add($in); App\FormDrafts::complete($in['draft'] ?? null); View::json($r); });
+$r->post('/order/bundle', function () { $in = Request::json(); $r = App\Wizard::bundle($in); App\FormDrafts::complete($in['draft'] ?? null); View::json($r); });
+$r->post('/order/quote', function () { $in = Request::json(); $r = App\Wizard::quote($in); App\FormDrafts::complete($in['draft'] ?? null); View::json($r); });
+$r->post('/order/draft', fn() => View::json(App\FormDrafts::save(Request::json())));
 
 /* SEO / machine-readable */
 $r->get('/sitemap.xml', function () { header('Content-Type: application/xml; charset=UTF-8'); echo Seo::sitemap(); });

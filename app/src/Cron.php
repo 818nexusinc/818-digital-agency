@@ -24,6 +24,7 @@ final class Cron
             $stats['followups'] = self::followUps();
             $stats['housekeeping'] = self::housekeeping();
             $stats['reports'] = self::reports();
+            $b = BlogEngine::weekly(); if ($b) $stats['blog'] = $b['slug'];
         } catch (\Throwable $e) {
             Log::error('cron.failed', ['error' => $e->getMessage()]);
             $stats['error'] = $e->getMessage();

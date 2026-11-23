@@ -53,6 +53,7 @@ return [
   'Use letters only.' => 'Utilisez seulement des lettres.',
   'Website' => 'Site Web',
   'Working…' => 'Traitement…',
+  'Progress saved. You can come back and finish later.' => 'Progression enregistrée. Vous pouvez revenir terminer plus tard.',
   'Yearly' => 'Annuel',
   'reference' => 'référence',
   '{p}% bundle discount · you save {s}' => 'Rabais d’ensemble de {p} % · vous économisez {s}',

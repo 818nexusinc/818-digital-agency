@@ -3,7 +3,7 @@
    Expects: $area ('admin'|'portal'), $groups [group => [href => label | [label, count]]], $areaName, $home, $title, $path, $user, $content */
 include_once APP_ROOT . '/views/partials/icons.php';
 $ico = function (string $h): string {
-    foreach (['approvals' => 'inbox', 'projects' => 'folder', 'filings' => 'certificate', 'tickets' => 'help', 'support' => 'help', 'leads' => 'search', 'customers' => 'users',
+    foreach (['drafts' => 'text', 'blog' => 'edit', 'simulator' => 'bot', 'demo' => 'stack', 'approvals' => 'inbox', 'projects' => 'folder', 'filings' => 'certificate', 'tickets' => 'help', 'support' => 'help', 'leads' => 'search', 'customers' => 'users',
         'proposals' => 'text', 'orders' => 'cart', 'agents' => 'bot', 'tasks' => 'check', 'workflows' => 'network', 'kb' => 'stack', 'content' => 'edit', 'growth' => 'chart',
         'finance' => 'cash', 'catalog' => 'layout', 'integrations' => 'bolt', 'settings' => 'cog', 'audit' => 'shield', 'system' => 'refresh', 'classic' => 'clock',
         'documents' => 'certificate', 'assistant' => 'bot', 'account' => 'user', 'services' => 'layout', 'cart' => 'cart'] as $k => $i) if (str_contains($h, $k)) return $i;

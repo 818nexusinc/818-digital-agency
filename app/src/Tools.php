@@ -98,6 +98,7 @@ final class Tools
         } catch (UserError $e) {
             return ['error' => $e->getMessage()];
         } catch (\Throwable $e) {
+            if (Ai::$mock) Simulator::$lastResults[$name] = ['exception' => get_class($e) . ': ' . $e->getMessage()];
             Log::error('tool.failed', ['tool' => $name, 'error' => $e->getMessage()]);
             return ['error' => 'Tool failed. Reference ' . Log::correlationId()];
         }

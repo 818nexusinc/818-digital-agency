@@ -50,8 +50,12 @@ final class Mailer
     /**
      * @return array{ok:bool,status:string,id?:int}
      */
+    /** When true (agent simulator), nothing is delivered. */
+    public static bool $dryRun = false;
+
     public static function send(string $template, string $to, array $vars = [], ?string $dedupeKey = null, ?string $relatedType = null, ?int $relatedId = null): array
     {
+        if (self::$dryRun) return ['ok' => true, 'status' => 'simulated'];
         $def = self::TEMPLATES[$template] ?? throw new \InvalidArgumentException('Unknown template ' . $template);
         $to = strtolower(trim($to));
         if (!filter_var($to, FILTER_VALIDATE_EMAIL)) return ['ok' => false, 'status' => 'invalid'];

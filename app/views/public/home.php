@@ -20,7 +20,7 @@ $paths = [
 ];
 ?>
 <nav class="rail" aria-label="<?= e(t('Homepage chapters')) ?>" data-rail>
-  <ol><?php foreach ($chap as $i => [$id, $lbl, $p]): ?><li style="<?= pillar_css($p) ?>"><a href="#<?= $id ?>"><span class="rl"><?= e(t($lbl)) ?></span><span class="rn"><?= sprintf('%02d', $i + 1) ?></span></a></li><?php endforeach; ?></ol>
+  <ol><?php foreach ($chap as $i => [$id, $lbl, $p]): ?><li style="<?= pillar_css($p) ?>"><a href="#<?= $id ?>" aria-label="<?= e(t($lbl)) ?>"><span class="rl"><?= e(t($lbl)) ?></span><span class="rd" aria-hidden="true"></span></a></li><?php endforeach; ?></ol>
   <span class="rail-bar" aria-hidden="true"><i data-rail-fill></i></span>
 </nav>
 
@@ -197,9 +197,3 @@ $paths = [
 <?php if ($reviews): ?><section class="sec alt"><div class="wrap"><div class="sec-head center"><h2>From verified customers</h2></div><div class="grid g3">
 <?php foreach ($reviews as $rv): ?><figure class="card" style="margin:0"><div aria-label="<?= (int)$rv['rating'] ?> out of 5"><?= str_repeat('★', (int)$rv['rating']) ?></div><blockquote style="margin:10px 0"><?= e($rv['body']) ?></blockquote><figcaption class="muted small"><?= e($rv['display_name'] ?: 'Verified customer') ?></figcaption></figure><?php endforeach; ?></div></div></section><?php endif; ?>
 
-<section class="news" id="news"><div class="wrap">
-  <div><h2>Be first to know.</h2><p>New services and launch offers. No spam.</p></div>
-  <div><?php if (!empty($_GET['subscribed'])): ?><p class="alert alert-success">Thanks! You're on the list. You can unsubscribe anytime from any email.</p>
-  <?php else: ?><form method="post" action="/subscribe"><?= Csrf::field() ?><label class="sr" for="news-email">Email address</label><input id="news-email" type="email" name="email" required placeholder="you@yourbusiness.ca" autocomplete="email"><input type="text" name="website" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true"><button class="btn btn-primary">Notify me</button></form>
-  <small>By subscribing you agree to receive occasional emails from 818 Nexus Inc. No spam. Unsubscribe anytime.</small><?php endif; ?></div>
-</div></section>

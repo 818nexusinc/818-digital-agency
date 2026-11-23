@@ -9,8 +9,16 @@ $P = fn(string $perm) => ['perm' => $perm];
 $me = fn() => Auth::user();
 $page = fn(int $per = 50) => [$per, max(0, ((int)($_GET['page'] ?? 1) - 1) * $per)];
 
-$r->get('/admin', function () {
-    View::page('admin/tower', ['title' => 'Control Tower', 'm' => Metrics::overview(30), 'today' => Metrics::overview(1),
+$r->get('/admin', function () use ($me) {
+    View::page('admin/tower', ['title' => 'Control Tower', 'm' => Metrics::overview(30), 'today' => Metrics::overview(1), 'me' => $me(),
+        'drafts' => Db::all("SELECT * FROM form_drafts WHERE status = 'open' AND email IS NOT NULL ORDER BY updated_at DESC LIMIT 5"),
+        'draftsOpen' => (int)Db::val("SELECT COUNT(*) FROM form_drafts WHERE status = 'open'"),
+        'newLeads' => (int)Db::val("SELECT COUNT(*) FROM leads WHERE created_at >= ?", [gmdate('Y-m-d H:i:s', time() - 7 * 86400)]),
+        'chatLeads' => (int)Db::val("SELECT COUNT(*) FROM leads WHERE source = 'ai_chat' AND created_at >= ?", [gmdate('Y-m-d H:i:s', time() - 30 * 86400)]),
+        'openTickets' => (int)Db::val("SELECT COUNT(*) FROM tickets WHERE status = 'open'"),
+        'blog' => ['last' => Settings::get('blog.last_generated'), 'count' => (int)Db::val("SELECT COUNT(*) FROM content_items WHERE kind = 'blog' AND status = 'published'"),
+            'review' => (int)Db::val("SELECT COUNT(*) FROM content_items WHERE kind = 'blog' AND status = 'review'"), 'enabled' => Settings::get('blog.enabled', '1') === '1'],
+        'demo' => App\Demo::count(), 'sim' => $_SESSION['sim_results'] ?? null, 'simAt' => $_SESSION['sim_at'] ?? null,
         'approvals' => Db::all("SELECT * FROM approvals WHERE status = 'pending' ORDER BY CASE risk WHEN 'high' THEN 0 WHEN 'medium' THEN 1 ELSE 2 END, id DESC LIMIT 8"),
         'failed' => Db::all("SELECT * FROM agent_tasks WHERE status = 'failed' ORDER BY updated_at DESC LIMIT 5"),
         'leads' => Db::all("SELECT l.*, c.name, c.email, c.business_name FROM leads l JOIN customers c ON c.id = l.customer_id WHERE l.status NOT IN ('converted','closed') ORDER BY l.score DESC, l.id DESC LIMIT 6"),
@@ -420,3 +428,67 @@ $r->post('/admin/filings/{num}', function ($p) use ($me) {
     Audit::log('filing.admin_' . $act, 'filing', $f['number']);
     View::redirect('/admin/filings/' . $f['number']);
 }, $P('projects.write'));
+
+/* ── Growth: unfinished forms, blog engine, agent simulator, demo data ── */
+$r->get('/admin/drafts', function () {
+    $st = in_array($_GET['status'] ?? 'open', ['open', 'followed_up', 'completed', 'dismissed', 'all'], true) ? ($_GET['status'] ?? 'open') : 'open';
+    $rows = $st === 'all' ? Db::all('SELECT * FROM form_drafts ORDER BY updated_at DESC LIMIT 200') : Db::all('SELECT * FROM form_drafts WHERE status = ? ORDER BY updated_at DESC LIMIT 200', [$st]);
+    $counts = []; foreach (Db::all('SELECT status, COUNT(*) n FROM form_drafts GROUP BY status') as $c) $counts[$c['status']] = (int)$c['n'];
+    View::page('admin/drafts', ['title' => 'Unfinished forms', 'rows' => $rows, 'status' => $st, 'counts' => $counts]);
+}, $P('crm.read'));
+$r->post('/admin/drafts/{id}', function ($p) use ($me) {
+    $id = (int)$p['id']; $a = Request::str('action', 20);
+    if ($a === 'lead') { $l = App\FormDrafts::toLead($id, $me()['email']); Session::flash('success', 'Lead created. Follow up from the Leads page.'); View::redirect('/admin/leads'); return; }
+    if (in_array($a, ['dismiss', 'reopen'], true)) Db::update('form_drafts', ['status' => $a === 'dismiss' ? 'dismissed' : 'open', 'updated_at' => now()], 'id = ?', [$id]);
+    if ($a === 'note') Db::update('form_drafts', ['notes' => Request::str('notes', 2000), 'updated_at' => now()], 'id = ?', [$id]);
+    Session::flash('success', 'Saved.'); View::redirect('/admin/drafts');
+}, $P('crm.write'));
+
+$r->get('/admin/blog', function () {
+    View::page('admin/blog', ['title' => 'Blog engine', 'posts' => Db::all("SELECT * FROM content_items WHERE kind = 'blog' ORDER BY id DESC LIMIT 100"),
+        'topics' => App\BlogEngine::TOPICS, 'next' => App\BlogEngine::nextTopic(), 'last' => Settings::get('blog.last_generated'),
+        'enabled' => Settings::get('blog.enabled', '1') === '1', 'autopublish' => Settings::get('blog.autopublish', '1') === '1',
+        'ai' => Integrations::configured('anthropic') || Integrations::configured('openai')]);
+}, $P('content.read'));
+$r->post('/admin/blog', function () use ($me) {
+    $a = Request::str('action', 20);
+    if ($a === 'settings') {
+        Settings::set('blog.enabled', !empty($_POST['enabled']) ? '1' : '0'); Settings::set('blog.autopublish', !empty($_POST['autopublish']) ? '1' : '0');
+        Session::flash('success', 'Blog settings saved.');
+    } elseif ($a === 'generate') {
+        $ti = ($_POST['topic'] ?? '') === '' ? null : (int)$_POST['topic'];
+        $post = App\BlogEngine::generate($ti, $me()['email']);
+        Session::flash('success', ($post['status'] === 'published' ? 'Published: ' : 'Ready for review: ') . $post['title']);
+    } else {
+        $id = (int)Request::str('id', 12);
+        if ($a === 'publish') Db::update('content_items', ['status' => 'published', 'publish_at' => now(), 'updated_at' => now()], "id = ? AND kind = 'blog'", [$id]);
+        if ($a === 'unpublish') Db::update('content_items', ['status' => 'review', 'updated_at' => now()], "id = ? AND kind = 'blog'", [$id]);
+        if ($a === 'delete') Db::run("DELETE FROM content_items WHERE id = ? AND kind = 'blog'", [$id]);
+        Audit::log('blog.' . $a, 'content', (string)$id, ['by' => $me()['email']]);
+        Session::flash('success', 'Done.');
+    }
+    View::redirect('/admin/blog');
+}, $P('content.write'));
+
+$r->get('/admin/simulator', function () {
+    View::page('admin/simulator', ['title' => 'Agent simulator', 'results' => $_SESSION['sim_results'] ?? null, 'ran_at' => $_SESSION['sim_at'] ?? null, 'agents' => App\Agents::DEFS]);
+}, $P('agents.read'));
+$r->post('/admin/simulator', function () use ($me) {
+    $only = Request::str('agent', 60) ?: null;
+    if ($only && !isset(App\Agents::DEFS[$only])) $only = null;
+    @set_time_limit(120);
+    $_SESSION['sim_results'] = App\Simulator::run($only);
+    $_SESSION['sim_at'] = now();
+    Audit::log('agents.simulated', 'agent', $only ?? 'all', ['by' => $me()['email'], 'passed' => count(array_filter($_SESSION['sim_results'], fn($x) => $x['ok']))]);
+    View::redirect('/admin/simulator');
+}, $P('agents.write'));
+
+$r->get('/admin/demo', function () {
+    $by = Db::all('SELECT tbl, COUNT(*) n FROM demo_records GROUP BY tbl ORDER BY tbl');
+    View::page('admin/demo', ['title' => 'Demo data', 'count' => App\Demo::count(), 'by' => $by]);
+}, $P('settings.read'));
+$r->post('/admin/demo', function () {
+    if (Request::str('action', 10) === 'seed') { $n = App\Demo::seed(); Session::flash('success', 'Demo data loaded: ' . array_sum($n) . ' records.'); }
+    else { if (Request::str('confirm', 20) !== 'DELETE') throw new UserError('Type DELETE to confirm.'); $n = App\Demo::purge(); Session::flash('success', "Deleted {$n} demo records. Your real data was not touched."); }
+    View::redirect('/admin/demo');
+}, $P('settings.write'));

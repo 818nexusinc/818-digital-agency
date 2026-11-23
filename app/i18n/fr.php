@@ -1,6 +1,16 @@
 <?php
 /* French (Canada) UI strings. English is the key. Generated from the rendered site; edit freely. */
 return [
+    'New guides, services and launch offers for Canadian entrepreneurs. One short email a month at most.' => 'Nouveaux guides, services et offres de lancement pour les entrepreneurs canadiens. Au plus un court courriel par mois.',
+    'Subscribe' => 'M’abonner',
+    'By subscribing you agree to receive occasional emails from 818 Nexus Inc. Unsubscribe anytime.' => 'En vous abonnant, vous acceptez de recevoir des courriels occasionnels de 818 Nexus Inc. Désabonnement en tout temps.',
+    'Thanks! You\'re on the list. You can unsubscribe anytime from any email.' => 'Merci! Vous êtes inscrit. Vous pouvez vous désabonner en tout temps depuis n’importe quel courriel.',
+    'min read' => 'min de lecture',
+    'Share' => 'Partager',
+    'Questions' => 'Questions',
+    'Ready to take the next step?' => 'Prêt à passer à l’étape suivante?',
+    'Start online in minutes, or ask a question first.' => 'Commencez en ligne en quelques minutes ou posez d’abord une question.',
+    'Progress saved. You can come back and finish later.' => 'Progression enregistrée. Vous pouvez revenir terminer plus tard.',
   'We’ll make it official.' => 'Nous la rendons officielle.',
   'Draft prepared for filing' => 'Ébauche préparée pour le dépôt',
   'Corporate name' => 'Dénomination sociale',

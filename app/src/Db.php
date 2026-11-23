@@ -21,7 +21,20 @@ final class Db
         }
         self::connect($dsn, Env::get('DB_USER'), Env::get('DB_PASS'));
         if (ON_VERCEL && self::$driver === 'sqlite') self::previewInstall();
+        else self::upgradeIfNeeded();
         return self::$pdo;
+    }
+
+    /** Apply new migration files after a deploy, so a new release never runs against an older schema. Installed databases only. */
+    private static function upgradeIfNeeded(): void
+    {
+        try {
+            $files = count(glob(APP_ROOT . '/migrations/*.sql') ?: []);
+            $done = (int)self::$pdo->query('SELECT COUNT(*) FROM migrations')->fetchColumn();
+            if ($done > 0 && $done < $files) { $applied = self::migrate(); if ($applied) Log::write('info', 'db.upgraded', ['migrations' => $applied]); }
+        } catch (\Throwable $e) {
+            // Not installed yet (no migrations table) or a parallel request already upgraded: carry on.
+        }
     }
 
     /**
