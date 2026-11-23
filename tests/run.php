@@ -592,5 +592,21 @@ tcase('demo data loads and deletes cleanly without touching real rows', function
     eq((int)Db::val("SELECT COUNT(*) FROM content_items WHERE slug LIKE 'demo-%'"), 0);
 });
 
+echo "\nProduction readiness\n";
+tcase('security check runs offline and scores', function () {
+    $r = App\SecurityCheck::run(false); ok(count($r) >= 15, 'enough checks');
+    foreach ($r as $x) ok(in_array($x['s'], ['pass', 'warn', 'fail', 'info'], true) && $x['t'] !== '', 'shape');
+    $s = App\SecurityCheck::score($r); ok($s >= 0 && $s <= 100);
+    foreach ($r as $x) ok(!str_contains($x['found'], (string)getenv('APP_KEY')), 'never prints secrets');
+});
+tcase('robots welcomes AI crawlers and llms files list services', function () {
+    $rb = App\Seo::robots(); ok(str_contains($rb, 'User-agent: GPTBot') && str_contains($rb, 'User-agent: ClaudeBot') && str_contains($rb, 'Sitemap:'));
+    ok(str_contains($rb, 'Disallow: /admin'));
+    ok(str_contains(App\Seo::llmsFull(), '# Service details'));
+    ok(str_contains(App\Seo::sitemap(), '<lastmod>'));
+    eq(App\Seo::indexNow(['/'])['ok'], false, 'skipped off the production domain');
+    ok(preg_match('/^[a-f0-9]{32}$/', App\Seo::indexNowKey()) === 1);
+});
+
 echo "\n" . ($fail ? "\033[31m{$fail} failed\033[0m, " : '') . "\033[32m{$pass} passed\033[0m\n";
 exit($fail ? 1 : 0);

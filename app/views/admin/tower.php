@@ -25,7 +25,7 @@ include_once APP_ROOT . '/views/partials/icons.php';
   <div class="tw-quick">
     <a class="btn btn-primary btn-sm" href="/admin/approvals">Review approvals</a>
     <a class="btn btn-ghost btn-sm" href="/admin/blog">Write this week's article</a>
-    <a class="btn btn-ghost btn-sm" href="/admin/simulator">Test the AI agents</a>
+    <a class="btn btn-ghost btn-sm" href="/admin/guide">How the agents work</a>
   </div>
 </header>
 

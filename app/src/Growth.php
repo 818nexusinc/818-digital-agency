@@ -165,6 +165,7 @@ final class BlogEngine
         Settings::set('blog.last_generated', now());
         Audit::log('blog.generated', 'content', (string)$id, ['by' => $by, 'generator' => $post['generator'], 'published' => $publish]);
         Mailer::notifyOwner($publish ? 'New article published' : 'New article ready for review', $post['title'], '/admin/blog');
+        if ($publish) { try { Seo::indexNow(['/blog/' . $slug, '/blog', '/sitemap.xml', '/llms.txt']); } catch (\Throwable $e) { Log::error('blog.indexnow', ['error' => $e->getMessage()]); } }
         return Db::one('SELECT * FROM content_items WHERE id = ?', [$id]);
     }
 

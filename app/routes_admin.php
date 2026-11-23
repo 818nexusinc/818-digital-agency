@@ -71,7 +71,11 @@ $r->post('/admin/agents/{slug}', function ($p) use ($me) {
 $r->get('/admin/tasks', function () use ($page) {
     [$per, $off] = $page(50);
     $st = preg_replace('/[^a-z_]/', '', (string)($_GET['status'] ?? ''));
-    View::page('admin/tasks', ['title' => 'Agent tasks', 'status' => $st, 'rows' => Db::all('SELECT * FROM agent_tasks' . ($st ? ' WHERE status = ?' : '') . " ORDER BY id DESC LIMIT {$per} OFFSET {$off}", $st ? [$st] : []),
+    $ag = preg_replace('/[^a-z_]/', '', (string)($_GET['agent'] ?? ''));
+    $w = []; $args = [];
+    if ($st) { $w[] = 'status = ?'; $args[] = $st; }
+    if ($ag) { $w[] = 'agent_slug = ?'; $args[] = $ag; }
+    View::page('admin/tasks', ['title' => 'Agent tasks', 'status' => $st, 'rows' => Db::all('SELECT * FROM agent_tasks' . ($w ? ' WHERE ' . implode(' AND ', $w) : '') . " ORDER BY id DESC LIMIT {$per} OFFSET {$off}", $args),
         'agents' => Db::all('SELECT slug, name FROM agents ORDER BY id')]);
 }, $P('agents.read'));
 $r->get('/admin/tasks/{id}', function ($p) {
@@ -461,7 +465,8 @@ $r->post('/admin/blog', function () use ($me) {
         Session::flash('success', ($post['status'] === 'published' ? 'Published: ' : 'Ready for review: ') . $post['title']);
     } else {
         $id = (int)Request::str('id', 12);
-        if ($a === 'publish') Db::update('content_items', ['status' => 'published', 'publish_at' => now(), 'updated_at' => now()], "id = ? AND kind = 'blog'", [$id]);
+        if ($a === 'publish') { Db::update('content_items', ['status' => 'published', 'publish_at' => now(), 'updated_at' => now()], "id = ? AND kind = 'blog'", [$id]);
+            $sl = Db::val('SELECT slug FROM content_items WHERE id = ?', [$id]); if ($sl) App\Seo::indexNow(['/blog/' . $sl, '/blog']); }
         if ($a === 'unpublish') Db::update('content_items', ['status' => 'review', 'updated_at' => now()], "id = ? AND kind = 'blog'", [$id]);
         if ($a === 'delete') Db::run("DELETE FROM content_items WHERE id = ? AND kind = 'blog'", [$id]);
         Audit::log('blog.' . $a, 'content', (string)$id, ['by' => $me()['email']]);
@@ -492,3 +497,43 @@ $r->post('/admin/demo', function () {
     else { if (Request::str('confirm', 20) !== 'DELETE') throw new UserError('Type DELETE to confirm.'); $n = App\Demo::purge(); Session::flash('success', "Deleted {$n} demo records. Your real data was not touched."); }
     View::redirect('/admin/demo');
 }, $P('settings.write'));
+
+$r->get('/admin/guide', function () {
+    View::page('admin/guide', ['title' => 'Agent guide', 'agents' => Db::all('SELECT slug, name, status, autonomy_level, model, tools FROM agents ORDER BY id'),
+        'ai' => Integrations::configured('anthropic') || Integrations::configured('openai')]);
+}, $P('agents.read'));
+
+$r->get('/admin/security', function () {
+    $res = $_SESSION['sec_results'] ?? null; $at = $_SESSION['sec_at'] ?? null;
+    if (!$res || strtotime($at . ' UTC') < time() - 600) { $res = App\SecurityCheck::run(); $at = now(); $_SESSION['sec_results'] = $res; $_SESSION['sec_at'] = $at; }
+    View::page('admin/security', ['title' => 'Security check', 'results' => $res, 'ran_at' => $at]);
+}, $P('settings.read'));
+$r->post('/admin/security', function () use ($me) {
+    $res = App\SecurityCheck::run(); $_SESSION['sec_results'] = $res; $_SESSION['sec_at'] = now();
+    Audit::log('security.check', 'system', null, ['by' => $me()['email'], 'score' => App\SecurityCheck::score($res)]);
+    View::redirect('/admin/security');
+}, $P('settings.read'));
+
+$r->get('/admin/search', function () {
+    $posts = (int)Db::val("SELECT COUNT(*) FROM content_items WHERE kind = 'blog' AND status = 'published'");
+    View::page('admin/search', ['title' => 'Search & AI visibility', 'urls' => count(App\Seo::allUrls()), 'posts' => $posts, 'last' => jdec((string)Settings::get('seo.indexnow_last') ?: 'null'),
+        'google' => (string)(Integrations::secret('search_console', 'verification') ?: Settings::get('seo.google_verification')), 'bing' => (string)Settings::get('seo.bing_verification'),
+        'sameAs' => (string)Settings::get('seo.same_as'), 'key' => App\Seo::indexNowKey(), 'blogOn' => Settings::get('blog.enabled', '1') === '1']);
+}, $P('content.read'));
+$r->post('/admin/search', function () use ($me) {
+    $a = Request::str('action', 20);
+    if ($a === 'save') {
+        foreach (['google' => 'seo.google_verification', 'bing' => 'seo.bing_verification'] as $f => $k) {
+            $v = trim(Request::str($f, 300));
+            if (preg_match('/content="([^"]+)"/', $v, $m)) $v = $m[1]; // accept the whole meta tag pasted in
+            Settings::set($k, preg_replace('/[^A-Za-z0-9_\-]/', '', $v));
+        }
+        Settings::set('seo.same_as', implode(',', array_filter(array_map('trim', preg_split('/[\s,]+/', Request::str('same_as', 2000))), fn($u) => str_starts_with($u, 'https://'))));
+        Session::flash('success', 'Saved. Verification tags are now on every page.');
+    } elseif ($a === 'ping') {
+        $res = App\Seo::indexNow(App\Seo::allUrls());
+        Audit::log('seo.indexnow', 'system', null, ['by' => $me()['email']] + $res);
+        Session::flash($res['ok'] ? 'success' : 'error', $res['ok'] ? "Sent {$res['count']} pages to Bing, Yandex, Seznam and Naver through IndexNow." : ($res['note'] ?? 'IndexNow did not accept the request (code ' . ($res['code'] ?? 0) . '). It works once the site runs on its production domain.'));
+    }
+    View::redirect('/admin/search');
+}, $P('content.write'));

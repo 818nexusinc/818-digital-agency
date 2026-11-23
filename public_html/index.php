@@ -24,6 +24,14 @@ if ($https) header('Strict-Transport-Security: max-age=31536000; includeSubDomai
 
 $path = Request::path();
 
+// One address for search engines: when a custom domain is set, *.vercel.app visitors are sent there (cron, webhooks and API calls excepted).
+$canonHost = parse_url((string)Env::get('APP_URL', ''), PHP_URL_HOST);
+$reqHost = strtolower((string)($_SERVER['HTTP_X_FORWARDED_HOST'] ?? $_SERVER['HTTP_HOST'] ?? ''));
+if ($canonHost && $reqHost && str_ends_with($reqHost, '.vercel.app') && !str_ends_with($canonHost, '.vercel.app') && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET'
+    && !preg_match('#^/(cron|webhooks|api/|setup)#', $path)) {
+    header('Location: https://' . $canonHost . ($_SERVER['REQUEST_URI'] ?? '/'), true, 301); exit;
+}
+
 // Language switch: /any-page?lang=fr|en stores the choice for a year and returns to the same page.
 if (isset($_GET['lang']) && in_array($_GET['lang'], ['en', 'fr'], true)) {
     setcookie('lang', $_GET['lang'], ['expires' => time() + 31536000, 'path' => '/', 'secure' => $https, 'httponly' => false, 'samesite' => 'Lax']);

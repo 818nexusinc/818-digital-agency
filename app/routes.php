@@ -20,7 +20,7 @@ $r->get('/', function () {
     foreach (Catalog::CATEGORIES as $k => $n) if ($k !== 'addon') $cats[$k] = ['name' => $n, 'services' => Catalog::byCategory($k)];
     $reviews = Db::all('SELECT rating, body, display_name FROM reviews WHERE published = 1 AND verified = 1 AND consent_publish = 1 ORDER BY id DESC LIMIT 3');
     View::page('public/home', ['title' => 'Register & Launch Your Business in Canada', 'cats' => $cats, 'reviews' => $reviews,
-        'bundle' => Db::one("SELECT * FROM packages WHERE slug = 'launch_bundle' AND status = 'active'"), 'jsonld' => [Seo::organization()]]);
+        'bundle' => Db::one("SELECT * FROM packages WHERE slug = 'launch_bundle' AND status = 'active'"), 'jsonld' => [Seo::organization(), Seo::website()]]);
 });
 
 $r->get('/services', function () {
@@ -158,10 +158,9 @@ $r->post('/order/draft', fn() => View::json(App\FormDrafts::save(Request::json()
 /* SEO / machine-readable */
 $r->get('/sitemap.xml', function () { header('Content-Type: application/xml; charset=UTF-8'); echo Seo::sitemap(); });
 $r->get('/llms.txt', function () { header('Content-Type: text/plain; charset=UTF-8'); echo Seo::llms(); });
-$r->get('/robots.txt', function () {
-    header('Content-Type: text/plain; charset=UTF-8');
-    echo "User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /portal\nDisallow: /cart\nDisallow: /checkout\nDisallow: /api/\nDisallow: /classic/\nDisallow: /proposal/\n\nSitemap: " . url('/sitemap.xml') . "\n";
-});
+$r->get('/robots.txt', function () { header('Content-Type: text/plain; charset=UTF-8'); header('Cache-Control: public, max-age=3600'); echo Seo::robots(); });
+$r->get('/llms-full.txt', function () { header('Content-Type: text/plain; charset=UTF-8'); header('Cache-Control: public, max-age=3600'); echo Seo::llmsFull(); });
+$r->get('/{key}.txt', function ($p) { if (!hash_equals(Seo::indexNowKey(), (string)$p['key'])) throw new HttpError(404, 'Page not found.'); header('Content-Type: text/plain; charset=UTF-8'); echo Seo::indexNowKey(); });
 $r->get('/services.json', fn() => View::json(Seo::catalogJson()));
 $r->get('/content.json', fn() => View::json(['name' => Settings::get('company.name'), 'version' => APP_VERSION, 'catalog' => url('/services.json'), 'llms' => url('/llms.txt')]));
 

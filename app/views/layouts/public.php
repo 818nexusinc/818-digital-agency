@@ -11,12 +11,14 @@ $cartCount = count(Cart::lines());
 <title><?= e($fullTitle) ?></title>
 <meta name="description" content="<?= e(str_limit((string)$desc, 160)) ?>">
 <link rel="canonical" href="<?= e($canon) ?>">
-<?php if (!empty($noindex)): ?><meta name="robots" content="noindex,nofollow"><?php endif; ?>
 <meta property="og:type" content="website"><meta property="og:title" content="<?= e($fullTitle) ?>"><meta property="og:description" content="<?= e(str_limit((string)$desc, 200)) ?>"><meta property="og:url" content="<?= e($canon) ?>"><meta property="og:site_name" content="<?= e(Settings::get('company.name')) ?>">
 <meta name="twitter:card" content="summary"><meta name="theme-color" content="#ffffff">
-<?php if ($v = Integrations::secret('search_console', 'verification')): ?><meta name="google-site-verification" content="<?= e($v) ?>"><?php endif; ?>
+<?php if ($v = Integrations::secret('search_console', 'verification') ?: Settings::get('seo.google_verification')): ?><meta name="google-site-verification" content="<?= e($v) ?>"><?php endif; ?>
+<?php if ($v = Settings::get('seo.bing_verification')): ?><meta name="msvalidate.01" content="<?= e($v) ?>"><?php endif; ?>
+<link rel="alternate" hreflang="en-CA" href="<?= e($canon) ?>"><link rel="alternate" hreflang="fr-CA" href="<?= e($canon . (str_contains($canon, '?') ? '&' : '?') . 'lang=fr') ?>"><link rel="alternate" hreflang="x-default" href="<?= e($canon) ?>">
+<meta name="robots" content="<?= !empty($noindex) ? 'noindex,nofollow' : 'index,follow,max-snippet:-1,max-image-preview:large' ?>">
 <meta name="csrf" content="<?= e($csrf ?? '') ?>">
-<link rel="alternate" type="text/plain" href="/llms.txt" title="LLM guide"><link rel="alternate" type="application/json" href="/services.json" title="Service catalog">
+<link rel="alternate" type="text/plain" href="/llms.txt" title="LLM guide"><link rel="alternate" type="application/rss+xml" href="/blog/feed.xml" title="818 Digital Agency guides"><link rel="alternate" type="application/json" href="/services.json" title="Service catalog">
 <link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
 
 <link rel="preconnect" href="https://api.fontshare.com"><link rel="preconnect" href="https://cdn.fontshare.com" crossorigin><link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=sentient@1,2&amp;display=swap"><link rel="stylesheet" href="/assets/css/app.css?v=<?= APP_VERSION ?>"><link rel="stylesheet" href="/assets/css/site.css?v=<?= APP_VERSION ?>"><link rel="stylesheet" href="/assets/css/v8.css?v=<?= APP_VERSION ?>"><link rel="stylesheet" href="/assets/css/v9.css?v=<?= APP_VERSION ?>"><link rel="stylesheet" href="/assets/css/v10.css?v=<?= APP_VERSION ?>"><link rel="stylesheet" href="/assets/css/v11.css?v=<?= APP_VERSION ?>"><link rel="stylesheet" href="/assets/css/v12.css?v=<?= APP_VERSION ?>"><link rel="stylesheet" href="/assets/css/v13.css?v=<?= APP_VERSION ?>">

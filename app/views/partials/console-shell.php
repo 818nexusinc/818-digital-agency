@@ -3,7 +3,7 @@
    Expects: $area ('admin'|'portal'), $groups [group => [href => label | [label, count]]], $areaName, $home, $title, $path, $user, $content */
 include_once APP_ROOT . '/views/partials/icons.php';
 $ico = function (string $h): string {
-    foreach (['drafts' => 'text', 'blog' => 'edit', 'simulator' => 'bot', 'demo' => 'stack', 'approvals' => 'inbox', 'projects' => 'folder', 'filings' => 'certificate', 'tickets' => 'help', 'support' => 'help', 'leads' => 'search', 'customers' => 'users',
+    foreach (['admin/search' => 'globe', 'guide' => 'help', 'security' => 'shield', 'drafts' => 'text', 'blog' => 'edit', 'simulator' => 'bot', 'demo' => 'stack', 'approvals' => 'inbox', 'projects' => 'folder', 'filings' => 'certificate', 'tickets' => 'help', 'support' => 'help', 'leads' => 'search', 'customers' => 'users',
         'proposals' => 'text', 'orders' => 'cart', 'agents' => 'bot', 'tasks' => 'check', 'workflows' => 'network', 'kb' => 'stack', 'content' => 'edit', 'growth' => 'chart',
         'finance' => 'cash', 'catalog' => 'layout', 'integrations' => 'bolt', 'settings' => 'cog', 'audit' => 'shield', 'system' => 'refresh', 'classic' => 'clock',
         'documents' => 'certificate', 'assistant' => 'bot', 'account' => 'user', 'services' => 'layout', 'cart' => 'cart'] as $k => $i) if (str_contains($h, $k)) return $i;
@@ -15,8 +15,8 @@ $crumb = '';
 foreach ($groups as $g => $links) foreach ($links as $h => $l) if (($path ?? "") !== $home && (($path ?? '') === $h || ($h !== $home && str_starts_with((string)($path ?? ''), $h . '/')))) $crumb = $g;
 ?><!doctype html>
 <html lang="<?= lang() === 'fr' ? 'fr-CA' : 'en-CA' ?>"<?= lang() === 'fr' ? " data-i18n='" . e(js_dict()) . "'" : '' ?>><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title><?= e(t($title ?? $areaName)) ?> · <?= e(t($areaName)) ?></title><meta name="robots" content="noindex">
-<meta name="csrf" content="<?= e($csrf ?? '') ?>"><link rel="icon" href="/assets/img/favicon.svg"><link rel="preconnect" href="https://api.fontshare.com"><link rel="preconnect" href="https://cdn.fontshare.com" crossorigin>
-<link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=sentient@1,2&amp;display=swap"><link rel="stylesheet" href="/assets/css/app.css?v=<?= APP_VERSION ?>"><link rel="stylesheet" href="/assets/css/console5.css?v=<?= APP_VERSION ?>"></head>
+<meta name="csrf" content="<?= e($csrf ?? '') ?>"><link rel="icon" href="/assets/img/favicon.svg"><link rel="preload" href="/fonts/hanken-grotesk-latin-500-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/assets/css/app.css?v=<?= APP_VERSION ?>"><link rel="stylesheet" href="/assets/css/console5.css?v=<?= APP_VERSION ?>"><link rel="stylesheet" href="/assets/css/console6.css?v=<?= APP_VERSION ?>"></head>
 <body class="con con-<?= e($area) ?>"<?= ($path ?? '') === '/portal/assistant' ? ' data-chat-inline' : '' ?>>
 <a class="skip" href="#main"><?= e(t('Skip to content')) ?></a>
 <div class="shell">
