@@ -73,21 +73,30 @@ final class Db
         if ($name === '') return ['ok' => false, 'target' => '', 'error' => 'DB_NAME is not set.'];
         $target = "{$host}:{$port}/{$name}";
         if (in_array(strtolower($host), ['localhost', '127.0.0.1', '::1'], true)) return ['ok' => false, 'target' => $target, 'error' => 'DB_HOST is set to localhost (' . $host . '). That address only works for websites running on the database server itself.', 'hint' => 'In Vercel, edit DB_HOST to the remote hostname or IP shown in My20i → Remote MySQL Access (on a Cloud Server this is usually the server\'s public IP address), then redeploy.'];
-        $t0 = microtime(true);
-        try {
-            $pdo = new PDO("mysql:host={$host};port={$port};dbname={$name};charset=utf8mb4", Env::get('DB_USER'), Env::get('DB_PASS'), [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_TIMEOUT => 6]);
-            $ver = (string)$pdo->query('SELECT VERSION()')->fetchColumn();
-            $tables = (int)$pdo->query('SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE()')->fetchColumn();
-            return ['ok' => true, 'target' => $target, 'version' => $ver, 'tables' => $tables, 'ms' => (int)((microtime(true) - $t0) * 1000)];
-        } catch (\PDOException $e) {
-            $m = $e->getMessage(); $hint = '';
-            if (str_contains($m, 'refused')) $hint = 'The server is reachable but nothing accepts connections on that port: MySQL is not listening publicly, or a firewall blocks it. Enable Remote MySQL Access in My20i and check the port.';
-            elseif (str_contains($m, 'timed out') || str_contains($m, 'timeout')) $hint = 'No answer: a firewall is dropping the connection. Remote access must allow any IP (%).';
-            elseif (str_contains($m, 'Access denied')) $hint = 'The server answered but rejected the username/password, or the user is not allowed from remote hosts (add % in Remote MySQL Access).';
-            elseif (str_contains($m, 'getaddrinfo') || str_contains($m, 'Name or service')) $hint = 'The hostname does not exist. Copy it again from My20i.';
-            elseif (str_contains($m, 'Unknown database')) $hint = 'Connected, but the database name is wrong. Copy it exactly, including any prefix.';
-            return ['ok' => false, 'target' => $target, 'error' => preg_replace('/using password: \w+/', '', $m), 'hint' => $hint];
+        $dsn = "mysql:host={$host};port={$port};dbname={$name};charset=utf8mb4";
+        $ca = null; foreach (['/etc/ssl/certs/ca-certificates.crt', '/etc/pki/tls/certs/ca-bundle.crt', '/etc/ssl/cert.pem'] as $f) if (is_readable($f)) { $ca = $f; break; }
+        $base = [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_TIMEOUT => 8];
+        $tries = ['encrypted' => $base + [PDO::MYSQL_ATTR_SSL_CA => $ca ?? '', PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => false], 'unencrypted' => $base];
+        $errs = [];
+        foreach ($tries as $mode => $opts) {
+            $t0 = microtime(true);
+            try {
+                $pdo = new PDO($dsn, Env::get('DB_USER'), Env::get('DB_PASS'), $opts);
+                $ver = (string)$pdo->query('SELECT VERSION()')->fetchColumn();
+                $tables = (int)$pdo->query('SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE()')->fetchColumn();
+                $c = $pdo->query("SHOW SESSION STATUS LIKE 'Ssl_cipher'")->fetch(PDO::FETCH_ASSOC);
+                return ['ok' => true, 'target' => $target, 'version' => $ver, 'tables' => $tables, 'ms' => (int)((microtime(true) - $t0) * 1000), 'tls' => !empty($c['Value']) ? 'encrypted (' . $c['Value'] . ')' : 'unencrypted',
+                    'notes' => $errs ? implode(' ', array_map(fn($k, $v) => ucfirst($k) . " attempt: {$v}", array_keys($errs), $errs)) : ''];
+            } catch (\PDOException $e) { $errs[$mode] = preg_replace('/using password: \w+/', '', $e->getMessage()); }
         }
+        $m = implode(' | ', $errs); $hint = '';
+        if (str_contains($m, 'refused')) $hint = 'The server is reachable but nothing accepts connections on that port: MySQL is not listening publicly, or a firewall blocks it. Enable Remote MySQL Access in My20i and check the port.';
+        elseif (str_contains($m, 'timed out') || str_contains($m, 'timeout')) $hint = 'No answer: a firewall is dropping the connection. Remote access must allow any IP (%). Changes in My20i can take 30 minutes.';
+        elseif (str_contains($m, 'Access denied')) $hint = 'The server answered but rejected the username/password, or the user is not allowed from remote hosts (add % in Remote MySQL Access).';
+        elseif (str_contains($m, 'gone away') || str_contains($m, 'Lost connection')) $hint = 'The connection opens and is then closed during the handshake. Usually the access rule has not finished applying (up to 30 minutes), or the host only allows listed IPs at the proxy. If it persists after 30 minutes, ask 20i support to confirm remote access from any IP (%) works on port ' . $port . '.';
+        elseif (str_contains($m, 'getaddrinfo') || str_contains($m, 'Name or service')) $hint = 'The hostname does not exist. Copy it again from My20i.';
+        elseif (str_contains($m, 'Unknown database')) $hint = 'Connected, but the database name is wrong. Copy it exactly, including any prefix.';
+        return ['ok' => false, 'target' => $target, 'error' => implode(' ', array_map(fn($k, $v) => ucfirst($k) . ": {$v}.", array_keys($errs), $errs)), 'hint' => $hint];
     }
 
     /** Encryption of the database connection: 'verified', 'encrypted', 'none' or '' (not MySQL). */

@@ -34,7 +34,7 @@ final class SecurityCheck
         if (Env::bool('DB_DISABLED')) {
             $pr = Db::probeMysql();
             $add('Configuration', 'Parked database connection test', $pr['ok'] ? 'pass' : 'fail',
-                $pr['ok'] ? "Connected to {$pr['target']} (MySQL {$pr['version']}, {$pr['tables']} tables, {$pr['ms']} ms). Ready to switch on." : "Could not connect to {$pr['target']}: {$pr['error']}",
+                $pr['ok'] ? "Connected to {$pr['target']} (MySQL {$pr['version']}, {$pr['tables']} tables, {$pr['ms']} ms, {$pr['tls']}). Ready to switch on. {$pr['notes']}" : "Could not connect to {$pr['target']}: {$pr['error']}",
                 $pr['ok'] ? '' : ($pr['hint'] ?? 'Check the database settings in Vercel.'), 'high');
         }
         $url = url('/');
