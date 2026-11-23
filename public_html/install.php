@@ -70,8 +70,8 @@ h1{font-size:22px;margin:0 0 6px}p{color:#5f6b85}label{display:block;font-size:1
   <?php if ($err): ?><div class="err"><?= $h($err) ?></div><?php endif; ?>
   <form method="post" autocomplete="off">
     <div class="row"><div><label for="h">Database host</label><input id="h" name="db_host" value="<?= $h($_POST['db_host'] ?? 'localhost') ?>"></div><div><label for="p">Port</label><input id="p" name="db_port" value="<?= $h($_POST['db_port'] ?? '3306') ?>"></div></div>
-    <label for="n">Database name</label><input id="n" name="db_name" value="<?= $h($_POST['db_name'] ?? $val('DB_NAME')) ?>" required>
-    <label for="u">Database user</label><input id="u" name="db_user" value="<?= $h($_POST['db_user'] ?? $val('DB_USER')) ?>" required>
+    <label for="n">Database name</label><input id="n" name="db_name" value="<?= $h($_POST['db_name'] ?? ($val('DB_NAME') ?: 'nx818db-353030305d72')) ?>" required>
+    <label for="u">Database user</label><input id="u" name="db_user" value="<?= $h($_POST['db_user'] ?? ($val('DB_USER') ?: 'nx818db-353030305d72')) ?>" required>
     <label for="pw">Database password</label><input id="pw" name="db_pass" type="password" required>
     <label for="url">Site address</label><input id="url" name="app_url" value="<?= $h($_POST['app_url'] ?? ('https://' . ($_SERVER['HTTP_HOST'] ?? '818digitalagency.com'))) ?>" required>
     <label for="e">Owner email</label><input id="e" name="owner_email" type="email" value="<?= $h($_POST['owner_email'] ?? 'hello@818nexus.ca') ?>" required>
