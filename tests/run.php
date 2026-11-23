@@ -371,6 +371,47 @@ t('backup is written and verified', function () { $f = Backup::run(); ok(is_file
 t('full cron cycle runs without errors', function () { $s = Cron::run(10); ok(!isset($s['error']), $s['error'] ?? ''); });
 
 
+
+echo "\nService forms (original site flows)\n";
+t('form details pre-fill the filing; customer still has to sign', function () {
+    $details = ['entity' => ['proposed_name' => 'Riverview Bookkeeping', 'activity' => 'Bookkeeping services for small businesses', 'start_date' => '2027-01-15'],
+        'owners' => [['first' => 'Jane', 'last' => 'Smith', 'email' => 'jane.form@example.com', 'resident_canadian' => '1']],
+        'registered_office' => ['street' => '12 Main St', 'city' => 'Riverview', 'postal' => 'E1B 3S3']];
+    $o = paidOrder('jane.form@example.com', [['slug' => 'sole_prop', 'opts' => ['province' => 'NB', 'details' => $details], 'qty' => 1]]);
+    $f = Db::one('SELECT f.* FROM filings f JOIN projects p ON p.id = f.project_id WHERE p.order_id = ?', [$o['id']]);
+    ok($f !== null, 'filing opened');
+    $d = jdec($f['data']);
+    eq($d['entity']['proposed_name'], 'Riverview Bookkeeping');
+    eq($d['registered_office']['province'] ?? null, 'NB');
+    eq($d['contact_email'], 'jane.form@example.com');
+    ok(in_array($f['status'], ['awaiting_authorization', 'needs_changes'], true), 'never auto-authorized: ' . $f['status']);
+    ok(empty($f['auth_hash']), 'no signature without the customer');
+});
+t('form endpoint rejects services that are quote-only or not orderable, and requires the agreement', function () {
+    throws(fn() => App\Wizard::add(['slug' => 'web_app', 'agree' => true]));
+    throws(fn() => App\Wizard::add(['slug' => 'sole_prop', 'province' => 'NB']));
+});
+t('add-ons are limited to the ones allowed for that service', function () {
+    Cart::clear();
+    App\Wizard::add(['slug' => 'corp_named', 'province' => 'NB', 'agree' => true, 'addons' => ['addon_seal', 'website_scale', 'addon_minute_book']]);
+    eq(array_column(Cart::lines(), 'slug'), ['corp_named', 'addon_seal', 'addon_minute_book']);
+    Cart::clear();
+});
+t('bundle discount tier is decided by the server from the service count', function () {
+    Cart::clear();
+    $r = App\Wizard::bundle(['agree' => true, 'province' => 'NB', 'reg_type' => 'numbered', 'tld' => 'ca', 'services' => ['registration' => 1, 'domain' => 1, 'email' => 1, 'bundle_pct' => 99], 'bundle_pct' => 99]);
+    eq($r['discount_pct'], 10);
+    $t = Cart::totals();
+    $list = Catalog::price(Catalog::find('corp_numbered'), ['province' => 'NB'])['unit_cents'];
+    eq($t['lines'][0]['unit_cents'], $list - intdiv($list * 10, 100), 'registration discounted 10%');
+    Cart::clear();
+});
+t('form details are sanitised: no passwords, bounded size', function () {
+    $c = App\Wizard::clean(['mailboxes' => [['prefix' => 'info', 'password' => 'hunter2']], 'card_number' => '4242']);
+    ok(!isset($c['mailboxes'][0]['password']) && !isset($c['card_number']));
+    throws(fn() => App\Wizard::add(['slug' => 'nuans', 'agree' => true, 'details' => ['x' => array_fill(0, 40, str_repeat('a', 2000))]]));
+});
+
 echo "\nGovernment filing agent\n";
 function filingOrder(string $email, string $slug, string $prov): array {
     $o = paidOrder($email, [['slug' => $slug, 'opts' => ['province' => $prov], 'qty' => 1]]);

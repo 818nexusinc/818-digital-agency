@@ -10,16 +10,16 @@ $admin = fn(string $perm = 'dashboard.view') => ['perm' => $perm];
 /* ─────────────────────────── Public site ─────────────────────────── */
 
 $r->get('/', function () {
-    $legacy = ['sole_prop' => '/services/sole_prop', 'partnership' => '/services/partnership', 'corporation' => '/services/category/registration', 'cooperative' => '/services/cooperative',
-        'nuans' => '/services/nuans', 'domain' => '/services/category/domains', 'email' => '/services/category/email', 'website' => '/services/category/websites',
-        'maintenance' => '/services/maintenance_care', 'web_app' => '/services/category/apps', 'webapp' => '/services/category/apps', 'bundle' => '/services#bundle', 'manage_biz' => '/services/category/management',
-        'opportunities' => '/funding', 'blog' => '/blog', 'about' => '/about', 'contact' => '/contact', 'privacy' => '/legal/privacy', 'terms' => '/legal/terms',
-        'refund' => '/legal/refunds', 'cookies' => '/legal/cookies', 'cart' => '/cart', 'auth' => '/login', 'dashboard' => '/portal', 'register' => '/services/category/registration'];
+    $legacy = ['sole_prop' => '/register/sole-proprietorship', 'partnership' => '/register/partnership', 'corporation' => '/register/corporation', 'cooperative' => '/register/cooperative',
+        'nuans' => '/register/nuans', 'domain' => '/domain', 'email' => '/email', 'website' => '/website', 'maintenance' => '/website/maintenance', 'web_app' => '/web-application', 'webapp' => '/web-application',
+        'bundle' => '/bundle', 'manage_biz' => '/manage-business', 'annual' => '/manage-business/annual-returns', 'bm_changes' => '/manage-business/corporate-changes', 'bm_docs' => '/manage-business/corporate-documents',
+        'bm_names' => '/manage-business/name-services', 'opportunities' => '/opportunities', 'blog' => '/blog', 'about' => '/about', 'contact' => '/contact', 'privacy' => '/legal/privacy', 'terms' => '/legal/terms',
+        'refund' => '/legal/refunds', 'cookies' => '/legal/cookies', 'cart' => '/cart', 'auth' => '/login', 'login' => '/login', 'signup' => '/signup', 'dashboard' => '/portal', 'register' => '/register'];
     if (isset($_GET['view'])) { $v = preg_replace('/[^a-z_]/', '', (string)$_GET['view']); header('Location: ' . ($legacy[$v] ?? '/'), true, 301); exit; }
     $cats = [];
     foreach (Catalog::CATEGORIES as $k => $n) if ($k !== 'addon') $cats[$k] = ['name' => $n, 'services' => Catalog::byCategory($k)];
     $reviews = Db::all('SELECT rating, body, display_name FROM reviews WHERE published = 1 AND verified = 1 AND consent_publish = 1 ORDER BY id DESC LIMIT 3');
-    View::page('public/home', ['title' => 'AI-powered business launch & digital services in Canada', 'cats' => $cats, 'reviews' => $reviews,
+    View::page('public/home', ['title' => 'Canadian business registration & digital services', 'cats' => $cats, 'reviews' => $reviews,
         'bundle' => Db::one("SELECT * FROM packages WHERE slug = 'launch_bundle' AND status = 'active'"), 'jsonld' => [Seo::organization()]]);
 });
 
@@ -97,6 +97,49 @@ $r->get('/unsubscribe', function () {
     }
     View::page('public/message', ['title' => $ok ? 'You are unsubscribed' : 'Link not valid', 'message' => $ok ? 'You will no longer receive marketing emails from us. Transactional emails about your orders will still be sent.' : 'This unsubscribe link is invalid or incomplete.']);
 });
+
+
+/* Original 818digitalagency.com structure: same paths, same page arrangement, same forms. */
+$svcPage = function (string $view, string $title, string $desc, array $extra = []) {
+    return function () use ($view, $title, $desc, $extra) {
+        View::page('public/svc/' . $view, ['title' => $title, 'description' => $desc, 'path' => Request::path()] + $extra);
+    };
+};
+$r->get('/register', $svcPage('register', 'Register your business in Canada', 'Register a sole proprietorship, partnership, corporation or co-operative in any province or federally. Government fees included.'));
+$r->get('/register/nuans', $svcPage('nuans', 'NUANS name search', 'Order an official NUANS name search report, required before incorporating a named corporation in most jurisdictions.'));
+$r->get('/register/sole-proprietorship', $svcPage('sole_prop', 'Sole proprietorship registration', 'Register a sole proprietorship in your province online. Government filing fee included.'));
+$r->get('/register/partnership', $svcPage('partnership', 'Partnership registration', 'Register a general or limited partnership online. Government filing fee included.'));
+$r->get('/register/corporation', $svcPage('corporation', 'Incorporate a Canadian corporation', 'Incorporate provincially or federally (CBCA), named or numbered. Government filing fee included.'));
+$r->get('/register/cooperative', $svcPage('cooperative', 'Co-operative registration', 'Register a worker, consumer, producer or multi-stakeholder co-operative.'));
+$r->get('/manage-business', $svcPage('manage', 'Manage your registered business', 'Annual returns, corporate changes, official documents and business name services.'));
+foreach (['annual-returns' => ['bm_annual', 'Annual return services'], 'corporate-changes' => ['bm_changes', 'Corporate changes'], 'corporate-documents' => ['bm_documents', 'Corporate documents'], 'name-services' => ['biz_name', 'Business name management']] as $seg => [$mslug, $mtitle]) {
+    $r->get('/manage-business/' . $seg, $svcPage('manage_form', $mtitle, $mtitle . ' filed with the registry on your behalf.', ['mkind' => $seg]));
+}
+$r->get('/domain', $svcPage('domain', 'Register your domain', 'Search and register .ca and .com domains with WHOIS privacy and automatic DNS.'));
+$r->get('/email', $svcPage('email', 'Business email hosting', 'Professional mailboxes on your own domain.'));
+$r->get('/website', $svcPage('website', 'Business website design & hosting', 'Custom, mobile-first websites built, hosted and maintained for Canadian businesses.'));
+$r->get('/website/maintenance', $svcPage('maintenance', 'Website maintenance plans', 'Backups, updates, security and content edits for your existing website.'));
+$r->get('/web-application', $svcPage('web_app', 'Custom web application development', 'Booking systems, portals, dashboards and custom business tools.'));
+$r->get('/bundle', $svcPage('bundle', 'Bundle & save', 'Combine registration, management, domain, email, website and maintenance and save up to 15%.'));
+$r->get('/opportunities', fn() => View::page('public/funding', ['title' => 'Business opportunities across Canada', 'path' => '/opportunities']));
+$r->get('/signup', fn() => View::page('public/register', ['title' => 'Create your account', 'noindex' => true]));
+
+$r->post('/subscribe', function () {
+    if (Request::str('website') !== '') throw new UserError('Submission rejected.');
+    if (!RateLimit::hit('subscribe:' . client_ip(), 5, 3600)) throw new UserError('Too many sign-ups from this network. Try again later.');
+    $email = strtolower(Request::str('email', 190));
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) throw new UserError('Enter a valid email address.');
+    $c = Crm::upsertCustomer(['email' => $email], 'newsletter');
+    Db::update('customers', ['consent_marketing' => 1, 'consent_at' => now()], 'id = ?', [$c['id']]); // express consent (CASL): they asked to be notified
+    Db::run('DELETE FROM email_suppressions WHERE email = ? AND reason = ?', [$email, 'unsubscribed']);
+    Audit::log('newsletter.subscribe', 'customer', (string)$c['id']);
+    View::redirect('/?subscribed=1#news');
+});
+
+/* Form endpoints (JSON, CSRF-checked like every POST) */
+$r->post('/order/add', fn() => View::json(App\Wizard::add(Request::json())));
+$r->post('/order/bundle', fn() => View::json(App\Wizard::bundle(Request::json())));
+$r->post('/order/quote', fn() => View::json(App\Wizard::quote(Request::json())));
 
 /* SEO / machine-readable */
 $r->get('/sitemap.xml', function () { header('Content-Type: application/xml; charset=UTF-8'); echo Seo::sitemap(); });
@@ -204,14 +247,15 @@ $r->post('/login/mfa', function () {
     if (!Auth::verifyMfa(Request::str('code', 10))) throw new UserError('That code did not match. Try the latest code from your authenticator app.');
     View::redirect('/admin');
 });
-$r->get('/register', fn() => View::page('public/register', ['title' => 'Create your account', 'noindex' => true]));
-$r->post('/register', function () {
+$signup = function () {
     if (!RateLimit::hit('register:' . client_ip(), 5, 3600)) throw new UserError('Too many sign-ups from this network. Try again later.');
     $u = Auth::register(Request::str('name', 190), Request::str('email', 190), (string)Request::input('password', ''), ['phone' => Request::str('phone', 40), 'business_name' => Request::str('business_name', 190), 'consent_marketing' => (bool)Request::input('consent_marketing')]);
     Auth::loginAs((int)$u['id']);
     Session::regenerate();
     View::redirect('/portal');
-});
+};
+$r->post('/signup', $signup);
+$r->post('/register', $signup);
 $r->post('/logout', function () { Auth::logout(); View::redirect('/'); });
 $r->get('/forgot', fn() => View::page('public/forgot', ['title' => 'Reset password', 'noindex' => true]));
 $r->post('/forgot', function () {

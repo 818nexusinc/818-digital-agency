@@ -31,7 +31,7 @@ $cartCount = count(Cart::lines());
       <a class="util-link" href="/how-it-works">How it works</a>
       <a class="cart-pill" href="/cart" aria-label="Cart (<?= $cartCount ?> items)"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6h15l-1.5 9h-12z"/><path d="M6 6 5 3H2"/><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/></svg><?php if ($cartCount): ?><span class="n"><?= $cartCount ?></span><?php endif; ?></a>
       <?php if (!empty($user)): ?><a class="btn btn-primary btn-sm" href="<?= App\Auth::isStaff($user) ? '/admin' : '/portal' ?>"><?= App\Auth::isStaff($user) ? 'Control Tower' : 'My portal' ?></a>
-      <?php else: ?><a class="btn btn-ghost btn-sm" href="/login">Log in</a><a class="btn btn-primary btn-sm" href="/register">Create account</a><?php endif; ?>
+      <?php else: ?><a class="btn btn-ghost btn-sm" href="/login">Log in</a><a class="btn btn-primary btn-sm" href="/signup">Create account</a><?php endif; ?>
       <button class="menu-btn" data-toggle="site-navbar" aria-expanded="false" aria-controls="site-navbar" aria-label="Menu"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg><span>Menu</span></button>
     </div>
   </div></div>
@@ -54,6 +54,6 @@ $cartCount = count(Cart::lines());
 </div></footer>
 <?php include APP_ROOT . '/views/partials/chat.php'; ?>
 <div class="cookie" id="cookie" hidden><b>Cookies</b><p class="small" style="margin:6px 0 10px">We use one essential cookie to keep you signed in and remember your cart. No advertising trackers. <a href="/legal/cookies">Details</a></p><button class="btn btn-dark btn-sm" data-consent="essential">OK</button></div>
-<script src="/assets/js/app.js?v=<?= APP_VERSION ?>" nonce="<?= e($nonce ?? '') ?>" defer></script>
+<script src="/assets/js/app.js?v=<?= APP_VERSION ?>" nonce="<?= e($nonce ?? '') ?>" defer></script><script src="/assets/js/wizard.js?v=<?= APP_VERSION ?>" nonce="<?= e($nonce ?? '') ?>" defer></script>
 </body>
 </html>

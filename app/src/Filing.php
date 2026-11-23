@@ -57,9 +57,19 @@ final class Filings
         $jur = strtoupper((string)(jdec($item['options'] ?? '{}')['province'] ?? 'NB'));
         if (!isset(self::JURISDICTIONS[$jur])) $jur = 'NB';
         $data = ['entity' => ['name_type' => $project['service_slug'] === 'corp_numbered' ? 'numbered' : 'named']];
+        $form = jdec($item['options'] ?? '{}')['details'] ?? null;
+        $status = 'awaiting_details'; $validation = [];
+        if (is_array($form) && $form) {
+            $form['contact_email'] = $form['contact_email'] ?? ($form['owners'][0]['email'] ?? $form['directors'][0]['email'] ?? $form['applicant']['email'] ?? '');
+            if ($jur !== 'FED' && is_array($form['registered_office'] ?? null) && empty($form['registered_office']['province'])) $form['registered_office']['province'] = $jur;
+            // Details typed into the order form become the filing draft; the customer still reviews and signs before anything is filed.
+            $data = self::normalize($form + ['entity' => []], ['data' => jenc($data)]);
+            $validation = self::validate($jur, $type, $data);
+            $status = empty($validation['errors']) ? 'awaiting_authorization' : 'needs_changes';
+        }
         $id = Db::insert('filings', ['number' => refno('FIL'), 'project_id' => $project['id'], 'customer_id' => $project['customer_id'], 'jurisdiction' => $jur,
-            'filing_type' => $type, 'status' => 'awaiting_details', 'data' => jenc($data), 'validation' => '{}', 'created_at' => now(), 'updated_at' => now()]);
-        self::event($id, 'opened', self::TYPE_LABELS[$type] . ' — ' . self::JURISDICTIONS[$jur][0], 'system');
+            'filing_type' => $type, 'status' => $status, 'data' => jenc($data), 'validation' => jenc($validation ?: new \stdClass()), 'created_at' => now(), 'updated_at' => now()]);
+        self::event($id, 'opened', self::TYPE_LABELS[$type] . ' — ' . self::JURISDICTIONS[$jur][0] . ($form ? ' (details from the order form)' : ''), 'system');
         return Db::one('SELECT * FROM filings WHERE id = ?', [$id]);
     }
 

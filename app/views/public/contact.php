@@ -1,12 +1,28 @@
-<section class="section tight"><div class="wrap grid g2" style="align-items:start">
-  <div><span class="eyebrow">Contact</span><h1 style="margin-top:8px">Talk to the team</h1><p class="lead">Send us a message and a person replies within one business day. For instant answers, use the assistant.</p>
-    <p><a href="mailto:<?= e(App\Settings::get('company.email')) ?>"><?= e(App\Settings::get('company.email')) ?></a><br><?= e(App\Settings::get('company.city')) ?></p>
-    <button class="btn btn-ghost" type="button" data-chat="">Chat with the assistant</button></div>
-  <form class="card" method="post" action="/contact"><?= App\Csrf::field() ?>
+<?php
+use App\Settings;
+include_once APP_ROOT . '/views/partials/icons.php';
+$hero = ['tone' => 'sky', 'icon' => 'mail', 'pills' => ['Contact us'], 'title' => 'Contact Us', 'sub' => 'We’re here to help. Reach out with any question about our services.'];
+include APP_ROOT . '/views/partials/svc/hero.php';
+?>
+<section class="sec" style="padding-top:36px"><div class="wrap contact-grid">
+  <div class="side-card"><h3 style="margin:0 0 16px">Our contact information</h3>
+    <div class="ci">
+      <div><span class="mc-ic tone-blue"><?= nx_icon('building') ?></span><span><small>Address</small><b><?= e(Settings::get('company.city')) ?></b></span></div>
+      <div><span class="mc-ic tone-teal"><?= nx_icon('mail') ?></span><span><small>Email</small><b><a href="mailto:<?= e(Settings::get('company.email')) ?>"><?= e(Settings::get('company.email')) ?></a></b></span></div>
+      <div><span class="mc-ic tone-violet"><?= nx_icon('calendar') ?></span><span><small>Office hours</small><b>Monday to Friday, 9 AM to 5 PM Atlantic</b></span></div>
+    </div>
+    <p class="note-box" style="margin-top:18px"><b>Response time:</b> a person replies within one business day. For instant answers, use the assistant.</p>
+    <button class="btn btn-ghost btn-sm" type="button" data-chat="">Chat with the assistant</button>
+  </div>
+  <form class="side-card" method="post" action="/contact"><?= App\Csrf::field() ?>
     <div class="hp"><label>Website <input name="website" tabindex="-1" autocomplete="off"></label></div>
-    <div class="grid g2"><div class="field"><label for="n">Name</label><input id="n" name="name" type="text" required autocomplete="name"></div><div class="field"><label for="em">Email</label><input id="em" name="email" type="email" required autocomplete="email"></div></div>
-    <div class="grid g2"><div class="field"><label for="ph">Phone (optional)</label><input id="ph" name="phone" type="tel" autocomplete="tel"></div><div class="field"><label for="bn">Business (optional)</label><input id="bn" name="business_name" type="text"></div></div>
-    <div class="field"><label for="msg">How can we help?</label><textarea id="msg" name="message" required></textarea></div>
-    <label class="check"><input type="checkbox" name="consent_marketing" value="1"> Send me occasional tips and offers (unsubscribe any time)</label>
-    <button class="btn btn-primary" style="margin-top:14px">Send message</button></form>
+    <div class="grid2">
+      <div class="fld"><label for="n">Full name <span class="req">*</span></label><input id="n" name="name" type="text" required autocomplete="name"></div>
+      <div class="fld"><label for="em">Email address <span class="req">*</span></label><input id="em" name="email" type="email" required autocomplete="email" placeholder="name@company.ca"></div>
+      <div class="fld"><label for="ph">Phone</label><input id="ph" name="phone" type="tel" autocomplete="tel"></div>
+      <div class="fld"><label for="sv">Service of interest</label><select id="sv" name="services[]"><option value="">Select a service…</option><option value="registration">Business registration</option><option value="management">Business management</option><option value="domains">Domain</option><option value="email">Business email</option><option value="websites">Website</option><option value="apps">Web application</option><option value="other">Something else</option></select></div>
+      <div class="fld wide"><label for="msg">Message <span class="req">*</span></label><textarea id="msg" name="message" required rows="5"></textarea></div>
+    </div>
+    <label class="ck" style="margin-top:14px"><input type="checkbox" name="consent_marketing" value="1"><span><small>Send me occasional tips and offers (unsubscribe anytime)</small></span></label>
+    <button class="btn btn-primary" style="margin-top:14px;width:100%">Send message</button></form>
 </div></section>

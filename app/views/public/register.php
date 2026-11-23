@@ -1,5 +1,6 @@
-<section class="section"><div class="wrap" style="max-width:480px"><form class="card" method="post" action="/register"><?= App\Csrf::field() ?>
-  <h1 style="font-size:1.6rem">Create your account</h1>
+<?php $hero = ['tone' => 'green', 'pills' => ['Create account'], 'title' => 'Create account', 'sub' => 'Your business launch starts here.']; include APP_ROOT . '/views/partials/svc/hero.php'; ?>
+<section class="section"><div class="wrap" style="max-width:480px"><form class="card" method="post" action="/signup"><?= App\Csrf::field() ?>
+  <h2 style="font-size:1.3rem">Create your account</h2>
   <div class="field"><label for="n">Full name</label><input id="n" name="name" type="text" required autocomplete="name"></div>
   <div class="field"><label for="em">Email</label><input id="em" name="email" type="email" required autocomplete="email"></div>
   <div class="field"><label for="pw">Password</label><input id="pw" name="password" type="password" required minlength="10" autocomplete="new-password"><div class="hint">At least 10 characters with letters and numbers.</div></div>

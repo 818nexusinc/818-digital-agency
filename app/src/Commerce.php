@@ -124,7 +124,7 @@ final class Cart
 
     public static function setLines(array $lines): void { Session::start(); $_SESSION['cart'] = array_values($lines); }
 
-    public static function add(string $slug, array $opts = [], int $qty = 1, ?string $package = null): void
+    public static function add(string $slug, array $opts = [], int $qty = 1, ?string $package = null, ?array $details = null, int $bundlePct = 0): void
     {
         $s = Catalog::find($slug) ?? throw new UserError('That service is not available.');
         $clean = [];
@@ -132,7 +132,10 @@ final class Cart
         if (Catalog::price($s, $clean) === null) throw new UserError("{$s['name']} is priced by quote. Request a quote instead and we'll send a proposal.");
         $lines = self::lines();
         if (count($lines) >= 25) throw new UserError('Your cart is full.');
-        $lines[] = ['slug' => $slug, 'opts' => $clean, 'qty' => max(1, min(20, $qty)), 'package' => $package];
+        if ($details) $clean['details'] = $details;
+        $line = ['slug' => $slug, 'opts' => $clean, 'qty' => max(1, min(20, $qty)), 'package' => $package];
+        if ($bundlePct > 0 && $bundlePct <= 30) $line['bundle_pct'] = $bundlePct; // set only by Wizard::bundle(), never from input
+        $lines[] = $line;
         self::setLines($lines);
     }
 
@@ -180,6 +183,8 @@ final class Cart
             if (!empty($l['package'])) {
                 $pct = (int)Db::val('SELECT discount_pct FROM packages WHERE slug = ?', [$l['package']]);
                 $d = intdiv($unit * $pct, 100); $unit -= $d; $disc += $d * $qty;
+            } elseif (!empty($l['bundle_pct'])) {
+                $d = intdiv($unit * min(30, (int)$l['bundle_pct']), 100); $unit -= $d; $disc += $d * $qty;
             }
             if ($coupon && (in_array('all', $coupon['applies_to'], true) || in_array($s['category'], $coupon['applies_to'], true) || in_array($s['slug'], $coupon['applies_to'], true))) {
                 if ($coupon['type'] === 'percent') { $d = intdiv($unit * (int)$coupon['value_amount'], 100); $unit -= $d; $disc += $d * $qty; }

@@ -1,107 +1,92 @@
 <?php
 use App\{Catalog, Filings, Csrf};
-$named = Catalog::find('corp_named');
-$prices = array_map(fn($c) => $c === null ? null : money($c), $named['province_prices'] ?? []);
-$pricesN = array_map(fn($c) => $c === null ? null : money($c), Catalog::find('corp_numbered')['province_prices'] ?? []);
-$acts = ['FED' => ['Corporations Canada', 'Canada Business Corporations Act'], 'AB' => ['Province of Alberta', 'Business Corporations Act (Alberta)'], 'BC' => ['Province of British Columbia', 'Business Corporations Act (British Columbia)'],
-  'MB' => ['Province of Manitoba', 'The Corporations Act (Manitoba)'], 'NB' => ['Province of New Brunswick', 'Business Corporations Act (New Brunswick)'], 'NL' => ['Province of Newfoundland and Labrador', 'Corporations Act (Newfoundland and Labrador)'],
-  'NS' => ['Province of Nova Scotia', 'Companies Act (Nova Scotia)'], 'ON' => ['Province of Ontario', 'Business Corporations Act (Ontario)'], 'PE' => ['Province of Prince Edward Island', 'Business Corporations Act (Prince Edward Island)'],
-  'QC' => ['Province of Québec', 'Business Corporations Act (Québec)'], 'SK' => ['Province of Saskatchewan', 'The Business Corporations Act, 2021 (Saskatchewan)']];
-$from = function (array $svcs) { $pp = array_filter($svcs, fn($s) => $s['pricing_model'] === 'per_province'); if ($pp) $svcs = $pp; $p = array_filter(array_map([Catalog::class, 'fromPrice'], $svcs), fn($x) => $x !== null); return $p ? min($p) : null; };
-// One photo per category; the first tile is the large one.
-$photos = ['registration' => ['owner-open', 'A shop owner holding an open sign'], 'management' => ['signing', 'A director signing company documents'],
-  'websites' => ['laptop', 'A laptop showing a website'], 'domains' => ['welcome', 'A welcome sign on a shop door'], 'email' => ['desk-poster', 'A business owner working at a laptop'],
-  'apps' => ['developer', 'A developer working on a laptop'], 'growth' => ['baker', 'A baker presenting fresh pastries']];
-$steps = [['You tell us', 'A short guided form, shaped to your registry.'], ['We check it', 'Names, legal endings, directors and addresses are checked automatically.'],
-  ['You sign once', 'One e-signature locks the exact details. Any change needs a new one.'], ['Our agent files', 'By API where the registry has one, through the official portal everywhere else.'], ['You\'re on the record', 'Corporation number and documents land in your portal.']];
+include_once APP_ROOT . '/views/partials/icons.php';
+$fp = function (string $slug) { $s = Catalog::find($slug); return $s ? Catalog::fromPrice($s) : null; };
+$regFrom = min(array_filter([$fp('sole_prop'), $fp('partnership'), $fp('corp_numbered')]));
+$svc6 = [
+  ['/register', 'building', 'blue', 'One-time', 'From ' . money($regFrom), 'Register Business', 'Corporation, partnership or sole proprietorship in any province', 'Guided forms and the government filing. We prepare the paperwork and file it once you have signed.', 'Start now'],
+  ['/manage-business', 'calendar', 'violet', 'One-time', 'From ' . money($fp('bm_documents')), 'Manage Business', 'Annual returns, changes, documents', 'Keep your registered business in good standing: annual returns, corporate changes, document orders and name services.', 'Manage business'],
+  ['/domain', 'globe', 'teal', 'Per year', 'From ' . money($fp('domain_register')) . '/yr', 'Domain Name', 'Register .ca, .com and more', 'Search and register your domain. DNS is set up for the email and website you order with us.', 'Register domain'],
+  ['/email', 'mail', 'cyan', 'Subscription', 'From ' . money($fp('email_starter')) . '/mo', 'Business Email', 'Mailboxes on your domain', 'Professional business email on your own domain, set up for you after payment.', 'Start now'],
+  ['/website', 'layout', 'green', 'Subscription', 'From ' . money($fp('website_launch')) . '/mo', 'Website Design', 'Designed, hosted and maintained', 'A monthly website subscription: we build it, host it and keep it updated so you can run your business.', 'Choose plan'],
+  ['/bundle', 'stack', 'amber', 'Bundle', 'Save up to 15%', 'Bundle & Save', 'Combine services, one dashboard', 'Registration, management, domain, email, website and maintenance together, with a discount that grows as you add services.', 'Get the bundle'],
+];
+$steps = [['edit', 'violet', 'Submit your application', 'Complete a short guided form with your business details.', 'Each form checks names, addresses and required details as you go, so nothing is missed.'],
+  ['search', 'teal', 'We review and prepare', 'We check everything and prepare the filing for the right registry.', 'Our filing agent validates the details against your registry’s rules and flags anything that needs a change.'],
+  ['certificate', 'green', 'You sign, we file', 'You review and sign once; then it is submitted to the registry.', 'Nothing is filed until you have paid, the checks pass and you have signed. Any change after signing needs a new signature.'],
+  ['calendar', 'blue', 'You’re good to go', 'Your documents and next steps arrive in your portal.', 'Track every order in your portal, download documents anytime and get reminders before deadlines.']];
+$mark = ['y' => '✓ ', 'x' => '✗ ', 'w' => '▲ '];
 ?>
-<section class="hero-l"><div class="wrap">
-  <div>
-    <h1>Everything to launch your Canadian business</h1>
-    <p class="lead">Register your business in any province or federally, then secure a domain, set up email and launch your website, all in one place.</p>
-    <div class="hero-actions"><a class="btn btn-primary" href="#certificate">Start an incorporation</a><a class="btn btn-ghost" href="/services">See services and prices</a></div>
-    <ul class="hero-points"><li>Government filing fees included in every price</li><li>You review and sign once before anything is filed</li><li>Track every step in your own portal</li></ul>
-  </div>
-    <div class="cert-wrap" id="certificate">
-      <div class="cert" aria-label="Certificate preview">
-        <span class="preview">Preview</span>
-        <div class="cert-border"><div class="cert-inner">
-          <p class="issuer" data-cert="issuer">Province of New Brunswick</p>
-          <p class="title">Certificate of Incorporation</p>
-          <p class="certify">This is to certify that</p>
-          <p class="cname" data-cert="name">Your Company Inc.</p>
-          <p class="act">was incorporated under the <span data-cert="act">Business Corporations Act (New Brunswick)</span></p>
-          <div class="cert-foot"><div class="line">No. <span data-cert="number">assigned on filing</span></div>
-            <div class="seal" aria-hidden="true"><svg viewBox="0 0 120 120"><defs><path id="sealc" d="M60,60 m-44,0 a44,44 0 1,1 88,0 a44,44 0 1,1 -88,0"/></defs>
-              <circle cx="60" cy="60" r="57" fill="#eef2ff" stroke="#2f5bea" stroke-width="2"/><circle cx="60" cy="60" r="36" fill="none" stroke="#2f5bea" stroke-width="1" stroke-dasharray="2 3"/>
-              <text font-family="Hanken, sans-serif" font-size="9.2" font-weight="700" letter-spacing="2.4" fill="#2f5bea"><textPath href="#sealc">818 DIGITAL AGENCY · FILED · 818 DIGITAL AGENCY ·</textPath></text>
-              <g fill="none" stroke-width="3.2"><circle cx="45" cy="52" r="5.6" stroke="#0e2340"/><circle cx="45" cy="67" r="7" stroke="#0e2340"/><circle cx="75" cy="52" r="5.6" stroke="#2f5bea"/><circle cx="75" cy="67" r="7" stroke="#2f5bea"/><path d="M58 51 L61.5 47 V74" stroke="#7f98e8" stroke-linecap="round" stroke-linejoin="round"/></g></svg></div>
-            <div class="line" data-cert="date"><?= e(gmdate('F j, Y')) ?></div></div>
-        </div></div>
-      </div>
-      <form class="cert-controls" method="post" action="/cart/add" data-prices="<?= e(jenc($prices)) ?>" data-prices-numbered="<?= e(jenc($pricesN)) ?>" data-acts="<?= e(jenc($acts)) ?>"><?= Csrf::field() ?><input type="hidden" name="slug" value="corp_named" data-cert-slug>
-        <div><label for="cn">Business name</label><input id="cn" type="text" placeholder="Type a name" autocomplete="organization" maxlength="80"></div>
-        <div><label for="ce">Ending</label><select id="ce"><option>Inc.</option><option>Ltd.</option><option>Corp.</option><option>Limited</option><option>Numbered</option></select></div>
-        <div><label for="cp">Registry</label><select id="cp" name="province"><?php foreach (Catalog::PROVINCES as $c => $n): if (($named['province_prices'][$c] ?? null) === null) continue; ?><option value="<?= $c ?>"<?= $c === 'NB' ? ' selected' : '' ?>><?= e($n) ?></option><?php endforeach; ?></select></div>
-        <div class="full"><span><span class="price" data-cert="price"><?= e($prices['NB'] ?? '') ?></span> <span class="muted small">incl. government fee</span></span><button class="btn btn-primary">Start this incorporation</button></div>
-      </form>
-    </div>
+<section class="hero-c"><div class="wrap">
+  <span class="badge-pill">One-stop Canadian business platform</span>
+  <h1>Everything to launch <span>your business</span></h1>
+  <p class="lead">Register your company, secure your domain, set up email and launch your website, all in one place.</p>
+  <div class="hero-actions"><a class="btn btn-primary btn-lg" href="/register">Get started</a><a class="btn btn-ghost btn-lg" href="/bundle">Bundle &amp; save</a></div>
 </div></section>
-
-<section class="registries" aria-label="Registries"><div class="wrap"><p>We file with</p><ul><?php foreach (Filings::JURISDICTIONS as $j => $r): ?><li><?= e($r[0]) ?></li><?php endforeach; ?></ul></div></section>
+<section class="stats" aria-label="At a glance">
+  <div><span class="mc-ic tone-blue"><?= nx_icon('building') ?></span><b><?= count(Filings::JURISDICTIONS) ?></b><span>Registries we file with</span></div>
+  <div><span class="mc-ic tone-teal"><?= nx_icon('cash') ?></span><b>From <?= e(money($regFrom)) ?></b><span>Government fees included</span></div>
+  <div><span class="mc-ic tone-violet"><?= nx_icon('certificate') ?></span><b>1 signature</b><span>Before anything is filed</span></div>
+  <div><span class="mc-ic tone-amber"><?= nx_icon('globe') ?></span><b>10 + federal</b><span>Provinces served</span></div>
+</section>
+<div class="prov-strip" aria-label="Provinces"><ul><?php $pv = ['FED' => 'Federal (Canada-wide)'] + Catalog::PROVINCES; for ($k = 0; $k < 2; $k++) foreach ($pv as $c => $n): ?><li<?= $k ? ' aria-hidden="true"' : '' ?>><?= e($n) ?><small>✓ Available now</small></li><?php endforeach; ?></ul></div>
 
 <section class="sec"><div class="wrap">
-  <div class="sec-head"><h2>Our services</h2><p>Everything a new or growing business needs, with prices shown up front.</p></div>
-  <div class="svc-grid">
-  <?php foreach ($cats as $k => $c): if (!$c['services'] || !isset($photos[$k])) continue; $min = $from($c['services']); [$img, $alt] = $photos[$k]; ?>
-    <a class="svc" href="/services/category/<?= e($k) ?>">
-      <img src="/media/<?= $img ?>.webp" alt="<?= e($alt) ?>" loading="lazy" width="1200" height="675">
-      <span class="svc-body"><span class="svc-name"><?= e($c['name']) ?></span>
-        <span class="svc-items"><?php foreach (array_slice($c['services'], 0, 3) as $s): ?><span><?= e(preg_replace('/^(Business Email|Website) — /', '', $s['name'])) ?></span><?php endforeach; ?></span>
-        <span class="svc-price"><?= $min !== null ? 'From ' . e(money($min)) : 'Quoted after a free consultation' ?></span></span>
+  <div class="sec-head center"><span class="badge-pill">Our services</span><h2>Built for Canadian entrepreneurs</h2><p>Six services. One dashboard.</p></div>
+  <div class="svc6">
+  <?php foreach ($svc6 as $i => [$href, $ic, $tone, $kind, $price, $t, $k, $d, $go]): ?>
+    <a class="s6" href="<?= e($href) ?>">
+      <span class="s6-top"><span class="mc-ic tone-<?= $tone ?>"><?= nx_icon($ic) ?></span><span class="s6-pr"><small><?= e($kind) ?></small><b><?= e($price) ?></b></span></span>
+      <span class="s6-n"><?= sprintf('%02d', $i + 1) ?></span><h3><?= e($t) ?></h3><p class="s6-k"><?= e($k) ?></p><p><?= e($d) ?></p>
+      <span class="s6-go"><?= e($go) ?> <?= nx_icon('arrow') ?></span>
     </a>
   <?php endforeach; ?>
-    <a class="svc svc-cta" href="/start"><span class="svc-body"><span class="svc-name">Not sure what you need?</span><span class="svc-items">Tell us about your business and we'll recommend the right services, with a written quote for anything custom.</span><span class="svc-price">Tell us what you need</span></span></a>
   </div>
 </div></section>
 
-<section class="sec alt"><div class="wrap how">
-  <div class="how-media"><video muted loop playsinline preload="none" poster="/media/sign-poster.webp" data-lazy-video aria-hidden="true"><source data-src="/media/sign.mp4" type="video/mp4"></video></div>
-  <div>
-    <div class="sec-head" style="margin-bottom:26px"><h2>How a registration works</h2><p>The same five steps for every registration, annual return and corporate change.</p></div>
-    <ol class="steps-l">
-      <?php foreach ($steps as [$t, $d]): ?><li><h3><?= e($t) ?></h3><p><?= e($d) ?></p></li><?php endforeach; ?>
-    </ol>
-    <p class="note">Nothing is sent to a registry until you've paid, the details pass every check and you've signed. We are not a law firm.</p>
+<section class="sec alt"><div class="wrap">
+  <div class="sec-head center"><span class="badge-pill">How it works</span><h2>Simple, guided, end to end, in four steps</h2><p>From your browser to the government registry. Select a step to learn more.</p></div>
+  <div class="steps4" data-steps4>
+  <?php foreach ($steps as $i => [$ic, $tone, $t, $d, $more]): ?>
+    <button type="button" class="st4<?= $i === 0 ? ' on' : '' ?>" aria-expanded="<?= $i === 0 ? 'true' : 'false' ?>"><span class="n"><?= sprintf('%02d', $i + 1) ?></span><span class="mc-ic tone-<?= $tone ?>"><?= nx_icon($ic) ?></span><h3><?= e($t) ?></h3><p><?= e($d) ?></p><span class="more"><?= e($more) ?></span></button>
+  <?php endforeach; ?>
   </div>
+  <div class="steps-cta"><a class="btn btn-primary btn-lg" href="/register">Start your business journey</a><small>Based in Moncton, New Brunswick</small></div>
 </div></section>
 
-<section class="sec"><div class="wrap duo">
-  <div class="panel-l">
-    <h3>Find your domain</h3><p class="muted">We check the .ca and .com registries directly.</p>
-    <form id="domain-check" class="domain-form"><label class="sr" for="domain-input">Domain</label><input id="domain-input" type="text" placeholder="yourcompany.ca" autocomplete="off"><button class="btn btn-primary">Check</button></form>
-    <div id="domain-result" aria-live="polite"></div>
-  </div>
-  <?php if ($bundle): ?><div class="panel-l" id="bundle">
-    <h3><?= e($bundle['name']) ?><span class="save"><?= (int)$bundle['discount_pct'] ?>% off</span></h3><p class="muted">Everything a new company needs, at a bundle price.</p>
-    <ul class="plain"><?php foreach (jdec($bundle['items']) as $it): $s = Catalog::find($it['slug']); if ($s): ?><li><span><?= e($s['name']) ?></span><span><?= e(Catalog::priceLabel($s)) ?></span></li><?php endif; endforeach; ?></ul>
-    <form method="post" action="/cart/add" class="row"><?= Csrf::field() ?><input type="hidden" name="package" value="<?= e($bundle['slug']) ?>"><select name="province" style="width:auto;flex:1" aria-label="Province"><?php foreach (Catalog::PROVINCES as $c => $n): ?><option value="<?= $c ?>"<?= $c === 'NB' ? ' selected' : '' ?>><?= e($n) ?></option><?php endforeach; ?></select><button class="btn btn-primary">Add the bundle</button></form>
-  </div><?php endif; ?>
+<section class="trust-sec" aria-label="Why customers trust us"><div class="wrap trust">
+  <?php foreach ([['users', 'teal', 'Canadian privacy law', 'Handled under PIPEDA'], ['certificate', 'blue', 'Encrypted connection', 'TLS on every page'], ['cash', 'violet', 'Payments by Stripe', 'Card details never stored here'], ['edit', 'green', 'You sign first', 'Nothing filed without you'], ['building', 'amber', 'Atlantic Canada team', 'Moncton, New Brunswick'], ['search', 'cyan', 'Clear prices', 'Government fees included']] as [$ic, $tone, $t, $s]): ?>
+  <div><span class="mc-ic tone-<?= $tone ?>"><?= nx_icon($ic) ?></span><span><b><?= e($t) ?></b><span><?= e($s) ?></span></span></div>
+  <?php endforeach; ?>
 </div></section>
 
-<section class="sec alt"><div class="wrap ask-l">
-  <img src="/media/dough.webp" alt="A baker preparing dough in a bakery" loading="lazy" width="1200" height="900">
-  <div>
-    <div class="sec-head" style="margin-bottom:20px"><h2>Not sure where to start?</h2><p>Describe your business and our assistant will recommend what you need, priced from our catalog.</p></div>
-    <form class="composer" id="composer" aria-label="Describe what you need">
-      <label class="sr" for="composer-text">What do you need?</label>
-      <textarea id="composer-text" placeholder="I'm opening a bakery in Moncton and need everything to get going."></textarea>
-      <div class="composer-foot"><div class="chips"><button class="chip" type="button">Incorporate in New Brunswick</button><button class="chip" type="button">I need a website</button><button class="chip" type="button">Email for my team</button></div><button class="btn btn-primary" type="submit">Get a plan</button></div>
-    </form>
-  </div>
+<section class="sec"><div class="wrap">
+  <div class="sec-head center"><span class="badge-pill">Why choose us</span><h2>The smarter way to register in Canada</h2><p>How 818 Digital Agency compares with the usual options.</p></div>
+  <div class="cmp-wrap"><table class="cmp">
+    <thead><tr><th scope="col"><span class="sr">Feature</span></th><th scope="col" class="us">818 Digital Agency<small>Recommended</small></th><th scope="col">Traditional lawyer</th><th scope="col">DIY government portal</th></tr></thead>
+    <tbody>
+      <?php foreach ([
+        ['Business registration', ['y', 'Guided online forms'], ['y', 'Done for you'], ['w', 'You complete the forms']],
+        ['NUANS name search', ['y', money($fp('nuans')) . ' flat'], ['w', 'Usually billed separately'], ['w', 'Order it yourself']],
+        ['Government fees', ['y', 'Included in the price'], ['w', 'Added to the invoice'], ['y', 'Paid directly']],
+        ['Domain, email & website', ['y', 'Same account'], ['x', 'Not offered'], ['x', 'Separate vendors']],
+        ['Annual returns & changes', ['y', 'Filed for you, with reminders'], ['y', 'Usually extra fees'], ['w', 'Track it yourself']],
+        ['Order tracking', ['y', 'Online portal'], ['w', 'By email or phone'], ['w', 'Registry account']],
+        ['Legal advice', ['x', 'Not a law firm'], ['y', 'Yes'], ['x', 'No']],
+        ['Typical cost', ['y', 'From ' . money($regFrom)], ['w', 'Typically higher (hourly)'], ['y', 'Government fee + your time']],
+      ] as [$row, $us, $law, $diy]): ?>
+      <tr><th scope="row"><?= e($row) ?></th><td class="us <?= $us[0] ?>"><?= $mark[$us[0]] . e($us[1]) ?></td><td class="<?= $law[0] ?>"><?= $mark[$law[0]] . e($law[1]) ?></td><td class="<?= $diy[0] ?>"><?= $mark[$diy[0]] . e($diy[1]) ?></td></tr>
+      <?php endforeach; ?>
+    </tbody></table></div>
 </div></section>
 
-<?php if ($reviews): ?><section class="sec"><div class="wrap"><div class="sec-head"><h2>From verified customers</h2></div><div class="grid g3">
+<?php if ($reviews): ?><section class="sec alt"><div class="wrap"><div class="sec-head center"><h2>From verified customers</h2></div><div class="grid g3">
 <?php foreach ($reviews as $rv): ?><figure class="card" style="margin:0"><div aria-label="<?= (int)$rv['rating'] ?> out of 5"><?= str_repeat('★', (int)$rv['rating']) ?></div><blockquote style="margin:10px 0"><?= e($rv['body']) ?></blockquote><figcaption class="muted small"><?= e($rv['display_name'] ?: 'Verified customer') ?></figcaption></figure><?php endforeach; ?></div></div></section><?php endif; ?>
 
-<section class="sec"><div class="wrap"><div class="cta-l"><div><h2>Ready to register your business?</h2><p>Based in Moncton, New Brunswick. Filing in every province and federally.</p></div><div class="hero-actions" style="margin:0"><a class="btn btn-primary" href="#certificate">Start an incorporation</a><a class="btn btn-ghost" href="/contact">Contact us</a></div></div></div></section>
+<section class="news" id="news"><div class="wrap">
+  <span class="mc-ic tone-blue" style="margin:0 auto 14px"><?= nx_icon('mail') ?></span>
+  <h2>Stay updated on new services</h2><p>Get early access and launch offers when new services and provinces go live.</p>
+  <?php if (!empty($_GET['subscribed'])): ?><p class="alert alert-success" style="max-width:460px;margin:0 auto">Thanks! You're on the list. You can unsubscribe anytime from any email.</p>
+  <?php else: ?><form method="post" action="/subscribe"><?= Csrf::field() ?><label class="sr" for="news-email">Email address</label><input id="news-email" type="email" name="email" required placeholder="you@yourbusiness.ca" autocomplete="email"><input type="text" name="website" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true"><button class="btn btn-primary">Notify me</button></form>
+  <small>By subscribing you agree to receive occasional emails from 818 Nexus Inc. No spam. Unsubscribe anytime.</small><?php endif; ?>
+</div></section>
