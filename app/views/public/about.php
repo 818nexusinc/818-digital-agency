@@ -1,6 +1,7 @@
 <?php
 include_once APP_ROOT . '/views/partials/icons.php';
-$hero = ['tone' => 'rose', 'icon' => 'building', 'pills' => ['Our story'], 'title' => 'Built for Canadian Entrepreneurs', 'sub' => '818 Digital Agency was founded in Moncton, New Brunswick with a single mission: make it effortless for Canadians to start and grow a business.'];
+$hero = ['tone' => 'rose', 'pills' => ['Moncton, New Brunswick'], 'title' => 'We make starting a business feel simple.', 'sub' => 'Registration, compliance and your online presence, handled by one Canadian team.',
+  'media' => ['img' => 'owners-open'], 'chips' => [['building', 'Canadian-owned', 'Built in New Brunswick'], ['users', 'Real people', 'Reply within one business day']]];
 include APP_ROOT . '/views/partials/svc/hero.php';
 ?>
 <section class="stats" aria-label="Facts">

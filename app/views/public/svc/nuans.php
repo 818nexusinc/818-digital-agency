@@ -4,8 +4,9 @@ include_once APP_ROOT . '/views/partials/svc/wz.php';
 include_once APP_ROOT . '/views/partials/icons.php';
 $svc = Catalog::find('nuans'); $p = Catalog::price($svc, []); $cents = $p['unit_cents'] ?? 4250;
 $provs = ['FED' => 'Federal (CBCA): all provinces'] + Catalog::PROVINCES; unset($provs['FED']); $provs = ['FED' => 'Federal (CBCA): all provinces'] + $provs;
-$hero = ['tone' => 'violet', 'icon' => 'search', 'pills' => ['Official NUANS report', 'Government compatible', $svc['timeline'] ?? 'Same day', 'Valid 90 days'],
-  'title' => 'Official NUANS Name Search', 'sub' => 'Get your official NUANS report before incorporating a named corporation. Results are delivered to your portal and by email.'];
+$hero = ['tone' => 'violet', 'pills' => ['Official NUANS report', 'Valid 90 days'],
+  'title' => 'Check your name before you commit.', 'sub' => 'An official NUANS report for named corporations, delivered to your portal and inbox.',
+  'media' => ['img' => 'email-typing'], 'chips' => [['search', $svc['timeline'] ?? 'Same day', 'Typical turnaround'], ['certificate', 'Government compatible', 'Valid for 90 days']]];
 include APP_ROOT . '/views/partials/svc/hero.php';
 ?>
 <section class="sec" style="padding:36px 0 10px"><div class="wrap">
@@ -48,7 +49,7 @@ include APP_ROOT . '/views/partials/svc/hero.php';
   <div class="sec-head center"><h2>What you need to know</h2></div>
   <div class="hub-grid">
     <?php foreach ([['Administered by ISED Canada', 'NUANS is run by Innovation, Science and Economic Development Canada and is the official pre-incorporation name search in Canada.'], ['Required in several jurisdictions', 'Mandatory for named corporations federally (CBCA) and in Ontario, New Brunswick and other jurisdictions. Some provinces use their own name search instead.'], ['Searches registered names & trademarks', 'The database covers registered corporations, business names and trademarks across Canada.'], ['90-day validity', 'A NUANS report is valid for 90 days. File your incorporation within that window or a new report is needed.'], ['Not a guarantee of approval', 'A clean report helps, but the registry makes the final decision on your name.']] as [$t, $d]): ?>
-    <div class="hub-card" style="--tone:#6d3fd8"><h3><?= e($t) ?></h3><p class="hc-d"><?= e($d) ?></p></div>
+    <div class="hub-card" data-rv style="--tone:#6d3fd8"><h3><?= e($t) ?></h3><p class="hc-d"><?= e($d) ?></p></div>
     <?php endforeach; ?>
   </div>
 </div></section>

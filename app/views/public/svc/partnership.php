@@ -2,8 +2,9 @@
 use App\Catalog;
 include_once APP_ROOT . '/views/partials/svc/wz.php';
 $svc = Catalog::find('partnership'); $pp = $svc['province_prices'] ?? [];
-$hero = ['tone' => 'blue', 'icon' => 'users', 'pills' => ['2+ partners', $svc['timeline'] ?? '1–3 business days', 'Provincial registry', 'Partnership agreement template'],
-  'title' => 'Partnership Registration', 'sub' => 'Register a general or limited partnership in Canada. A simple structure for two or more owners, with flexible profit sharing.'];
+$hero = ['tone' => 'blue', 'pills' => ['2+ partners', $svc['timeline'] ?? '1–3 business days'],
+  'title' => 'Build it together.', 'sub' => 'Register a general or limited partnership, with flexible profit sharing between owners.',
+  'media' => ['img' => 'handshake'], 'chips' => [['users', 'Two or more owners', 'General or limited'], ['text', 'Agreement template', 'Included with your order']]];
 include APP_ROOT . '/views/partials/svc/hero.php';
 $partner = wz_field('owners[{i}][first]', 'First name *', 'text', ['data-rule' => 'person', 'autocomplete' => 'given-name'])
   . wz_field('owners[{i}][last]', 'Last name *', 'text', ['data-rule' => 'person', 'autocomplete' => 'family-name'])

@@ -15,7 +15,8 @@ foreach ($feat as $s => $list) {
 }
 $pages = ['Home', 'About us', 'Services', 'Contact', 'Our team', 'Gallery / portfolio', 'Testimonials', 'FAQ', 'Blog', 'Pricing', 'Booking', 'Careers'];
 $pageChecks = '<div class="chk-grid">'; foreach ($pages as $i => $pg) $pageChecks .= '<label class="ck"><input type="checkbox" name="pages[]" value="' . e($pg) . '" data-label="Page" data-text="' . e($pg) . '"' . ($i < 4 ? ' checked' : '') . '><span><b>' . e($pg) . '</b></span></label>'; $pageChecks .= '</div>';
-$hero = ['tone' => 'sky', 'icon' => 'layout', 'pills' => ['Website design & hosting', 'Mobile first', 'Hosting + SSL included'], 'title' => 'Business Website Design & Hosting', 'sub' => 'Custom-designed, mobile-first websites, built, hosted and maintained for Canadian businesses.'];
+$hero = ['tone' => 'sky', 'pills' => ['Mobile first', 'Hosting + SSL included'], 'title' => 'A website that wins you customers.', 'sub' => 'Designed, built, hosted and maintained for you.',
+  'media' => ['img' => 'phone-owner'], 'chips' => [['layout', 'Custom design', 'Built around your brand'], ['bolt', 'Hosting + SSL', 'Included from day one']]];
 include APP_ROOT . '/views/partials/svc/hero.php';
 ?>
 <section class="svc-body"><div class="wrap">

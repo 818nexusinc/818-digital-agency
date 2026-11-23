@@ -18,3 +18,5 @@ Photos
 
 Posters (*-poster.webp) are frames from the videos above. Files were resized and re-encoded for the web.
 People shown are stock models, not 818 customers or staff.
+owner-boxes, cafe-owner, partners, team-deal, coop-team, notes, phone-owner, docs-typing, handshake, cafe-laptop, email-typing, desk-smile, owners-open: Pexels photos (Kampus Production, fauxels, Yan Krukau, Hanna Pad, Pavel Danilyuk, Polina Zimmerman and others), Pexels License.
+team-talk.mp4 (Max Medyk), team-laptop.mp4 (Artem Podrez): Pexels videos, Pexels License.

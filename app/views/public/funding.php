@@ -1,6 +1,7 @@
 <?php
 include_once APP_ROOT . '/views/partials/icons.php';
-$hero = ['tone' => 'blue', 'icon' => 'cash', 'pills' => ['Federal & regional programs', 'Updated regularly'], 'title' => 'Business Opportunities Across Canada', 'sub' => 'Government funding, innovation and procurement programs available to Canadian entrepreneurs, with links to each official program page.'];
+$hero = ['tone' => 'blue', 'pills' => ['Federal & regional programs'], 'title' => 'Funding is out there. Find yours.', 'sub' => 'Grants, loans and procurement programs for Canadian entrepreneurs, linked to each official page.',
+  'media' => ['img' => 'team-deal'], 'chips' => [['cash', 'Official sources', 'Links to every program'], ['check', 'Get registered first', 'Most programs require it']]];
 include APP_ROOT . '/views/partials/svc/hero.php';
 $progs = [
   ['Federal funding', 'Innovative Solutions Canada (ISC)', 'ISED / Innovation Canada', 'https://ised-isde.canada.ca/site/innovative-solutions-canada/en', 'Federal departments challenge Canadian small businesses to solve real problems with innovation, funding proof of feasibility and prototype development, and can become your first government customer.', ['Canadian for-profit business', 'Small business (499 or fewer employees)', 'R&D carried out in Canada'], ['Phased funding for feasibility and prototypes', 'Government may buy the result', 'Non-dilutive: no equity given up']],

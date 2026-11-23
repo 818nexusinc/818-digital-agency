@@ -4,8 +4,9 @@ include_once APP_ROOT . '/views/partials/svc/wz.php';
 $svc = Catalog::find('sole_prop'); $pp = $svc['province_prices'] ?? [];
 $from = $pp ? min(array_filter($pp, fn($v) => $v !== null)) : null;
 $months = ['Dec 31', 'Jan 31', 'Feb 28', 'Mar 31', 'Apr 30', 'May 31', 'Jun 30', 'Jul 31', 'Aug 31', 'Sep 30', 'Oct 31', 'Nov 30'];
-$hero = ['tone' => 'teal', 'icon' => 'user', 'pills' => ['Simplest structure', $svc['timeline'] ?? '1–3 business days', 'Provincial registry', 'Lowest cost'],
-  'title' => 'Sole Proprietorship Registration', 'sub' => "Canada's simplest business structure. Register quickly, with no partners and no complex filings. Ideal for freelancers, consultants and independent professionals."];
+$hero = ['tone' => 'teal', 'pills' => ['Simplest structure', $svc['timeline'] ?? '1–3 business days'],
+  'title' => 'Go solo. Get registered.', 'sub' => 'The fastest, lowest-cost way to make your business official. Ideal for freelancers and consultants.',
+  'media' => ['img' => 'cafe-laptop'], 'chips' => [['clock', $svc['timeline'] ?? '1–3 business days', 'Typical registry time'], ['check', 'Government fee included', 'No surprise costs']]];
 include APP_ROOT . '/views/partials/svc/hero.php';
 ?>
 <section class="svc-body"><div class="wrap">

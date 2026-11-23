@@ -44,3 +44,21 @@ function client_ip(): string
 }
 
 function label(string $status): string { return ucwords(str_replace('_', ' ', $status)); }
+
+/* ── Language (EN / FR) ─────────────────────────────────────────────── */
+function lang(): string
+{
+    static $l = null;
+    if ($l === null) { $c = $_COOKIE['lang'] ?? ''; $l = in_array($c, ['en', 'fr'], true) ? $c : 'en'; }
+    return $l;
+}
+/** Translate a UI string. English is the key; missing French entries fall back to English. */
+function t(string $s): string
+{
+    if ($s === '' || lang() !== 'fr') return $s;
+    static $d = null;
+    $d ??= is_file(APP_ROOT . '/i18n/fr.php') ? (require APP_ROOT . '/i18n/fr.php') : [];
+    return $d[$s] ?? $s;
+}
+/** Translate, then format with sprintf (for strings with prices or names). */
+function tf(string $s, mixed ...$a): string { return vsprintf(t($s), $a); }

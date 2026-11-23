@@ -4,7 +4,8 @@ include_once APP_ROOT . '/views/partials/svc/wz.php';
 $plans = [];
 foreach (['email_starter' => 'Starter', 'email_business' => 'Business', 'email_team' => 'Team'] as $s => $n) { $x = Catalog::find($s); $p = Catalog::price($x, []); $plans[$s] = [$x, $p['unit_cents'] ?? 0, $n]; }
 $dom = Catalog::find('domain_register'); $caCents = (int)($dom['options']['tlds']['ca'] ?? 0);
-$hero = ['tone' => 'orange', 'icon' => 'mail', 'pills' => ['Business email hosting', 'Webmail & mobile', 'Spam filtering'], 'title' => 'Business Email Hosting', 'sub' => 'Professional mailboxes on your own domain, set up for you after payment.'];
+$hero = ['tone' => 'orange', 'pills' => ['Your own domain', 'Webmail & mobile'], 'title' => 'Email that looks like a business.', 'sub' => 'Professional mailboxes on your domain, set up for you after payment.',
+  'media' => ['img' => 'notes'], 'chips' => [['mail', 'you@yourbusiness.ca', 'On every device'], ['shield', 'Spam filtering', 'Included']]];
 include APP_ROOT . '/views/partials/svc/hero.php';
 $cardOpts = [];
 foreach ($plans as $s => [$x, $c, $n]) $cardOpts[] = [$s, $n, $x['summary'], money($c) . '/mo', ['data-cents' => $c, 'data-line' => 'Email ' . $n, 'data-per' => '/mo', 'data-text' => $n . ' (' . money($c) . '/mo)'] + ($s === 'email_starter' ? ['checked' => true] : [])];

@@ -3,9 +3,10 @@ use App\Catalog;
 include_once APP_ROOT . '/views/partials/icons.php';
 $min = function (string $slug) { $s = Catalog::find($slug); $p = $s ? Catalog::fromPrice($s) : null; return $p; };
 $nuans = $min('nuans'); $sole = $min('sole_prop'); $part = $min('partnership'); $corp = $min('corp_numbered'); $coop = $min('cooperative');
-$hero = ['tone' => 'blue', 'icon' => 'building', 'pills' => ['Every province + federal', 'Official government filings', 'Government fees included', 'From ' . money(min(array_filter([$sole, $part, $corp])))],
-  'title' => 'Register Your Business in Canada', 'sub' => 'Professional business registration in every province and federally under the Canada Business Corporations Act, from sole proprietorships to corporations.',
-  'actions' => [['#structures', 'Choose your structure', true], ['/register/nuans', 'NUANS name search (' . money($nuans) . ')']]];
+$hero = ['tone' => 'blue', 'pills' => ['Every province + federal', 'From ' . money(min(array_filter([$sole, $part, $corp])))],
+  'title' => 'Your business, officially registered.', 'sub' => 'Pick a structure, answer a few questions and we file it with the registry. Government fees included.',
+  'actions' => [['#structures', 'Choose your structure', true], ['/register/nuans', 'NUANS name search (' . money($nuans) . ')']],
+  'media' => ['video' => 'team-talk'], 'chips' => [['pen', 'You approve and sign', 'Before anything is filed'], ['shield', 'Filed with the registry', 'Status in your portal']]];
 include APP_ROOT . '/views/partials/svc/hero.php';
 $cards = [
   ['nuans', '/register/nuans', 'search', 'violet', '#6d3fd8', 'Start here', 'NUANS Name Search', 'Check your business name is available before you incorporate.', $nuans, 'One-time · PDF report', ['Searches registered names and trademarks across Canada', 'Report usually the same day', 'Valid for 90 days', 'Up to 3 proposed names']],
@@ -24,7 +25,7 @@ $cards = [
   <div class="sec-head center"><h2>Choose your business structure</h2><p>Each structure has different legal, tax and operational implications. Pick one to see what's included, then start your registration.</p></div>
   <div class="hub-grid">
   <?php foreach ($cards as [$id, $href, $ic, $tone, $col, $flag, $t, $d, $price, $sub, $list]): ?>
-    <article class="hub-card" id="hc-<?= $id ?>" style="--tone:<?= $col ?>">
+    <article class="hub-card" data-rv id="hc-<?= $id ?>" style="--tone:<?= $col ?>">
       <div class="hc-top"><span class="mc-ic tone-<?= $tone ?>"><?= nx_icon($ic) ?></span><span class="hc-flag"><?= e($flag) ?></span></div>
       <h3><?= e($t) ?></h3><p class="hc-d"><?= e($d) ?></p>
       <p class="hc-price"><b><?= $price !== null ? e(money($price)) : 'Quote' ?></b><small><?= e($sub) ?></small></p>

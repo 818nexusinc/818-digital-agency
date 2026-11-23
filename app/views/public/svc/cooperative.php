@@ -2,8 +2,9 @@
 use App\Catalog;
 include_once APP_ROOT . '/views/partials/svc/wz.php';
 $svc = Catalog::find('cooperative');
-$hero = ['tone' => 'green', 'icon' => 'network', 'pills' => ['Member-owned', 'Democratic governance', $svc['timeline'] ?? '1–3 weeks', 'Provincial filing'],
-  'title' => 'Co-operative Registration', 'sub' => 'Register a co-operative in Canada: a democratic, member-owned business where each member gets one vote regardless of investment.'];
+$hero = ['tone' => 'green', 'pills' => ['Member-owned', $svc['timeline'] ?? '1–3 weeks'],
+  'title' => 'One member, one vote.', 'sub' => 'Register a democratic, member-owned co-operative. Tell us about it and we send a written quote.',
+  'media' => ['img' => 'coop-team'], 'chips' => [['network', 'Member-owned', 'Democratic governance'], ['text', 'Written quote', 'Before any work starts']]];
 include APP_ROOT . '/views/partials/svc/hero.php';
 ?>
 <section class="svc-body"><div class="wrap">

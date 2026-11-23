@@ -4,8 +4,9 @@ include_once APP_ROOT . '/views/partials/svc/wz.php';
 $named = Catalog::find('corp_named'); $numbered = Catalog::find('corp_numbered');
 $by = ['field' => 'slug', 'maps' => ['corp_named' => $named['province_prices'] ?? [], 'corp_numbered' => $numbered['province_prices'] ?? []]];
 $provs = ['FED' => 'Federal'] + Catalog::PROVINCES; unset($provs['FED']);
-$hero = ['tone' => 'amber', 'icon' => 'building', 'pills' => ['Provincial or federal (CBCA)', 'Named or numbered', 'Limited liability', 'Government fee included'],
-  'title' => 'Incorporate a Canadian Corporation', 'sub' => 'Provincial or federal (CBCA), named or numbered. Answer a few questions and we prepare and file your articles of incorporation.'];
+$hero = ['tone' => 'amber', 'pills' => ['Provincial or federal (CBCA)', 'Named or numbered'],
+  'title' => 'Incorporate in minutes. We handle the filing.', 'sub' => 'Answer a few questions. We prepare your articles of incorporation and file them once you sign.',
+  'media' => ['img' => 'signing'], 'chips' => [['shield', 'Limited liability', 'Protect personal assets'], ['pen', 'You sign first', 'Nothing filed without approval']]];
 include APP_ROOT . '/views/partials/svc/hero.php';
 $director = wz_field('directors[{i}][first]', 'First name *', 'text', ['data-rule' => 'person', 'placeholder' => 'Legal first name'])
   . wz_field('directors[{i}][last]', 'Last name *', 'text', ['data-rule' => 'person', 'placeholder' => 'Legal last name'])

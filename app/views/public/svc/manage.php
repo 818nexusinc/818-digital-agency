@@ -2,9 +2,10 @@
 use App\Catalog;
 include_once APP_ROOT . '/views/partials/icons.php';
 $fromP = function (string $slug) { $s = Catalog::find($slug); return $s ? Catalog::fromPrice($s) : null; };
-$hero = ['tone' => 'blue', 'icon' => 'calendar', 'pills' => ['Every province + federal', 'Official registry filings', 'Deadline reminders'],
-  'title' => 'Business Management Portal', 'sub' => 'Everything you need to manage your registered Canadian business after registration: annual returns, corporate changes, official documents and business name services, filed with the registry for you.',
-  'actions' => [['#services', 'View all services', true]]];
+$hero = ['tone' => 'blue', 'pills' => ['Every province + federal', 'Deadline reminders'],
+  'title' => 'Stay in good standing. Without the paperwork.', 'sub' => 'Annual returns, corporate changes and official documents, filed for you.',
+  'actions' => [['#services', 'View all services', true]],
+  'media' => ['img' => 'docs-typing'], 'chips' => [['calendar', 'Never miss a deadline', 'Reminders before it is due'], ['certificate', 'Official documents', 'Ordered from the registry']]];
 include APP_ROOT . '/views/partials/svc/hero.php';
 $cards = [
   ['/manage-business/annual-returns', 'calendar', 'blue', '#2457d6', 'Compliance', 'Annual Return Services', 'Stay compliant: file your annual return on time and avoid costly penalties.', $fromP('bm_annual'), 'Per annual return filing', ['Corporation annual return', 'Business name renewal', 'Compliance check']],
@@ -22,7 +23,7 @@ $cards = [
   <div class="sec-head center"><h2>What would you like to do?</h2><p>Choose a service to file, update or order. Everything is submitted to the right registry for you.</p></div>
   <div class="hub-grid">
   <?php foreach ($cards as $i => [$href, $ic, $tone, $col, $flag, $t, $d, $price, $sub, $list]): ?>
-    <article class="hub-card" id="mc-<?= $i ?>" style="--tone:<?= $col ?>">
+    <article class="hub-card" data-rv id="mc-<?= $i ?>" style="--tone:<?= $col ?>">
       <div class="hc-top"><span class="mc-ic tone-<?= $tone ?>"><?= nx_icon($ic) ?></span><span class="hc-flag"><?= e($flag) ?></span></div>
       <h3><?= e($t) ?></h3><p class="hc-d"><?= e($d) ?></p>
       <p class="hc-price"><b><?= $price !== null ? 'From ' . e(money($price)) : 'Quote' ?></b><small><?= e($sub) ?></small></p>

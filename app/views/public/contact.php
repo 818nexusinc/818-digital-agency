@@ -1,7 +1,8 @@
 <?php
 use App\Settings;
 include_once APP_ROOT . '/views/partials/icons.php';
-$hero = ['tone' => 'sky', 'icon' => 'mail', 'pills' => ['Contact us'], 'title' => 'Contact Us', 'sub' => 'We’re here to help. Reach out with any question about our services.'];
+$hero = ['tone' => 'sky', 'pills' => ['Contact us'], 'title' => 'Talk to a real person.', 'sub' => 'Questions about a filing, an order or a quote? We reply within one business day.',
+  'media' => ['img' => 'welcome'], 'chips' => [['mail', 'Send us a message', 'Use the form below'], ['clock', 'Mon–Fri', 'Atlantic time']]];
 include APP_ROOT . '/views/partials/svc/hero.php';
 ?>
 <section class="sec" style="padding-top:36px"><div class="wrap contact-grid">

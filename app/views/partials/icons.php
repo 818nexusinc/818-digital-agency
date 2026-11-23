@@ -3,6 +3,11 @@
 if (!function_exists('nx_icon')) {
     function nx_icon(string $n): string {
         $p = [
+            'check' => '<circle cx="12" cy="12" r="9"/><path d="m8 12.5 2.8 2.8L16.5 9"/>',
+            'shield' => '<path d="M12 3 5 6v6c0 4.2 3 7.6 7 9 4-1.4 7-4.8 7-9V6z"/><path d="m9 12 2 2 4-4"/>',
+            'clock' => '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+            'bolt' => '<path d="M13 3 5 14h6l-1 7 8-11h-6z"/>',
+            'pen' => '<path d="M3 21c3-1 5-3 6-6l8-8 3 3-8 8c-3 1-5 3-6 6"/><path d="m14 7 3 3"/>',
             'search' => '<circle cx="11" cy="11" r="6"/><path d="m20 20-4.5-4.5"/>',
             'user' => '<circle cx="12" cy="8" r="4"/><path d="M5 20c1-4 4-6 7-6s6 2 7 6"/>',
             'users' => '<circle cx="9" cy="8" r="3.5"/><path d="M3 19c.8-3.4 3.2-5 6-5s5.2 1.6 6 5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14c1.6.6 2.6 2.2 3 5"/>',

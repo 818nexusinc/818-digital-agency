@@ -23,7 +23,7 @@ $K = [
     'extra' => fn() => wz_field('current_name', 'Current registered business name *', 'text', ['data-rule' => 'bizname']) . '<div data-show="change_type=change">' . wz_field('entity[proposed_name]', 'New business name *', 'text', ['data-rule' => 'bizname']) . '</div>'],
 ];
 $k = $K[$mkind]; $svc = Catalog::find($k['slug']); $cents = empty($k['province_priced']) ? (Catalog::price($svc, [])['unit_cents'] ?? null) : null;
-$hero = ['tone' => $k['tone'], 'icon' => $k['icon'], 'back' => ['/manage-business', 'All business management services'], 'title' => $k['title'], 'sub' => $k['sub']];
+$hero = ['tone' => $k['tone'], 'icon' => $k['icon'], 'back' => ['/manage-business', 'All business management services'], 'title' => $k['title'], 'sub' => $k['sub'], 'media' => ['img' => ['annual-returns' => 'desk-smile', 'corporate-changes' => 'signing', 'corporate-documents' => 'docs-typing', 'name-services' => 'owner-boxes'][$mkind] ?? 'laptop'], 'chips' => [['shield', 'Filed with the registry', 'Status in your portal'], ['pen', 'You approve first', 'Nothing filed without it']]];
 include APP_ROOT . '/views/partials/svc/hero.php';
 $priceBadge = $cents !== null ? money($cents) : '';
 $opts = array_map(fn($o) => [$o[0], $o[1], $o[2], $priceBadge], $k['opts']);

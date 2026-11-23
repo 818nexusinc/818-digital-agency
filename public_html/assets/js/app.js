@@ -217,4 +217,28 @@
   function consent() { try { return localStorage.getItem('nx818_cookie_consent'); } catch (e) { return 'essential'; } }
   if (ck && !consent()) ck.hidden = false;
   $$('[data-consent]').forEach(function (b) { b.addEventListener('click', function () { try { localStorage.setItem('nx818_cookie_consent', b.getAttribute('data-consent')); } catch (e) {} ck.hidden = true; }); });
+
+  /* v5 motion: every looping clip plays only while on screen; sections rise in once; the filing tracker steps through its stages. */
+  var vids = $$('video[data-autoplay]');
+  if (still) vids.forEach(function (v) { v.removeAttribute('autoplay'); v.pause(); });
+  else if ('IntersectionObserver' in window) {
+    var vio = new IntersectionObserver(function (es) { es.forEach(function (en) { var v = en.target; if (en.isIntersecting) { var p = v.play(); if (p && p.catch) p.catch(function () {}); } else if (!v.paused) v.pause(); }); }, { rootMargin: '120px' });
+    vids.forEach(function (v) { vio.observe(v); });
+  }
+  var rvs = $$('[data-rv]');
+  if (rvs.length && !still && 'IntersectionObserver' in window) {
+    document.documentElement.classList.add('js-rv');
+    rvs.forEach(function (el) { var sib = Array.prototype.filter.call(el.parentNode.children, function (c) { return c.hasAttribute('data-rv'); }); el.style.setProperty('--d', (Math.min(sib.indexOf(el), 6) * 0.08) + 's'); });
+    var rvo = new IntersectionObserver(function (es) { es.forEach(function (en) { if (en.isIntersecting) { en.target.classList.add('in'); rvo.unobserve(en.target); } }); }, { threshold: .1, rootMargin: '0px 0px -30px 0px' });
+    rvs.forEach(function (el) { rvo.observe(el); });
+    setTimeout(function () { rvs.forEach(function (el) { if (el.getBoundingClientRect().top < innerHeight) el.classList.add('in'); }); }, 60);
+  }
+  var trk = $('[data-track]');
+  if (trk && !still) {
+    var li = $$('li', trk), at = 2;
+    setInterval(function () {
+      at = (at + 1) % (li.length + 2);
+      li.forEach(function (x, i) { x.className = i < at ? 'done' : (i === at ? 'now' : ''); });
+    }, 1800);
+  }
 })();

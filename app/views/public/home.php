@@ -4,55 +4,74 @@ include_once APP_ROOT . '/views/partials/icons.php';
 $fp = function (string $slug) { $s = Catalog::find($slug); return $s ? Catalog::fromPrice($s) : null; };
 $regFrom = min(array_filter([$fp('sole_prop'), $fp('partnership'), $fp('corp_numbered')]));
 $svc6 = [
-  ['/register', 'building', 'blue', 'One-time', 'From ' . money($regFrom), 'Register Business', 'Corporation, partnership or sole proprietorship in any province', 'Guided forms and the government filing. We prepare the paperwork and file it once you have signed.', 'Start now'],
-  ['/manage-business', 'calendar', 'violet', 'One-time', 'From ' . money($fp('bm_documents')), 'Manage Business', 'Annual returns, changes, documents', 'Keep your registered business in good standing: annual returns, corporate changes, document orders and name services.', 'Manage business'],
-  ['/domain', 'globe', 'teal', 'Per year', 'From ' . money($fp('domain_register')) . '/yr', 'Domain Name', 'Register .ca, .com and more', 'Search and register your domain. DNS is set up for the email and website you order with us.', 'Register domain'],
-  ['/email', 'mail', 'cyan', 'Subscription', 'From ' . money($fp('email_starter')) . '/mo', 'Business Email', 'Mailboxes on your domain', 'Professional business email on your own domain, set up for you after payment.', 'Start now'],
-  ['/website', 'layout', 'green', 'Subscription', 'From ' . money($fp('website_launch')) . '/mo', 'Website Design', 'Designed, hosted and maintained', 'A monthly website subscription: we build it, host it and keep it updated so you can run your business.', 'Choose plan'],
-  ['/bundle', 'stack', 'amber', 'Bundle', 'Save up to 15%', 'Bundle & Save', 'Combine services, one dashboard', 'Registration, management, domain, email, website and maintenance together, with a discount that grows as you add services.', 'Get the bundle'],
+  ['/register', 'building', 'blue', 'From ' . money($regFrom), 'Register your business', 'Corporation, partnership or sole proprietorship, in any province.', 'cafe-owner', 'Start now'],
+  ['/manage-business', 'calendar', 'violet', 'From ' . money($fp('bm_documents')), 'Manage your business', 'Annual returns, changes and documents.', 'docs-typing', 'Manage'],
+  ['/domain', 'globe', 'teal', 'From ' . money($fp('domain_register')) . '/yr', 'Domain name', '.ca, .com and more.', 'laptop', 'Search'],
+  ['/email', 'mail', 'cyan', 'From ' . money($fp('email_starter')) . '/mo', 'Business email', 'Mailboxes on your domain.', 'notes', 'Set up'],
+  ['/website', 'layout', 'green', 'From ' . money($fp('website_launch')) . '/mo', 'Website design', 'Built, hosted and maintained.', 'developer', 'Choose plan'],
+  ['/bundle', 'stack', 'amber', 'Save up to 15%', 'Bundle & save', 'Everything together, one dashboard.', 'partners', 'Build a bundle'],
 ];
-$steps = [['edit', 'violet', 'Submit your application', 'Complete a short guided form with your business details.', 'Each form checks names, addresses and required details as you go, so nothing is missed.'],
-  ['search', 'teal', 'We review and prepare', 'We check everything and prepare the filing for the right registry.', 'Our filing agent validates the details against your registry’s rules and flags anything that needs a change.'],
-  ['certificate', 'green', 'You sign, we file', 'You review and sign once; then it is submitted to the registry.', 'Nothing is filed until you have paid, the checks pass and you have signed. Any change after signing needs a new signature.'],
-  ['calendar', 'blue', 'You’re good to go', 'Your documents and next steps arrive in your portal.', 'Track every order in your portal, download documents anytime and get reminders before deadlines.']];
+$steps = [['edit', 'violet', 'Tell us about your business', 'A short guided form that checks details as you type.'],
+  ['search', 'teal', 'We review and prepare', 'Our filing agent checks it against your registry’s rules.'],
+  ['pen', 'green', 'You sign, we file', 'Nothing is submitted until you approve it.'],
+  ['certificate', 'blue', 'You’re in business', 'Documents and next steps land in your portal.']];
 $mark = ['y' => '✓ ', 'x' => '✗ ', 'w' => '▲ '];
 ?>
-<section class="hero-c"><div class="wrap">
-  <span class="badge-pill">One-stop Canadian business platform</span>
-  <h1>Everything to launch <span>your business</span></h1>
-  <p class="lead">Register your company, secure your domain, set up email and launch your website, all in one place.</p>
-  <div class="hero-actions"><a class="btn btn-primary btn-lg" href="/register">Get started</a><a class="btn btn-ghost btn-lg" href="/bundle">Bundle &amp; save</a></div>
+<section class="hx"><div class="wrap hx-grid">
+  <div class="hx-text">
+    <span class="badge-pill" data-rv><?= e(t('One-stop Canadian business platform')) ?></span>
+    <h1 data-rv><?= e(t('Start your business.')) ?><br><span><?= e(t('We handle the rest.')) ?></span></h1>
+    <p class="lead" data-rv><?= e(t('Registration, domain, email and website. One place, one checkout, every province.')) ?></p>
+    <div class="hero-actions" data-rv><a class="btn btn-primary btn-lg" href="/register"><?= e(t('Get started')) ?></a><a class="btn btn-ghost btn-lg" href="/bundle"><?= e(t('Bundle & save')) ?></a></div>
+    <ul class="hx-proof" data-rv><li><?= nx_icon('check') ?><?= e(t('Government fees included')) ?></li><li><?= nx_icon('check') ?><?= e(t('You sign before we file')) ?></li><li><?= nx_icon('check') ?><?= e(t('Canadian team')) ?></li></ul>
+  </div>
+  <div class="hx-media" data-rv>
+    <div class="sh-frame"><img src="/media/owners-open.webp" alt="" width="1600" height="900" fetchpriority="high" style="object-position:55% 50%"></div>
+    <div class="hx-track" aria-hidden="true">
+      <b><?= e(t('Your filing')) ?></b>
+      <ol data-track><li class="done"><?= e(t('Details submitted')) ?></li><li class="done"><?= e(t('Checks passed')) ?></li><li class="now"><?= e(t('Signed by you')) ?></li><li><?= e(t('Filed with the registry')) ?></li></ol>
+    </div>
+    <div class="chip-f chip-1"><span class="mc-ic tone-teal"><?= nx_icon('shield') ?></span><span><b><?= e(t('Filed with the registry')) ?></b><small><?= count(Filings::JURISDICTIONS) ?> <?= e(t('registries supported')) ?></small></span></div>
+  </div>
 </div></section>
 <section class="stats" aria-label="At a glance">
-  <div><span class="mc-ic tone-blue"><?= nx_icon('building') ?></span><b><?= count(Filings::JURISDICTIONS) ?></b><span>Registries we file with</span></div>
-  <div><span class="mc-ic tone-teal"><?= nx_icon('cash') ?></span><b>From <?= e(money($regFrom)) ?></b><span>Government fees included</span></div>
-  <div><span class="mc-ic tone-violet"><?= nx_icon('certificate') ?></span><b>1 signature</b><span>Before anything is filed</span></div>
-  <div><span class="mc-ic tone-amber"><?= nx_icon('globe') ?></span><b>10 + federal</b><span>Provinces served</span></div>
+  <div><span class="mc-ic tone-blue"><?= nx_icon('building') ?></span><b data-count="<?= count(Filings::JURISDICTIONS) ?>"><?= count(Filings::JURISDICTIONS) ?></b><span><?= e(t('Registries we file with')) ?></span></div>
+  <div><span class="mc-ic tone-teal"><?= nx_icon('cash') ?></span><b><?= e(t('From')) ?> <?= e(money($regFrom)) ?></b><span><?= e(t('Government fees included')) ?></span></div>
+  <div><span class="mc-ic tone-violet"><?= nx_icon('pen') ?></span><b><?= e(t('1 signature')) ?></b><span><?= e(t('Before anything is filed')) ?></span></div>
+  <div><span class="mc-ic tone-amber"><?= nx_icon('globe') ?></span><b><?= e(t('10 + federal')) ?></b><span><?= e(t('Provinces served')) ?></span></div>
 </section>
-<div class="prov-strip" aria-label="Provinces"><ul><?php $pv = ['FED' => 'Federal (Canada-wide)'] + Catalog::PROVINCES; for ($k = 0; $k < 2; $k++) foreach ($pv as $c => $n): ?><li<?= $k ? ' aria-hidden="true"' : '' ?>><?= e($n) ?><small>✓ Available now</small></li><?php endforeach; ?></ul></div>
+<div class="prov-strip" aria-label="Provinces"><ul><?php $pv = ['FED' => 'Federal (Canada-wide)'] + Catalog::PROVINCES; for ($k = 0; $k < 2; $k++) foreach ($pv as $c => $n): ?><li<?= $k ? ' aria-hidden="true"' : '' ?>><?= e(t($n)) ?><small>✓ <?= e(t('Available now')) ?></small></li><?php endforeach; ?></ul></div>
 
 <section class="sec"><div class="wrap">
-  <div class="sec-head center"><span class="badge-pill">Our services</span><h2>Built for Canadian entrepreneurs</h2><p>Six services. One dashboard.</p></div>
-  <div class="svc6">
-  <?php foreach ($svc6 as $i => [$href, $ic, $tone, $kind, $price, $t, $k, $d, $go]): ?>
-    <a class="s6" href="<?= e($href) ?>">
-      <span class="s6-top"><span class="mc-ic tone-<?= $tone ?>"><?= nx_icon($ic) ?></span><span class="s6-pr"><small><?= e($kind) ?></small><b><?= e($price) ?></b></span></span>
-      <span class="s6-n"><?= sprintf('%02d', $i + 1) ?></span><h3><?= e($t) ?></h3><p class="s6-k"><?= e($k) ?></p><p><?= e($d) ?></p>
-      <span class="s6-go"><?= e($go) ?> <?= nx_icon('arrow') ?></span>
+  <div class="sec-head split-head" data-rv><div><span class="badge-pill"><?= e(t('Our services')) ?></span><h2><?= e(t('Six services. One dashboard.')) ?></h2></div><p><?= e(t('Start with one. Add the rest when you are ready.')) ?></p></div>
+  <div class="bento">
+  <?php foreach ($svc6 as $i => [$href, $ic, $tone, $price, $t, $d, $img, $go]): ?>
+    <a class="bc bc-<?= $i ?>" href="<?= e($href) ?>" data-rv>
+      <span class="bc-img"><img src="/media/<?= e($img) ?>.webp" alt="" loading="lazy" width="1400" height="934"></span>
+      <span class="bc-body"><span class="bc-top"><span class="mc-ic tone-<?= $tone ?>"><?= nx_icon($ic) ?></span><b class="bc-pr"><?= e(str_starts_with($price, 'From ') ? t('From') . substr($price, 4) : t($price)) ?></b></span>
+      <h3><?= e(t($t)) ?></h3><p><?= e(t($d)) ?></p><span class="s6-go"><?= e(t($go)) ?> <?= nx_icon('arrow') ?></span></span>
     </a>
   <?php endforeach; ?>
   </div>
 </div></section>
 
-<section class="sec alt"><div class="wrap">
-  <div class="sec-head center"><span class="badge-pill">How it works</span><h2>Simple, guided, end to end, in four steps</h2><p>From your browser to the government registry. Select a step to learn more.</p></div>
-  <div class="steps4" data-steps4>
-  <?php foreach ($steps as $i => [$ic, $tone, $t, $d, $more]): ?>
-    <button type="button" class="st4<?= $i === 0 ? ' on' : '' ?>" aria-expanded="<?= $i === 0 ? 'true' : 'false' ?>"><span class="n"><?= sprintf('%02d', $i + 1) ?></span><span class="mc-ic tone-<?= $tone ?>"><?= nx_icon($ic) ?></span><h3><?= e($t) ?></h3><p><?= e($d) ?></p><span class="more"><?= e($more) ?></span></button>
-  <?php endforeach; ?>
+<section class="sec alt"><div class="wrap how">
+  <div class="how-l">
+    <div class="sec-head" data-rv><span class="badge-pill"><?= e(t('How it works')) ?></span><h2><?= e(t('Four steps. No paperwork.')) ?></h2></div>
+    <ol class="how-steps">
+    <?php foreach ($steps as $i => [$ic, $tone, $t, $d]): ?>
+      <li data-rv><span class="mc-ic tone-<?= $tone ?>"><?= nx_icon($ic) ?></span><div><h3><?= e(t($t)) ?></h3><p><?= e(t($d)) ?></p></div></li>
+    <?php endforeach; ?>
+    </ol>
+    <div class="hero-actions" data-rv><a class="btn btn-primary btn-lg" href="/register"><?= e(t('Start your business')) ?></a></div>
   </div>
-  <div class="steps-cta"><a class="btn btn-primary btn-lg" href="/register">Start your business journey</a><small>Based in Moncton, New Brunswick</small></div>
+  <div class="how-r" data-rv><div class="sh-frame tall"><video autoplay muted loop playsinline preload="none" poster="/media/desk-poster.webp" aria-hidden="true" data-autoplay><source src="/media/desk.mp4" type="video/mp4"></video></div>
+    <div class="chip-f chip-0"><span class="mc-ic tone-green"><?= nx_icon('pen') ?></span><span><b><?= e(t('Signed by you')) ?></b><small><?= e(t('Then we file')) ?></small></span></div></div>
 </div></section>
+
+<section class="band"><video autoplay muted loop playsinline preload="none" poster="/media/coast-poster.webp" aria-hidden="true" data-autoplay><source src="/media/coast.mp4" type="video/mp4"></video>
+  <div class="wrap band-in" data-rv><h2><?= e(t('Proudly built in Atlantic Canada.')) ?></h2><p><?= e(t('Serving entrepreneurs from coast to coast.')) ?></p><a class="btn btn-light btn-lg" href="/about"><?= e(t('Our story')) ?></a></div>
+</section>
 
 <section class="trust-sec" aria-label="Why customers trust us"><div class="wrap trust">
   <?php foreach ([['users', 'teal', 'Canadian privacy law', 'Handled under PIPEDA'], ['certificate', 'blue', 'Encrypted connection', 'TLS on every page'], ['cash', 'violet', 'Payments by Stripe', 'Card details never stored here'], ['edit', 'green', 'You sign first', 'Nothing filed without you'], ['building', 'amber', 'Atlantic Canada team', 'Moncton, New Brunswick'], ['search', 'cyan', 'Clear prices', 'Government fees included']] as [$ic, $tone, $t, $s]): ?>
