@@ -33,6 +33,7 @@ $menus = [
       ['web_app', 'laptop', 'Web Application', 'Portals, booking, dashboards.', 'Custom quote'],
     ]],
 ];
+$mimg = ['nuans' => 'notes', 'sole_prop' => 'cafe-laptop', 'partnership' => 'handshake', 'corp_named' => 'signing', 'cooperative' => 'coop-team', 'bm_annual' => 'desk-smile', 'bm_changes' => 'docs-typing', 'bm_documents' => 'paperwork', 'biz_name' => 'owner-boxes', 'domain_register' => 'laptop', 'email_starter' => 'email-typing', 'website_launch' => 'developer', 'maintenance_care' => 'phone-owner', 'web_app' => 'team-deal'];
 $cur = $path ?? '';
 $links = ['nuans' => '/register/nuans', 'sole_prop' => '/register/sole-proprietorship', 'partnership' => '/register/partnership', 'corp_named' => '/register/corporation', 'cooperative' => '/register/cooperative',
   'bm_annual' => '/manage-business/annual-returns', 'bm_changes' => '/manage-business/corporate-changes', 'bm_documents' => '/manage-business/corporate-documents', 'biz_name' => '/manage-business/name-services',
@@ -48,7 +49,7 @@ $links = ['nuans' => '/register/nuans', 'sole_prop' => '/register/sole-proprieto
           <div class="mega-lead"><p class="mega-k"><?= e($m['label']) ?></p><p class="mega-title"><?= e($m['title']) ?></p><p class="mega-sub"><?= e($m['sub']) ?></p><a class="btn btn-light btn-sm mega-all" href="<?= e($m['all'][0]) ?>"><?= e($m['all'][1]) ?></a></div>
           <ul class="mega-grid" style="--cols:<?= count($m['items']) ?>">
           <?php foreach ($m['items'] as [$slug, $ic, $name, $desc, $badge]): ?>
-            <li><a class="mega-card" href="<?= e($links[$slug] ?? '/services/' . $slug) ?>"><span class="mc-ic"><?= nx_icon($ic) ?></span><span class="mc-body"><span class="mc-name"><?= e($name) ?></span><span class="mc-desc"><?= e($desc) ?></span></span><span class="mc-badge"><?= e($badge) ?></span></a></li>
+            <li><a class="mega-card" href="<?= e($links[$slug] ?? '/services/' . $slug) ?>"><span class="mc-img"><img src="/media/<?= e($mimg[$slug] ?? 'laptop') ?>-t.webp" alt="" loading="lazy" decoding="async" width="520" height="347"></span><span class="mc-ic"><?= nx_icon($ic) ?></span><span class="mc-body"><span class="mc-name"><?= e($name) ?></span><span class="mc-desc"><?= e($desc) ?></span></span><span class="mc-badge"><?= e($badge) ?></span></a></li>
           <?php endforeach; ?>
           </ul>
         </div>

@@ -9,7 +9,7 @@ $due = (int)date('n') % 12;
 $months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 $mark = ['y' => '✓ ', 'x' => '✗ ', 'w' => '▲ '];
 $chap = [['open', 'Open', 'brand', '#0d1117', 'dark'], ['register', 'Register', 'register', PILLARS['register']['deep'], 'dark'], ['manage', 'Manage', 'manage', PILLARS['manage']['soft'], 'light'],
-  ['web', 'Web', 'web', PILLARS['web']['deep'], 'dark'], ['bundle', 'Bundle', 'bundle', PILLARS['bundle']['soft'], 'light'], ['funding', 'Funding', 'opps', PILLARS['opps']['deep'], 'dark'], ['start', 'Start', 'brand', '#f5f6f8', 'light']];
+  ['web', 'Web', 'web', PILLARS['web']['soft'], 'light'], ['bundle', 'Bundle', 'bundle', PILLARS['bundle']['soft'], 'light'], ['funding', 'Funding', 'opps', PILLARS['opps']['soft'], 'light'], ['start', 'Start', 'brand', '#f5f6f8', 'light']];
 $attr = function (int $i) use ($chap) { [$id, $lbl, $p, $flow, $tone] = $chap[$i]; return 'id="' . $id . '" data-flow="' . $flow . '" data-tone="' . $tone . '" data-pillar="' . $p . '" style="--chbg:' . $flow . ';' . pillar_css($p) . '" aria-label="' . e(t($lbl)) . '"'; };
 $paths = [
   ['register', 'signing', 'Make it official.', [['/register/sole-proprietorship', 'Sole proprietorship', $fp('sole_prop')], ['/register/partnership', 'Partnership', $fp('partnership')], ['/register/corporation', 'Corporation', $fp('corp_numbered')], ['/register/nuans', 'NUANS name search', $fp('nuans')]]],
@@ -39,7 +39,7 @@ $paths = [
   <div class="wrap ch-grid">
     <div class="ch-copy">
       <a class="ch-k" href="/register"><i></i><?= e(t('Register Business')) ?></a>
-      <h2 data-split><?= e(t('Name it. We’ll make it official.')) ?></h2>
+      <h2 class="h2-lines"><span class="ln1"><?= e(t('Name it.')) ?></span><span class="ln2"><?= e(t('We’ll make it official.')) ?></span></h2>
       <div class="nm-form">
         <label class="nm-field"><span><?= e(t('Your business name')) ?></span><input type="text" maxlength="60" autocomplete="off" spellcheck="false" placeholder="Maple &amp; Pine" data-bizname></label>
         <div class="nm-row">
@@ -48,18 +48,21 @@ $paths = [
         </div>
       </div>
       <div class="ch-cta"><a class="btn btn-light btn-lg" href="/register/nuans" data-name-link="/register/nuans"><?= e(t('Check the name first')) ?></a><a class="btn btn-outline-light btn-lg" href="/register"><?= e(t('Register from')) ?> <?= e(money($regFrom)) ?></a></div>
-      <p class="fine"><?= e(t('Government fees included. Filed with the registry as soon as your order is in.')) ?></p>
+      <p class="fine one-line"><?= e(t('Government fees included. Filed with the registry as soon as your order is in.')) ?></p>
     </div>
     <div class="aoi-wrap">
       <img class="aoi-bg" src="/media/paperwork.webp" alt="" loading="lazy" decoding="async" width="1400" height="934">
       <figure class="sheet aoi" aria-label="<?= e(t('Preview of your articles of incorporation')) ?>">
-        <div class="aoi-head"><p class="aoi-k"><?= e(t('Draft')) ?> · <span data-jur-out><?= e(t('New Brunswick')) ?></span></p><p class="aoi-t"><?= e(t('Articles of Incorporation')) ?></p></div>
+        <div class="aoi-head"><p class="aoi-k"><?= e(t('Draft prepared for filing')) ?> · <span data-jur-out><?= e(t('New Brunswick')) ?></span></p><p class="aoi-t"><?= e(t('Articles of Incorporation')) ?></p></div>
         <ol class="aoi-list">
-          <li><span><?= e(t('Name of the corporation')) ?></span><b class="aoi-name"><span data-name-out>Maple &amp; Pine</span> <span data-end-out>Inc.</span></b></li>
-          <li><span><?= e(t('Classes and maximum number of shares')) ?></span><b><?= e(t('Common shares, unlimited')) ?></b></li>
-          <li><span><?= e(t('Restrictions on share transfers')) ?></span><b><?= e(t('Directors must approve')) ?></b></li>
-          <li><span><?= e(t('Number of directors')) ?></span><b><?= e(t('Minimum 1, maximum 10')) ?></b></li>
-          <li><span><?= e(t('Restrictions on the business')) ?></span><b><?= e(t('None')) ?></b></li>
+          <li><span><?= e(t('Corporate name')) ?></span><b class="aoi-name"><span data-name-out>Maple &amp; Pine</span> <span data-end-out>Inc.</span></b></li>
+          <li><span><?= e(t('Province or territory of the registered office')) ?></span><b data-jur-out2><?= e(t('New Brunswick')) ?></b></li>
+          <li><span><?= e(t('Classes and maximum number of shares the corporation may issue')) ?></span><b><?= e(t('An unlimited number of common shares')) ?></b></li>
+          <li><span><?= e(t('Restrictions on share transfers')) ?></span><b><?= e(t('See attached schedule')) ?></b></li>
+          <li class="aoi-2"><span><?= e(t('Minimum and maximum number of directors')) ?></span><b><?= e(t('Minimum 1, maximum 10')) ?></b></li>
+          <li class="aoi-2"><span><?= e(t('Restrictions on the business')) ?></span><b><?= e(t('None')) ?></b></li>
+          <li class="aoi-2"><span><?= e(t('Other provisions')) ?></span><b><?= e(t('See attached schedule')) ?></b></li>
+          <li class="aoi-2"><span><?= e(t('Incorporator')) ?></span><b><?= e(t('You')) ?></b></li>
         </ol>
         <p class="aoi-foot"><?= e(t('Preview, not a government document')) ?></p>
         <div class="stamp" aria-hidden="true"><span><?= e(t('Ready to file')) ?></span></div>
@@ -74,9 +77,9 @@ $paths = [
       <a class="ch-k" href="/manage-business"><i></i><?= e(t('Manage Business')) ?></a>
       <h2 data-split><?= e(t('Stay compliant. Skip the paperwork.')) ?></h2>
       <ul class="plist">
-        <li><a href="/manage-business/annual-returns"><?= e(t('Annual returns')) ?></a><b><?= e($from($fp('bm_annual'))) ?></b></li>
-        <li><a href="/manage-business/corporate-changes"><?= e(t('Corporate changes')) ?></a><b><?= e($from($fp('bm_changes'))) ?></b></li>
-        <li><a href="/manage-business/corporate-documents"><?= e(t('Certificates and copies')) ?></a><b><?= e($from($fp('bm_documents'))) ?></b></li>
+        <li><a href="/manage-business/annual-returns"><span><?= e(t('Annual returns')) ?></span><b><?= e($from($fp('bm_annual'))) ?></b></a></li>
+        <li><a href="/manage-business/corporate-changes"><span><?= e(t('Corporate changes')) ?></span><b><?= e($from($fp('bm_changes'))) ?></b></a></li>
+        <li><a href="/manage-business/corporate-documents"><span><?= e(t('Certificates and copies')) ?></span><b><?= e($from($fp('bm_documents'))) ?></b></a></li>
       </ul>
       <a class="btn btn-primary btn-lg" href="/manage-business"><?= e(t('Manage your business')) ?></a>
     </div>
@@ -91,23 +94,29 @@ $paths = [
 <section class="ch ch-web" <?= $attr(3) ?>>
   <div class="wrap ch-grid">
     <div class="ch-copy">
-      <a class="ch-k" href="/website"><i></i><?= e(t('Web Services')) ?></a>
+      <a class="ch-k" href="/web-services"><i></i><?= e(t('Web Services')) ?></a>
       <h2 data-split><?= e(t('Get found. Get customers.')) ?></h2>
+      <form class="dsearch" action="/domain" method="get" role="search">
+        <label class="sr" for="dm-q"><?= e(t('Search a domain')) ?></label>
+        <span class="ds-pre" aria-hidden="true">www.</span>
+        <input id="dm-q" name="q" type="text" placeholder="mapleandpine.ca" autocomplete="off" autocapitalize="none" spellcheck="false" data-dm>
+        <button class="btn btn-primary" type="submit"><?= e(t('Search')) ?></button>
+      </form>
       <ul class="plist">
-        <li><a href="/domain"><?= e(t('Domain name')) ?></a><b><?= e($from($fp('domain_register'), 'yr')) ?></b></li>
-        <li><a href="/email"><?= e(t('Business email')) ?></a><b><?= e($from($fp('email_starter'), 'mo')) ?></b></li>
-        <li><a href="/website"><?= e(t('Website, hosted and maintained')) ?></a><b><?= e($from($fp('website_launch'), 'mo')) ?></b></li>
+        <li><a href="/domain"><span><?= e(t('Domain name')) ?></span><b><?= e($from($fp('domain_register'), 'yr')) ?></b></a></li>
+        <li><a href="/email"><span><?= e(t('Business email')) ?></span><b><?= e($from($fp('email_starter'), 'mo')) ?></b></a></li>
+        <li><a href="/website"><span><?= e(t('Website, hosted and maintained')) ?></span><b><?= e($from($fp('website_launch'), 'mo')) ?></b></a></li>
       </ul>
-      <form class="dmini" action="/domain" method="get" role="search"><label class="sr" for="dm-q"><?= e(t('Search a domain')) ?></label><span class="dm-www">www.</span><input id="dm-q" name="q" type="text" placeholder="mapleandpine.ca" autocomplete="off" autocapitalize="none" spellcheck="false" data-dm><button class="btn btn-light" type="submit"><?= e(t('Search')) ?></button></form>
-      <a class="btn btn-outline-light btn-lg" href="/web-services"><?= e(t('Start Web Services')) ?></a>
+      <a class="btn btn-primary btn-lg" href="/web-services"><?= e(t('Start Web Services')) ?></a>
     </div>
-    <div class="stack" aria-hidden="true">
-      <div class="st-url"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="u">www.<b data-slug-out>mapleandpine</b>.ca</span></div>
-      <div class="st-site">
+    <div class="site-mock" aria-hidden="true">
+      <div class="sm-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="sm-url">https://www.<b data-slug-out>mapleandpine</b>.ca</span></div>
+      <div class="sm-nav"><b class="sm-logo" data-name-out>Maple &amp; Pine</b><span><?= e(t('Shop')) ?></span><span><?= e(t('About')) ?></span><span><?= e(t('Contact')) ?></span><span class="sm-cart"><?= e(t('Cart')) ?> (2)</span></div>
+      <div class="sm-hero">
         <video autoplay muted loop playsinline preload="none" poster="/media/packing-poster.webp" data-autoplay><source src="/media/packing.mp4" type="video/mp4"></video>
-        <div class="st-site-in"><p class="st-brand" data-name-out>Maple &amp; Pine</p><p class="st-tag"><?= e(t('Shipping across Canada')) ?></p><span class="st-btn"><?= e(t('Shop now')) ?></span></div>
+        <div class="sm-copy"><p class="sm-h"><?= e(t('Handmade in Canada.')) ?></p><p class="sm-s"><?= e(t('Shipping across Canada')) ?></p><span class="sm-btn"><?= e(t('Shop now')) ?></span></div>
       </div>
-      <div class="st-mail"><span class="av-s">M</span><span><b><?= e(t('New order')) ?></b><small>hello@<span data-slug-out>mapleandpine</span>.ca</small></span></div>
+      <div class="sm-mail"><span class="av-s">M</span><span><b><?= e(t('New order')) ?></b><small>orders@<span data-slug-out>mapleandpine</span>.ca</small></span></div>
     </div>
   </div>
 </section>
@@ -134,7 +143,7 @@ $paths = [
       <a class="ch-k" href="/opportunities"><i></i><?= e(t('Opportunities')) ?></a>
       <h2 data-split><?= e(t('Funding is out there.')) ?></h2>
       <p><?= e(t('Grants, loans and government programs. Most start with a registered business.')) ?></p>
-      <a class="btn btn-light btn-lg" href="/opportunities"><?= e(t('Find funding')) ?></a>
+      <a class="btn btn-primary btn-lg" href="/opportunities"><?= e(t('Find funding')) ?></a>
     </div>
     <ul class="progs" aria-label="<?= e(t('Programs')) ?>">
       <li><b>IRAP</b><span><?= e(t('National Research Council of Canada')) ?></span></li>

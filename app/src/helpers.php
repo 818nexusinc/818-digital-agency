@@ -100,9 +100,9 @@ function js_dict(): string
 const PILLARS = [
     'register' => ['name' => 'Register Business', 'home' => '/register', 'acc' => '#4f46e5', 'soft' => '#eef2ff', 'deep' => '#4f46e5', 'ink' => '#312e81', 'tone' => 'dark'],
     'manage'   => ['name' => 'Manage Business', 'home' => '/manage-business', 'acc' => '#047857', 'soft' => '#e7f8f0', 'deep' => '#059669', 'ink' => '#064e3b', 'tone' => 'light'],
-    'web'      => ['name' => 'Web Services', 'home' => '/web-services', 'acc' => '#be185d', 'soft' => '#fdf0f6', 'deep' => '#db2777', 'ink' => '#831843', 'tone' => 'dark'],
+    'web'      => ['name' => 'Web Services', 'home' => '/web-services', 'acc' => '#be185d', 'soft' => '#fcf1f6', 'deep' => '#be185d', 'ink' => '#701a43', 'tone' => 'light'],
     'bundle'   => ['name' => 'Bundle & Save', 'home' => '/bundle', 'acc' => '#c2410c', 'soft' => '#fff4ea', 'deep' => '#ea580c', 'ink' => '#7c2d12', 'tone' => 'light'],
-    'opps'     => ['name' => 'Opportunities', 'home' => '/opportunities', 'acc' => '#be123c', 'soft' => '#fff1f3', 'deep' => '#e11d48', 'ink' => '#881337', 'tone' => 'dark'],
+    'opps'     => ['name' => 'Opportunities', 'home' => '/opportunities', 'acc' => '#be123c', 'soft' => '#fff3f4', 'deep' => '#be123c', 'ink' => '#7f1d2d', 'tone' => 'light'],
     'brand'    => ['name' => '818 Digital Agency', 'home' => '/', 'acc' => '#1e44c8', 'soft' => '#eef2fd', 'deep' => '#0f172a', 'ink' => '#0f172a', 'tone' => 'dark'],
 ];
 function pillar(string $path): string

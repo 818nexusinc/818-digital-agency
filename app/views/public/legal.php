@@ -1,6 +1,18 @@
-<?php $co = App\Settings::get('company.legal'); $email = App\Settings::get('company.email'); ?>
-<section class="section tight"><div class="wrap prose">
-<h1><?= e($title) ?></h1><p class="small muted">Operated by <?= e($co) ?>, <?= e(App\Settings::get('company.city')) ?>. Questions: <a href="mailto:<?= e($email) ?>"><?= e($email) ?></a>. This document describes how this platform actually works. Have it reviewed by your legal advisor before relying on it.</p>
+<?php $co = App\Settings::get('company.legal'); $email = App\Settings::get('company.email');
+$trust = ['privacy' => ['Privacy', 'What we collect, why, and your choices.'], 'terms' => ['Terms', 'The agreement for using our services.'], 'refunds' => ['Refunds', 'When and how you get your money back.'],
+  'cookies' => ['Cookies', 'One essential cookie. No trackers.'], 'ai' => ['How we use AI', 'What our AI does, and what it never does.']];
+$summ = $trust[$page][1] ?? ''; ?>
+<section class="trust-hero"><div class="wrap">
+  <nav class="crumbs" aria-label="<?= e(t('Breadcrumb')) ?>"><a href="/"><?= e(t('Home')) ?></a><span aria-hidden="true">/</span><span><?= e(t('Trust centre')) ?></span><span aria-hidden="true">/</span><b aria-current="page"><?= e(t($trust[$page][0] ?? $title)) ?></b></nav>
+  <h1 data-split><?= e($title) ?></h1>
+  <p class="th-sub"><?= e(t($summ)) ?></p>
+  <nav class="trust-tabs" aria-label="<?= e(t('Trust centre')) ?>"><?php foreach ($trust as $k => [$n, $d]): ?><a href="/legal/<?= $k ?>"<?= $k === $page ? ' aria-current="page"' : '' ?>><?= e(t($n)) ?></a><?php endforeach; ?></nav>
+</div></section>
+<section class="trust-body"><div class="wrap trust-grid">
+  <aside class="toc" aria-label="<?= e(t('On this page')) ?>"><p><?= e(t('On this page')) ?></p><ol data-toc></ol>
+    <div class="toc-help"><b><?= e(t('Questions?')) ?></b><a href="mailto:<?= e($email) ?>"><?= e($email) ?></a></div></aside>
+  <article class="prose legal" data-toc-src>
+  <p class="legal-meta">Operated by <?= e($co) ?>, <?= e(App\Settings::get('company.city')) ?>. Questions: <a href="mailto:<?= e($email) ?>"><?= e($email) ?></a>. This document describes how this platform actually works. Have it reviewed by your legal advisor before relying on it.</p>
 <?php if ($page === 'privacy'): ?>
 <h2>What we collect</h2><ul><li>Contact and business details you give us (name, email, phone, business name, location).</li><li>Order, project, support and payment records. Card details are handled by Stripe and never reach our servers.</li><li>Conversations with our AI assistant, and preferences it saves to help you (only when you're signed in and memory is on).</li><li>Technical data needed for security: IP address, sign-in events and an essential session cookie.</li></ul>
 <h2>Why we use it</h2><p>To provide and support the services you request, prepare proposals, keep records required by law, protect accounts against abuse, and, only with your consent, send marketing emails.</p>
@@ -24,4 +36,5 @@
 <h2>Limits we enforce in software</h2><ul><li>Prices and policies come only from our catalog and knowledge base.</li><li>Government filings are submitted only after payment, automatic validation and the authorization you give when you submit your order form. Deployments, DNS and domain transfers, refunds and payment changes require human approval.</li><li>Each agent has spending limits and restricted permissions. Agents can't change their own permissions.</li><li>Your data is scoped to your account. Agents can't see other customers' information.</li></ul>
 <h2>Your options</h2><p>Ask for a person at any time with "Talk to a person" in the chat or the <a href="/contact">contact form</a>.</p>
 <?php endif; ?>
+  </article>
 </div></section>
