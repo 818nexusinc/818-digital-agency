@@ -72,7 +72,7 @@ final class Db
         $host = (string)Env::get('DB_HOST', 'localhost'); $port = (int)Env::get('DB_PORT', '3306') ?: 3306; $name = (string)Env::get('DB_NAME', '');
         if ($name === '') return ['ok' => false, 'target' => '', 'error' => 'DB_NAME is not set.'];
         $target = "{$host}:{$port}/{$name}";
-        if (in_array(strtolower($host), ['localhost', '127.0.0.1', '::1'], true)) return ['ok' => false, 'target' => $target, 'error' => 'DB_HOST is set to localhost. That only works on the database server itself; use the remote hostname or IP shown in My20i → Remote MySQL Access.'];
+        if (in_array(strtolower($host), ['localhost', '127.0.0.1', '::1'], true)) return ['ok' => false, 'target' => $target, 'error' => 'DB_HOST is set to localhost (' . $host . '). That address only works for websites running on the database server itself.', 'hint' => 'In Vercel, edit DB_HOST to the remote hostname or IP shown in My20i → Remote MySQL Access (on a Cloud Server this is usually the server\'s public IP address), then redeploy.'];
         $t0 = microtime(true);
         try {
             $pdo = new PDO("mysql:host={$host};port={$port};dbname={$name};charset=utf8mb4", Env::get('DB_USER'), Env::get('DB_PASS'), [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_TIMEOUT => 6]);
