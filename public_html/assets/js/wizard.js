@@ -301,4 +301,8 @@
 
   /* Choose-a-card helpers used on hub pages: selecting a structure in the quiz highlights its card. */
   $$('[data-jump]').forEach(function (b) { b.addEventListener('click', function () { var t = document.getElementById(b.dataset.jump); if (t) { t.scrollIntoView({ behavior: 'smooth', block: 'center' }); t.classList.add('pulse'); setTimeout(function () { t.classList.remove('pulse'); }, 1600); } }); });
+
+  /* Arriving from the homepage name preview: /register/nuans?name=… fills the first proposed name. */
+  var qn = new URLSearchParams(location.search).get('name');
+  if (qn) $$('[name="entity[proposed_name]"]').forEach(function (f) { f.value = qn.slice(0, 100); f.dispatchEvent(new Event('input', { bubbles: true })); });
 })();

@@ -252,4 +252,39 @@
     nf.addEventListener('keydown', function (e) { if (e.key === 'Enter') { var f = navA.filter(function (a) { return !a.hidden; })[0]; if (f) location.href = f.href; } if (e.key === 'Escape') { nf.value = ''; nf.dispatchEvent(new Event('input')); nf.blur(); } });
     document.addEventListener('keydown', function (e) { var tg = e.target.tagName; if ((e.key === '/' || ((e.metaKey || e.ctrlKey) && e.key === 'k')) && !/INPUT|TEXTAREA|SELECT/.test(tg)) { e.preventDefault(); var sd = $('#side'); if (sd && innerWidth <= 960) sd.classList.add('open'); nf.focus(); } });
   }
+
+  /* Homepage story: header height for full-screen chapters, chapter rail, and the live name preview. */
+  var hdr = $('.site-header');
+  function setHH() { if (hdr) document.documentElement.style.setProperty('--hh', hdr.offsetHeight + 'px'); }
+  setHH(); window.addEventListener('resize', setHH);
+  var rail = $('[data-rail]');
+  if (rail && 'IntersectionObserver' in window) {
+    var rl = $$('a', rail), chs = $$('.story .ch');
+    var cio = new IntersectionObserver(function (es) { es.forEach(function (en) {
+      if (!en.isIntersecting) return;
+      rl.forEach(function (a) { if (a.getAttribute('href') === '#' + en.target.id) a.setAttribute('aria-current', 'step'); else a.removeAttribute('aria-current'); });
+      rail.classList.toggle('on-dark', en.target.classList.contains('ch-idea'));
+    }); }, { threshold: .55 });
+    chs.forEach(function (c) { cio.observe(c); });
+    var tail = $('.story') && $('.story').nextElementSibling;
+    var tio = new IntersectionObserver(function (es) { es.forEach(function (en) { rail.classList.toggle('off', en.boundingClientRect.top < innerHeight * .5 && en.isIntersecting); }); }, { threshold: [0, .3] });
+    if (tail) tio.observe(tail);
+  }
+  var bn = $('[data-bizname]');
+  if (bn) {
+    var sheet = $('.sheet'), jur = $('[data-jur]'), def = bn.getAttribute('placeholder');
+    var slug = function (v) { return v.toLowerCase().replace(/&/g, 'and').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '').slice(0, 40) || 'yourbusiness'; };
+    var paint = function () {
+      var v = bn.value.trim() || def, end = ($('[data-end]:checked') || {}).value || 'Inc.';
+      $$('[data-name-out]').forEach(function (o) { o.textContent = v; });
+      $$('[data-slug-out]').forEach(function (o) { o.textContent = slug(v); });
+      $$('[data-end-out]').forEach(function (o) { o.textContent = end; });
+      var jo = $('[data-jur-out]'); if (jo && jur) jo.textContent = jur.options[jur.selectedIndex].text;
+      $$('[data-name-link]').forEach(function (a) { a.href = a.getAttribute('data-name-link') + (bn.value.trim() ? '?name=' + encodeURIComponent(bn.value.trim() + ' ' + end) : ''); });
+      if (sheet) sheet.classList.toggle('signed', bn.value.trim().length > 1);
+    };
+    bn.addEventListener('input', paint); if (jur) jur.addEventListener('change', paint);
+    $$('[data-end]').forEach(function (r) { r.addEventListener('change', paint); });
+    paint();
+  }
 })();

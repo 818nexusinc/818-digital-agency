@@ -3,84 +3,129 @@ use App\{Catalog, Filings, Csrf};
 include_once APP_ROOT . '/views/partials/icons.php';
 $fp = function (string $slug) { $s = Catalog::find($slug); return $s ? Catalog::fromPrice($s) : null; };
 $regFrom = min(array_filter([$fp('sole_prop'), $fp('partnership'), $fp('corp_numbered')]));
-$svc6 = [
-  ['/register', 'building', 'blue', 'From ' . money($regFrom), 'Register your business', 'Corporation, partnership or sole proprietorship, in any province.', 'cafe-owner', 'Start now'],
-  ['/manage-business', 'calendar', 'violet', 'From ' . money($fp('bm_documents')), 'Manage your business', 'Annual returns, changes and documents.', 'docs-typing', 'Manage'],
-  ['/domain', 'globe', 'teal', 'From ' . money($fp('domain_register')) . '/yr', 'Domain name', '.ca, .com and more.', 'laptop', 'Search'],
-  ['/email', 'mail', 'cyan', 'From ' . money($fp('email_starter')) . '/mo', 'Business email', 'Mailboxes on your domain.', 'notes', 'Set up'],
-  ['/website', 'layout', 'green', 'From ' . money($fp('website_launch')) . '/mo', 'Website design', 'Built, hosted and maintained.', 'developer', 'Choose plan'],
-  ['/bundle', 'stack', 'amber', 'Save up to 15%', 'Bundle & save', 'Everything together, one dashboard.', 'partners', 'Build a bundle'],
+$jur = ['FED' => 'Federal (CBCA)'] + Catalog::PROVINCES;
+$idx = [
+  ['/register', 'Register a business', 'Sole proprietorship, partnership, corporation or co-op.', 'From ' . money($regFrom), 'signing'],
+  ['/manage-business', 'Manage a registered business', 'Annual returns, changes, certificates.', 'From ' . money($fp('bm_documents')), 'docs-typing'],
+  ['/domain', 'Domain name', '.ca, .com and more, with DNS set up.', 'From ' . money($fp('domain_register')) . '/yr', 'laptop'],
+  ['/email', 'Business email', 'Mailboxes on your own domain.', 'From ' . money($fp('email_starter')) . '/mo', 'notes'],
+  ['/website', 'Website', 'Designed, hosted and maintained.', 'From ' . money($fp('website_launch')) . '/mo', 'developer'],
+  ['/web-application', 'Custom software', 'Portals, booking systems, dashboards.', 'Quoted in writing', 'team-deal'],
 ];
-$steps = [['edit', 'violet', 'Tell us about your business', 'A short guided form that checks details as you type.'],
-  ['search', 'teal', 'We review and prepare', 'Our filing agent checks it against your registry’s rules.'],
-  ['pen', 'green', 'You sign, we file', 'Nothing is submitted until you approve it.'],
-  ['certificate', 'blue', 'You’re in business', 'Documents and next steps land in your portal.']];
+$chap = [['idea', 'Idea'], ['name', 'Name'], ['file', 'File'], ['online', 'Online'], ['care', 'Care'], ['start', 'Start']];
+$due = (int)date('n') % 12; // a sample anniversary month for the illustration
+$months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 $mark = ['y' => '✓ ', 'x' => '✗ ', 'w' => '▲ '];
 ?>
-<section class="hx"><div class="wrap hx-grid">
-  <div class="hx-text">
-    <span class="badge-pill" data-rv><?= e(t('One-stop Canadian business platform')) ?></span>
-    <h1 data-rv><?= e(t('Start your business.')) ?><br><span><?= e(t('We handle the rest.')) ?></span></h1>
-    <p class="lead" data-rv><?= e(t('Registration, domain, email and website. One place, one checkout, every province.')) ?></p>
-    <div class="hero-actions" data-rv><a class="btn btn-primary btn-lg" href="/register"><?= e(t('Get started')) ?></a><a class="btn btn-ghost btn-lg" href="/bundle"><?= e(t('Bundle & save')) ?></a></div>
-    <ul class="hx-proof" data-rv><li><?= nx_icon('check') ?><?= e(t('Government fees included')) ?></li><li><?= nx_icon('check') ?><?= e(t('You sign before we file')) ?></li><li><?= nx_icon('check') ?><?= e(t('Canadian team')) ?></li></ul>
+<nav class="rail" aria-label="Homepage chapters" data-rail>
+  <ol><?php foreach ($chap as $i => [$id, $lbl]): ?><li><a href="#<?= $id ?>"><span class="rn"><?= sprintf('%02d', $i + 1) ?></span><span class="rl"><?= e(t($lbl)) ?></span></a></li><?php endforeach; ?></ol>
+</nav>
+
+<div class="story">
+<section class="ch ch-idea" id="idea" aria-label="<?= e(t('Idea')) ?>">
+  <img class="ch-bg" src="/media/owners-open.webp" alt="" width="1600" height="900" fetchpriority="high">
+  <div class="wrap ch-in">
+    <h1 class="st-in"><?= e(t('It starts with an idea.')) ?></h1>
+    <p class="st-in"><?= e(t('We take it from there: the registration, a name online, email and a website. Filed, built and looked after by a team in Moncton, New Brunswick.')) ?></p>
+    <div class="ch-act st-in"><a class="btn btn-light btn-lg" href="/register"><?= e(t('Start your business')) ?></a><a class="lnk-light" href="#name"><?= e(t('See how it works')) ?></a></div>
   </div>
-  <div class="hx-media" data-rv>
-    <div class="sh-frame"><img src="/media/owners-open.webp" alt="" width="1600" height="900" fetchpriority="high" style="object-position:55% 50%"></div>
-    <div class="hx-track" aria-hidden="true">
-      <b><?= e(t('Your filing')) ?></b>
-      <ol data-track><li class="done"><?= e(t('Details submitted')) ?></li><li class="done"><?= e(t('Checks passed')) ?></li><li class="now"><?= e(t('Signed by you')) ?></li><li><?= e(t('Filed with the registry')) ?></li></ol>
+  <a class="ch-next" href="#name" aria-label="<?= e(t('Next chapter')) ?>"><span><?= e(t('Scroll')) ?></span><i></i></a>
+</section>
+
+<section class="ch ch-name" id="name" aria-label="<?= e(t('Name')) ?>">
+  <div class="wrap ch-grid">
+    <div class="ch-copy">
+      <h2><?= e(t('Give it a name.')) ?></h2>
+      <p><?= e(t('Type the name you have in mind and pick where you will register. This is roughly how it will read on your paperwork.')) ?></p>
+      <div class="nm-form">
+        <label class="nm-field"><span><?= e(t('Business name')) ?></span><input type="text" maxlength="60" autocomplete="off" spellcheck="false" placeholder="Maple &amp; Pine" data-bizname></label>
+        <div class="nm-row">
+          <label class="nm-sel"><span><?= e(t('Registry')) ?></span><select data-jur><?php foreach ($jur as $c => $n): ?><option value="<?= e($c) ?>"<?= $c === 'NB' ? ' selected' : '' ?>><?= e(t($n)) ?></option><?php endforeach; ?></select></label>
+          <fieldset class="nm-end"><legend><?= e(t('Ending')) ?></legend><?php foreach (['Inc.', 'Ltd.', 'Corp.'] as $k => $en): ?><label><input type="radio" name="hm_end" value="<?= $en ?>"<?= $k ? '' : ' checked' ?> data-end><span><?= $en ?></span></label><?php endforeach; ?></fieldset>
+        </div>
+      </div>
+      <p class="ch-links"><a class="lnk" href="/register/nuans" data-name-link="/register/nuans"><?= e(t('Check it with an official NUANS search')) ?></a> <span class="muted"><?= e(money($fp('nuans'))) ?></span></p>
     </div>
-    <div class="chip-f chip-1"><span class="mc-ic tone-teal"><?= nx_icon('shield') ?></span><span><b><?= e(t('Filed with the registry')) ?></b><small><?= count(Filings::JURISDICTIONS) ?> <?= e(t('registries supported')) ?></small></span></div>
+    <figure class="sheet" aria-label="<?= e(t('Preview of your corporate name')) ?>">
+      <div class="sh-top"><span><?= e(t('Draft')) ?></span><span><?= e(t('Preview, not a government document')) ?></span></div>
+      <p class="sh-k"><?= e(t('Corporation name')) ?></p>
+      <p class="sh-name"><span data-name-out>Maple &amp; Pine</span> <span data-end-out>Inc.</span></p>
+      <dl class="sh-dl">
+        <div><dt><?= e(t('Registry')) ?></dt><dd data-jur-out><?= e(t('New Brunswick')) ?></dd></div>
+        <div><dt><?= e(t('Directors')) ?></dt><dd><?= e(t('You, and anyone you add')) ?></dd></div>
+        <div><dt><?= e(t('Corporation number')) ?></dt><dd><?= e(t('Issued by the registry')) ?></dd></div>
+      </dl>
+      <div class="sh-sign"><svg viewBox="0 0 220 50" aria-hidden="true"><path d="M6 36c14-22 22-26 26-18s-8 22 0 18 16-28 24-24-6 26 4 22 14-20 22-18 2 16 10 14 12-12 20-12 6 10 14 8 18-10 30-8 30 2 50-2"/></svg><span><?= e(t('Your signature, once you have reviewed it')) ?></span></div>
+    </figure>
   </div>
-</div></section>
-<section class="stats" aria-label="At a glance">
-  <div><span class="mc-ic tone-blue"><?= nx_icon('building') ?></span><b data-count="<?= count(Filings::JURISDICTIONS) ?>"><?= count(Filings::JURISDICTIONS) ?></b><span><?= e(t('Registries we file with')) ?></span></div>
-  <div><span class="mc-ic tone-teal"><?= nx_icon('cash') ?></span><b><?= e(t('From')) ?> <?= e(money($regFrom)) ?></b><span><?= e(t('Government fees included')) ?></span></div>
-  <div><span class="mc-ic tone-violet"><?= nx_icon('pen') ?></span><b><?= e(t('1 signature')) ?></b><span><?= e(t('Before anything is filed')) ?></span></div>
-  <div><span class="mc-ic tone-amber"><?= nx_icon('globe') ?></span><b><?= e(t('10 + federal')) ?></b><span><?= e(t('Provinces served')) ?></span></div>
 </section>
-<div class="prov-strip" aria-label="Provinces"><ul><?php $pv = ['FED' => 'Federal (Canada-wide)'] + Catalog::PROVINCES; for ($k = 0; $k < 2; $k++) foreach ($pv as $c => $n): ?><li<?= $k ? ' aria-hidden="true"' : '' ?>><?= e(t($n)) ?><small>✓ <?= e(t('Available now')) ?></small></li><?php endforeach; ?></ul></div>
 
-<section class="sec"><div class="wrap">
-  <div class="sec-head split-head" data-rv><div><span class="badge-pill"><?= e(t('Our services')) ?></span><h2><?= e(t('Six services. One dashboard.')) ?></h2></div><p><?= e(t('Start with one. Add the rest when you are ready.')) ?></p></div>
-  <div class="bento">
-  <?php foreach ($svc6 as $i => [$href, $ic, $tone, $price, $t, $d, $img, $go]): ?>
-    <a class="bc bc-<?= $i ?>" href="<?= e($href) ?>" data-rv>
-      <span class="bc-img"><img src="/media/<?= e($img) ?>.webp" alt="" loading="lazy" width="1400" height="934"></span>
-      <span class="bc-body"><span class="bc-top"><span class="mc-ic tone-<?= $tone ?>"><?= nx_icon($ic) ?></span><b class="bc-pr"><?= e(str_starts_with($price, 'From ') ? t('From') . substr($price, 4) : t($price)) ?></b></span>
-      <h3><?= e(t($t)) ?></h3><p><?= e(t($d)) ?></p><span class="s6-go"><?= e(t($go)) ?> <?= nx_icon('arrow') ?></span></span>
-    </a>
-  <?php endforeach; ?>
-  </div>
-</div></section>
-
-<section class="sec alt"><div class="wrap how">
-  <div class="how-l">
-    <div class="sec-head" data-rv><span class="badge-pill"><?= e(t('How it works')) ?></span><h2><?= e(t('Four steps. No paperwork.')) ?></h2></div>
-    <ol class="how-steps">
-    <?php foreach ($steps as $i => [$ic, $tone, $t, $d]): ?>
-      <li data-rv><span class="mc-ic tone-<?= $tone ?>"><?= nx_icon($ic) ?></span><div><h3><?= e(t($t)) ?></h3><p><?= e(t($d)) ?></p></div></li>
-    <?php endforeach; ?>
+<section class="ch ch-file" id="file" aria-label="<?= e(t('File')) ?>">
+  <div class="ch-media"><video autoplay muted loop playsinline preload="none" poster="/media/desk-poster.webp" aria-hidden="true" data-autoplay><source src="/media/desk.mp4" type="video/mp4"></video></div>
+  <div class="ch-side">
+    <h2><?= e(t('Sign once. We file it.')) ?></h2>
+    <ol class="steps3">
+      <li><b><?= e(t('Answer a guided form.')) ?></b><span><?= e(t('It checks names, addresses and directors as you type.')) ?></span></li>
+      <li><b><?= e(t('We check it against the registry’s rules.')) ?></b><span><?= e(t('Anything that needs fixing comes back to you in plain language.')) ?></span></li>
+      <li><b><?= e(t('You sign. We submit it.')) ?></b><span><?= e(t('Your documents arrive in your portal. Nothing is filed without your signature.')) ?></span></li>
     </ol>
-    <div class="hero-actions" data-rv><a class="btn btn-primary btn-lg" href="/register"><?= e(t('Start your business')) ?></a></div>
+    <p class="fine"><?= e(t('We file with Corporations Canada and every provincial registry.')) ?> <?= e(t('From')) ?> <?= e(money($regFrom)) ?>, <?= e(t('government fees included.')) ?></p>
+    <a class="btn btn-primary btn-lg" href="/register"><?= e(t('Choose your structure')) ?></a>
   </div>
-  <div class="how-r" data-rv><div class="sh-frame tall"><video autoplay muted loop playsinline preload="none" poster="/media/desk-poster.webp" aria-hidden="true" data-autoplay><source src="/media/desk.mp4" type="video/mp4"></video></div>
-    <div class="chip-f chip-0"><span class="mc-ic tone-green"><?= nx_icon('pen') ?></span><span><b><?= e(t('Signed by you')) ?></b><small><?= e(t('Then we file')) ?></small></span></div></div>
-</div></section>
-
-<section class="band"><video autoplay muted loop playsinline preload="none" poster="/media/coast-poster.webp" aria-hidden="true" data-autoplay><source src="/media/coast.mp4" type="video/mp4"></video>
-  <div class="wrap band-in" data-rv><h2><?= e(t('Proudly built in Atlantic Canada.')) ?></h2><p><?= e(t('Serving entrepreneurs from coast to coast.')) ?></p><a class="btn btn-light btn-lg" href="/about"><?= e(t('Our story')) ?></a></div>
 </section>
 
-<section class="trust-sec" aria-label="Why customers trust us"><div class="wrap trust">
-  <?php foreach ([['users', 'teal', 'Canadian privacy law', 'Handled under PIPEDA'], ['certificate', 'blue', 'Encrypted connection', 'TLS on every page'], ['cash', 'violet', 'Payments by Stripe', 'Card details never stored here'], ['edit', 'green', 'You sign first', 'Nothing filed without you'], ['building', 'amber', 'Atlantic Canada team', 'Moncton, New Brunswick'], ['search', 'cyan', 'Clear prices', 'Government fees included']] as [$ic, $tone, $t, $s]): ?>
-  <div><span class="mc-ic tone-<?= $tone ?>"><?= nx_icon($ic) ?></span><span><b><?= e($t) ?></b><span><?= e($s) ?></span></span></div>
-  <?php endforeach; ?>
-</div></section>
+<section class="ch ch-online" id="online" aria-label="<?= e(t('Online')) ?>">
+  <div class="wrap ch-grid">
+    <div class="ch-copy">
+      <h2><?= e(t('Then, get found.')) ?></h2>
+      <p><?= e(t('The same name becomes your web address, your inbox and your website. One account, one bill.')) ?></p>
+      <ul class="plist">
+        <li><span><?= e(t('Domain name')) ?></span><b><?= e(t('From')) ?> <?= e(money($fp('domain_register'))) ?>/<?= e(t('yr')) ?></b></li>
+        <li><span><?= e(t('Business email')) ?></span><b><?= e(t('From')) ?> <?= e(money($fp('email_starter'))) ?>/<?= e(t('mo')) ?></b></li>
+        <li><span><?= e(t('Website, hosted and maintained')) ?></span><b><?= e(t('From')) ?> <?= e(money($fp('website_launch'))) ?>/<?= e(t('mo')) ?></b></li>
+      </ul>
+      <a class="btn btn-primary btn-lg" href="/bundle"><?= e(t('Bundle them and save up to 15%')) ?></a>
+    </div>
+    <div class="stack" aria-hidden="true">
+      <div class="st-url"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="u">www.<b data-slug-out>mapleandpine</b>.ca</span></div>
+      <div class="st-site">
+        <img src="/media/cafe-owner.webp" alt="" loading="lazy" width="1400" height="934">
+        <div class="st-site-in"><p class="st-brand" data-name-out>Maple &amp; Pine</p><p class="st-tag"><?= e(t('Open Tuesday to Sunday')) ?></p><span class="st-btn"><?= e(t('Book a table')) ?></span></div>
+      </div>
+      <div class="st-mail"><span class="av-s">M</span><span><b><?= e(t('New message')) ?></b><small>hello@<span data-slug-out>mapleandpine</span>.ca</small></span></div>
+    </div>
+  </div>
+</section>
+
+<section class="ch ch-care" id="care" aria-label="<?= e(t('Care')) ?>">
+  <div class="wrap ch-grid">
+    <div class="ch-copy">
+      <h2><?= e(t('Stay in good standing.')) ?></h2>
+      <p><?= e(t('Corporations file an annual return every year, and records change. We keep the dates, remind you ahead of time and file it for you.')) ?></p>
+      <a class="btn btn-primary btn-lg" href="/manage-business"><?= e(t('Manage your business')) ?></a>
+    </div>
+    <div class="year" aria-hidden="true">
+      <?php foreach ($months as $i => $m): $isDue = $i === $due; $isRem = $i === ($due + 11) % 12; ?>
+        <div class="mo<?= $isDue ? ' due' : '' ?><?= $isRem ? ' rem' : '' ?>"><span><?= e(t($m)) ?></span><?php if ($isDue): ?><em><?= e(t('Annual return filed')) ?></em><?php elseif ($isRem): ?><em><?= e(t('We remind you')) ?></em><?php endif; ?></div>
+      <?php endforeach; ?>
+    </div>
+  </div>
+</section>
+
+<section class="ch ch-start" id="start" aria-label="<?= e(t('Start')) ?>">
+  <div class="wrap">
+    <h2><?= e(t('Where would you like to start?')) ?></h2>
+    <ul class="idx">
+    <?php foreach ($idx as [$href, $tt, $dd, $pr, $img]): ?>
+      <li><a href="<?= e($href) ?>"><span class="ix-t"><?= e(t($tt)) ?></span><span class="ix-d"><?= e(t($dd)) ?></span><span class="ix-p"><?= e(str_starts_with($pr, 'From ') ? t('From') . substr($pr, 4) : t($pr)) ?></span><img src="/media/<?= e($img) ?>.webp" alt="" loading="lazy" width="1400" height="934"></a></li>
+    <?php endforeach; ?>
+    </ul>
+  </div>
+</section>
+</div>
 
 <section class="sec"><div class="wrap">
-  <div class="sec-head center"><span class="badge-pill">Why choose us</span><h2>The smarter way to register in Canada</h2><p>How 818 Digital Agency compares with the usual options.</p></div>
+  <div class="sec-head"><h2>How we compare</h2><p>Against hiring a lawyer, or filing it all yourself.</p></div>
   <div class="cmp-wrap"><table class="cmp">
     <thead><tr><th scope="col"><span class="sr">Feature</span></th><th scope="col" class="us">818 Digital Agency<small>Recommended</small></th><th scope="col">Traditional lawyer</th><th scope="col">DIY government portal</th></tr></thead>
     <tbody>
@@ -103,9 +148,8 @@ $mark = ['y' => '✓ ', 'x' => '✗ ', 'w' => '▲ '];
 <?php foreach ($reviews as $rv): ?><figure class="card" style="margin:0"><div aria-label="<?= (int)$rv['rating'] ?> out of 5"><?= str_repeat('★', (int)$rv['rating']) ?></div><blockquote style="margin:10px 0"><?= e($rv['body']) ?></blockquote><figcaption class="muted small"><?= e($rv['display_name'] ?: 'Verified customer') ?></figcaption></figure><?php endforeach; ?></div></div></section><?php endif; ?>
 
 <section class="news" id="news"><div class="wrap">
-  <span class="mc-ic tone-blue" style="margin:0 auto 14px"><?= nx_icon('mail') ?></span>
-  <h2>Stay updated on new services</h2><p>Get early access and launch offers when new services and provinces go live.</p>
-  <?php if (!empty($_GET['subscribed'])): ?><p class="alert alert-success" style="max-width:460px;margin:0 auto">Thanks! You're on the list. You can unsubscribe anytime from any email.</p>
+  <div><h2>Stay updated on new services</h2><p>Get early access and launch offers when new services and provinces go live.</p></div>
+  <div><?php if (!empty($_GET['subscribed'])): ?><p class="alert alert-success">Thanks! You're on the list. You can unsubscribe anytime from any email.</p>
   <?php else: ?><form method="post" action="/subscribe"><?= Csrf::field() ?><label class="sr" for="news-email">Email address</label><input id="news-email" type="email" name="email" required placeholder="you@yourbusiness.ca" autocomplete="email"><input type="text" name="website" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true"><button class="btn btn-primary">Notify me</button></form>
-  <small>By subscribing you agree to receive occasional emails from 818 Nexus Inc. No spam. Unsubscribe anytime.</small><?php endif; ?>
+  <small>By subscribing you agree to receive occasional emails from 818 Nexus Inc. No spam. Unsubscribe anytime.</small><?php endif; ?></div>
 </div></section>

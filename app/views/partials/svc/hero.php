@@ -19,8 +19,6 @@ $hm = $hero['media'] ?? null;
       <?php if (!empty($hm['video'])): ?><video autoplay muted loop playsinline preload="metadata" poster="/media/<?= e($hm['poster'] ?? $hm['video'] . '-poster') ?>.webp" aria-hidden="true" data-autoplay><source src="/media/<?= e($hm['video']) ?>.mp4" type="video/mp4"></video>
       <?php else: ?><img src="/media/<?= e($hm['img']) ?>.webp" alt="" width="1400" height="934" fetchpriority="high"><?php endif; ?>
     </div>
-    <?php foreach (($hero['chips'] ?? []) as $i => [$ic, $ct, $cs]): ?>
-      <div class="chip-f chip-<?= $i ?>"><span class="mc-ic tone-<?= ['blue', 'teal', 'violet'][$i % 3] ?>"><?= nx_icon($ic) ?></span><span><b><?= e(t($ct)) ?></b><small><?= e(t($cs)) ?></small></span></div>
-    <?php endforeach; ?>
+    <?php if (!empty($hero['chips'])): ?><p class="sh-cap"><?php foreach (array_slice($hero['chips'], 0, 2) as [$ic, $ct, $cs]): ?><span><b><?= e(t($ct)) ?></b> <?= e(t($cs)) ?></span><?php endforeach; ?></p><?php endif; ?>
   </div><?php endif; ?>
 </div></section>
