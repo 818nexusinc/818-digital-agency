@@ -19,7 +19,7 @@ $r->get('/', function () {
     $cats = [];
     foreach (Catalog::CATEGORIES as $k => $n) if ($k !== 'addon') $cats[$k] = ['name' => $n, 'services' => Catalog::byCategory($k)];
     $reviews = Db::all('SELECT rating, body, display_name FROM reviews WHERE published = 1 AND verified = 1 AND consent_publish = 1 ORDER BY id DESC LIMIT 3');
-    View::page('public/home', ['title' => 'Canadian business registration & digital services', 'cats' => $cats, 'reviews' => $reviews,
+    View::page('public/home', ['title' => 'Register & Launch Your Business in Canada', 'cats' => $cats, 'reviews' => $reviews,
         'bundle' => Db::one("SELECT * FROM packages WHERE slug = 'launch_bundle' AND status = 'active'"), 'jsonld' => [Seo::organization()]]);
 });
 
@@ -102,26 +102,32 @@ $r->get('/unsubscribe', function () {
 /* Original 818digitalagency.com structure: same paths, same page arrangement, same forms. */
 $svcPage = function (string $view, string $title, string $desc, array $extra = []) {
     return function () use ($view, $title, $desc, $extra) {
-        View::page('public/svc/' . $view, ['title' => $title, 'description' => $desc, 'path' => Request::path()] + $extra);
+        $path = Request::path(); $p = pillar($path);
+        $crumbs = ['Home' => '/'];
+        if ($p !== 'brand' && PILLARS[$p]['home'] !== $path) $crumbs[PILLARS[$p]['name']] = PILLARS[$p]['home'];
+        $crumbs[$extra['crumb'] ?? $title] = $path;
+        $ld = [App\Seo::breadcrumbs($crumbs)];
+        if (!empty($extra['svc']) && ($s = App\Catalog::find($extra['svc']))) { $sv = App\Seo::service($s); $sv['url'] = url($path); $ld[] = $sv; }
+        View::page('public/svc/' . $view, ['title' => $title, 'description' => $desc, 'path' => $path, 'jsonld' => $ld] + $extra);
     };
 };
-$r->get('/register', $svcPage('register', 'Register your business in Canada', 'Register a sole proprietorship, partnership, corporation or co-operative in any province or federally. Government fees included.'));
-$r->get('/register/nuans', $svcPage('nuans', 'NUANS name search', 'Order an official NUANS name search report, required before incorporating a named corporation in most jurisdictions.'));
-$r->get('/register/sole-proprietorship', $svcPage('sole_prop', 'Sole proprietorship registration', 'Register a sole proprietorship in your province online. Government filing fee included.'));
-$r->get('/register/partnership', $svcPage('partnership', 'Partnership registration', 'Register a general or limited partnership online. Government filing fee included.'));
-$r->get('/register/corporation', $svcPage('corporation', 'Incorporate a Canadian corporation', 'Incorporate provincially or federally (CBCA), named or numbered. Government filing fee included.'));
-$r->get('/register/cooperative', $svcPage('cooperative', 'Co-operative registration', 'Register a worker, consumer, producer or multi-stakeholder co-operative.'));
-$r->get('/manage-business', $svcPage('manage', 'Manage your registered business', 'Annual returns, corporate changes, official documents and business name services.'));
-foreach (['annual-returns' => ['bm_annual', 'Annual return services'], 'corporate-changes' => ['bm_changes', 'Corporate changes'], 'corporate-documents' => ['bm_documents', 'Corporate documents'], 'name-services' => ['biz_name', 'Business name management']] as $seg => [$mslug, $mtitle]) {
-    $r->get('/manage-business/' . $seg, $svcPage('manage_form', $mtitle, $mtitle . ' filed with the registry on your behalf.', ['mkind' => $seg]));
+$r->get('/register', $svcPage('register', 'Register a Business in Canada Online', 'Register a sole proprietorship, partnership, corporation or co-op in any province or federally. Government fees included. Start online in minutes.', ['crumb' => 'Register Business']));
+$r->get('/register/nuans', $svcPage('nuans', 'NUANS Name Search Report, Same Day', 'Order an official NUANS name search report online. Required before incorporating a named corporation. Delivered to your inbox, valid 90 days.', ['crumb' => 'NUANS Name Search', 'svc' => 'nuans']));
+$r->get('/register/sole-proprietorship', $svcPage('sole_prop', 'Register a Sole Proprietorship Online', 'Register your sole proprietorship or trade name in any province. Government fee included, filed fast, no NUANS needed. Start in minutes.', ['crumb' => 'Sole Proprietorship', 'svc' => 'sole_prop']));
+$r->get('/register/partnership', $svcPage('partnership', 'Register a Partnership in Canada', 'Register a general or limited partnership online in any province. Government fee and agreement template included. Start in minutes.', ['crumb' => 'Partnership', 'svc' => 'partnership']));
+$r->get('/register/corporation', $svcPage('corporation', 'Incorporate a Business in Canada Online', 'Incorporate provincially or federally (CBCA), named or numbered. Articles prepared and filed for you, government fee included. Start now.', ['crumb' => 'Corporation', 'svc' => 'corp_numbered']));
+$r->get('/register/cooperative', $svcPage('cooperative', 'Register a Co-operative in Canada', 'Register a worker, consumer, producer or multi-stakeholder co-op. Tell us about it and get a written quote within one business day.', ['crumb' => 'Co-operative', 'svc' => 'cooperative']));
+$r->get('/manage-business', $svcPage('manage', 'Annual Returns & Corporate Changes', 'Keep your Canadian business in good standing. Annual returns, director and address changes, and official documents, filed for you.', ['crumb' => 'Manage Business']));
+foreach (['annual-returns' => ['bm_annual', 'Annual Return Filing'], 'corporate-changes' => ['bm_changes', 'Corporate Changes'], 'corporate-documents' => ['bm_documents', 'Corporate Documents & Certificates'], 'name-services' => ['biz_name', 'Business Name Renewal & Change']] as $seg => [$mslug, $mtitle]) {
+    $r->get('/manage-business/' . $seg, $svcPage('manage_form', $mtitle, $mtitle . ' filed with your provincial or federal registry on your behalf. Fast, accurate and tracked in your portal. Start online.', ['mkind' => $seg, 'crumb' => $mtitle, 'svc' => $mslug]));
 }
-$r->get('/domain', $svcPage('domain', 'Register your domain', 'Search and register .ca and .com domains with WHOIS privacy and automatic DNS.'));
-$r->get('/email', $svcPage('email', 'Business email hosting', 'Professional mailboxes on your own domain.'));
-$r->get('/website', $svcPage('website', 'Business website design & hosting', 'Custom, mobile-first websites built, hosted and maintained for Canadian businesses.'));
-$r->get('/website/maintenance', $svcPage('maintenance', 'Website maintenance plans', 'Backups, updates, security and content edits for your existing website.'));
-$r->get('/web-application', $svcPage('web_app', 'Custom web application development', 'Booking systems, portals, dashboards and custom business tools.'));
-$r->get('/bundle', $svcPage('bundle', 'Bundle & save', 'Combine registration, management, domain, email, website and maintenance and save up to 15%.'));
-$r->get('/opportunities', fn() => View::page('public/funding', ['title' => 'Business opportunities across Canada', 'path' => '/opportunities']));
+$r->get('/domain', $svcPage('domain', 'Register a .ca or .com Domain', 'Search and register your .ca or .com domain. WHOIS privacy where allowed and DNS set up for your email and website. Check availability now.', ['crumb' => 'Domain Name', 'svc' => 'domain_register']));
+$r->get('/email', $svcPage('email', 'Business Email on Your Own Domain', 'Professional email at your own domain with webmail, mobile access and spam filtering. Set up for you after checkout. Plans from $9.99/month.', ['crumb' => 'Business Email', 'svc' => 'email_starter']));
+$r->get('/website', $svcPage('website', 'Small Business Website Design & Hosting', 'A custom, mobile-first website built, hosted and maintained for your Canadian business. Hosting and SSL included. Choose a plan today.', ['crumb' => 'Website Design', 'svc' => 'website_launch']));
+$r->get('/website/maintenance', $svcPage('maintenance', 'Website Maintenance Plans', 'Daily backups, updates, security patches and content edits for your existing website. Monthly plans, cancel anytime.', ['crumb' => 'Website Maintenance', 'svc' => 'maintenance_care']));
+$r->get('/web-application', $svcPage('web_app', 'Custom Web App Development, Canada', 'Booking systems, client portals, dashboards and business tools, built around how you work. Free consultation and a written quote.', ['crumb' => 'Web Application', 'svc' => 'web_app']));
+$r->get('/bundle', $svcPage('bundle', 'Business Bundle: Register, Domain & Website', 'Register your business and add a domain, email and website in one order. Save up to 15% automatically. Build your bundle now.', ['crumb' => 'Bundle & Save']));
+$r->get('/opportunities', fn() => View::page('public/funding', ['title' => 'Small Business Grants & Funding in Canada', 'description' => 'Federal and Atlantic Canada funding programs for small businesses: IRAP, ACOA, CSBFP and more, with links to each official page.', 'path' => '/opportunities']));
 $r->get('/signup', fn() => View::page('public/register', ['title' => 'Create your account', 'noindex' => true]));
 
 $r->post('/subscribe', function () {

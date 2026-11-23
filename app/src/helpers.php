@@ -95,3 +95,29 @@ function js_dict(): string
     $d = is_file(APP_ROOT . '/i18n/fr_js.php') ? (require APP_ROOT . '/i18n/fr_js.php') : [];
     return jenc($d);
 }
+
+/* ── Business pillars: each main business has its own colour, used on the homepage, in its submenu and on its pages. */
+const PILLARS = [
+    'register' => ['name' => 'Register Business', 'home' => '/register', 'acc' => '#2b3fd1', 'soft' => '#eef0fe', 'deep' => '#141b52', 'ink' => '#0e1433'],
+    'manage'   => ['name' => 'Manage Business', 'home' => '/manage-business', 'acc' => '#0b7a62', 'soft' => '#e6f4ef', 'deep' => '#0b3b31', 'ink' => '#082a23'],
+    'web'      => ['name' => 'Web Services', 'home' => '/website', 'acc' => '#b42a6a', 'soft' => '#fbeaf2', 'deep' => '#3d0f29', 'ink' => '#2a0a1c'],
+    'bundle'   => ['name' => 'Bundle & Save', 'home' => '/bundle', 'acc' => '#9a5b00', 'soft' => '#fff2d9', 'deep' => '#3e2600', 'ink' => '#2b1a00'],
+    'opps'     => ['name' => 'Opportunities', 'home' => '/opportunities', 'acc' => '#c21f32', 'soft' => '#fdecee', 'deep' => '#4a0c15', 'ink' => '#33080e'],
+    'brand'    => ['name' => '818 Digital Agency', 'home' => '/', 'acc' => '#1e44c8', 'soft' => '#eef2fd', 'deep' => '#0d1117', 'ink' => '#0d1117'],
+];
+function pillar(string $path): string
+{
+    return match (true) {
+        str_starts_with($path, '/register') => 'register',
+        str_starts_with($path, '/manage-business') => 'manage',
+        in_array(strtok($path, '/') ?: '', ['domain', 'email', 'website', 'web-application'], true) => 'web',
+        $path === '/bundle' => 'bundle',
+        in_array($path, ['/opportunities', '/funding'], true) => 'opps',
+        default => 'brand',
+    };
+}
+function pillar_css(string $p): string
+{
+    $c = PILLARS[$p] ?? PILLARS['brand'];
+    return "--acc:{$c['acc']};--acc-soft:{$c['soft']};--acc-deep:{$c['deep']};--acc-ink:{$c['ink']}";
+}

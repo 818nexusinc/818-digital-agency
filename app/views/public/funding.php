@@ -21,5 +21,4 @@ $progs = [
       <div class="prog-cols"><div><b>Eligibility</b><ul><?php foreach ($elig as $x): ?><li><?= e($x) ?></li><?php endforeach; ?></ul></div><div><b>Highlights</b><ul><?php foreach ($hi as $x): ?><li><?= e($x) ?></li><?php endforeach; ?></ul></div></div></article>
   <?php endforeach; ?>
   </div>
-  <div class="cta-l" style="margin-top:28px"><div><h2 style="font-size:1.4rem">How 818 can help you access these programs</h2><p>Most programs require a registered business, and many fund websites or software. We handle the registration and build the digital work; we don’t write grant applications or guarantee funding.</p></div><div class="hero-actions" style="margin:0"><a class="btn btn-primary" href="/register">Register your business</a></div></div>
 </div></section>

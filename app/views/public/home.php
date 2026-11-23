@@ -2,49 +2,53 @@
 use App\{Catalog, Filings, Csrf};
 include_once APP_ROOT . '/views/partials/icons.php';
 $fp = function (string $slug) { $s = Catalog::find($slug); return $s ? Catalog::fromPrice($s) : null; };
+$from = fn(?int $c, string $suf = '') => $c === null ? t('Custom quote') : t('From') . ' ' . money($c) . ($suf ? '/' . t($suf) : '');
 $regFrom = min(array_filter([$fp('sole_prop'), $fp('partnership'), $fp('corp_numbered')]));
 $jur = ['FED' => 'Federal (CBCA)'] + Catalog::PROVINCES;
-$idx = [
-  ['/register', 'Register a business', 'Any structure, any province.', 'From ' . money($regFrom), 'signing'],
-  ['/manage-business', 'Manage a registered business', 'Returns, changes, certificates.', 'From ' . money($fp('bm_documents')), 'docs-typing'],
-  ['/domain', 'Domain name', '.ca, .com and more.', 'From ' . money($fp('domain_register')) . '/yr', 'laptop'],
-  ['/email', 'Business email', 'On your own domain.', 'From ' . money($fp('email_starter')) . '/mo', 'notes'],
-  ['/website', 'Website', 'Built and looked after.', 'From ' . money($fp('website_launch')) . '/mo', 'developer'],
-  ['/web-application', 'Custom software', 'Built around how you work.', 'Quoted in writing', 'team-deal'],
-];
-$chap = [['idea', 'Idea'], ['name', 'Name'], ['file', 'File'], ['online', 'Online'], ['care', 'Care'], ['start', 'Start']];
-$due = (int)date('n') % 12; // a sample anniversary month for the illustration
+$due = (int)date('n') % 12;
 $months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 $mark = ['y' => '✓ ', 'x' => '✗ ', 'w' => '▲ '];
+$chap = [['open', 'Open', 'brand', '#0d1117', 'dark'], ['register', 'Register', 'register', PILLARS['register']['deep'], 'dark'], ['manage', 'Manage', 'manage', PILLARS['manage']['soft'], 'light'],
+  ['web', 'Web', 'web', PILLARS['web']['deep'], 'dark'], ['bundle', 'Bundle', 'bundle', PILLARS['bundle']['soft'], 'light'], ['funding', 'Funding', 'opps', PILLARS['opps']['deep'], 'dark'], ['start', 'Start', 'brand', '#f5f6f8', 'light']];
+$attr = function (int $i) use ($chap) { [$id, $lbl, $p, $flow, $tone] = $chap[$i]; return 'id="' . $id . '" data-flow="' . $flow . '" data-tone="' . $tone . '" data-pillar="' . $p . '" style="--chbg:' . $flow . ';' . pillar_css($p) . '" aria-label="' . e(t($lbl)) . '"'; };
+$paths = [
+  ['register', 'signing', 'Make it official.', [['/register/sole-proprietorship', 'Sole proprietorship', $fp('sole_prop')], ['/register/partnership', 'Partnership', $fp('partnership')], ['/register/corporation', 'Corporation', $fp('corp_numbered')], ['/register/nuans', 'NUANS name search', $fp('nuans')]]],
+  ['manage', 'docs-typing', 'Stay in good standing.', [['/manage-business/annual-returns', 'Annual returns', $fp('bm_annual')], ['/manage-business/corporate-changes', 'Corporate changes', $fp('bm_changes')], ['/manage-business/corporate-documents', 'Documents', $fp('bm_documents')]]],
+  ['web', 'developer', 'Get found online.', [['/domain', 'Domain name', $fp('domain_register')], ['/email', 'Business email', $fp('email_starter')], ['/website', 'Website', $fp('website_launch')], ['/web-application', 'Custom software', null]]],
+  ['bundle', 'partners', 'Save up to 15%.', [['/bundle', 'Build a bundle', null]]],
+  ['opps', 'team-deal', 'Find funding.', [['/opportunities', 'Grants and programs', null]]],
+];
 ?>
-<nav class="rail" aria-label="Homepage chapters" data-rail>
-  <ol><?php foreach ($chap as $i => [$id, $lbl]): ?><li><a href="#<?= $id ?>"><span class="rn"><?= sprintf('%02d', $i + 1) ?></span><span class="rl"><?= e(t($lbl)) ?></span></a></li><?php endforeach; ?></ol>
+<nav class="rail" aria-label="<?= e(t('Homepage chapters')) ?>" data-rail>
+  <ol><?php foreach ($chap as $i => [$id, $lbl, $p]): ?><li style="<?= pillar_css($p) ?>"><a href="#<?= $id ?>"><span class="rl"><?= e(t($lbl)) ?></span><span class="rn"><?= sprintf('%02d', $i + 1) ?></span></a></li><?php endforeach; ?></ol>
+  <span class="rail-bar" aria-hidden="true"><i data-rail-fill></i></span>
 </nav>
 
 <div class="story">
-<section class="ch ch-idea" id="idea" data-tone="dark" data-flow="#0d1117" style="--chbg:#0d1117" aria-label="<?= e(t('Idea')) ?>">
+<section class="ch ch-open ch-idea" <?= $attr(0) ?>>
   <video class="ch-bg" autoplay muted loop playsinline preload="auto" poster="/media/opening-day-poster.webp" aria-hidden="true" data-autoplay><source src="/media/opening-day.mp4" type="video/mp4"></video>
   <div class="wrap ch-in">
-    <h1 class="st-in"><?= e(t('Open for business.')) ?></h1>
-    <p class="st-in"><?= e(t('We register it, put it online and build the website. You run it.')) ?></p>
-    <div class="ch-act st-in"><a class="btn btn-light btn-lg" href="/register"><?= e(t('Start your business')) ?></a><a class="lnk-light" href="#name"><?= e(t('How it works')) ?></a></div>
+    <h1 class="st-in"><span class="ln"><span><?= e(t('Open for')) ?></span></span> <span class="ln"><span><?= e(t('business.')) ?></span></span></h1>
+    <p class="st-in"><?= e(t('Register it. Get it online. Keep it compliant. One Canadian team does it all.')) ?></p>
+    <div class="ch-act st-in"><a class="btn btn-light btn-lg" href="/register"><?= e(t('Start your business')) ?></a><a class="lnk-light" href="#register"><?= e(t('Explore services')) ?></a></div>
   </div>
-  <a class="ch-next" href="#name" aria-label="<?= e(t('Next chapter')) ?>"><span><?= e(t('Scroll')) ?></span><i></i></a>
+  <a class="ch-next" href="#register" aria-label="<?= e(t('Next chapter')) ?>"><span><?= e(t('Scroll')) ?></span><i></i></a>
 </section>
 
-<section class="ch ch-name" id="name" data-tone="light" data-flow="#f4f5f7" style="--chbg:#f4f5f7" aria-label="<?= e(t('Name')) ?>">
+<section class="ch ch-register" <?= $attr(1) ?>>
   <div class="wrap ch-grid">
     <div class="ch-copy">
-      <h2><?= e(t('Name it.')) ?></h2>
-      <p><?= e(t('Type it. See it on paper.')) ?></p>
+      <a class="ch-k" href="/register"><i></i><?= e(t('Register Business')) ?></a>
+      <h2 data-split><?= e(t('Name it. We’ll make it official.')) ?></h2>
       <div class="nm-form">
-        <label class="nm-field"><span><?= e(t('Business name')) ?></span><input type="text" maxlength="60" autocomplete="off" spellcheck="false" placeholder="Maple &amp; Pine" data-bizname></label>
+        <label class="nm-field"><span><?= e(t('Your business name')) ?></span><input type="text" maxlength="60" autocomplete="off" spellcheck="false" placeholder="Maple &amp; Pine" data-bizname></label>
         <div class="nm-row">
           <label class="nm-sel"><span><?= e(t('Registry')) ?></span><select data-jur><?php foreach ($jur as $c => $n): ?><option value="<?= e($c) ?>"<?= $c === 'NB' ? ' selected' : '' ?>><?= e(t($n)) ?></option><?php endforeach; ?></select></label>
           <fieldset class="nm-end"><legend><?= e(t('Ending')) ?></legend><?php foreach (['Inc.', 'Ltd.', 'Corp.'] as $k => $en): ?><label><input type="radio" name="hm_end" value="<?= $en ?>"<?= $k ? '' : ' checked' ?> data-end><span><?= $en ?></span></label><?php endforeach; ?></fieldset>
         </div>
       </div>
-      <p class="ch-links"><a class="lnk" href="/register/nuans" data-name-link="/register/nuans"><?= e(t('Check it with NUANS')) ?></a> <span class="muted"><?= e(money($fp('nuans'))) ?></span></p>
+      <div class="ch-cta"><a class="btn btn-light btn-lg" href="/register"><?= e(t('Register from')) ?> <?= e(money($regFrom)) ?></a><a class="lnk-light" href="/register/nuans" data-name-link="/register/nuans"><?= e(t('Check the name first')) ?></a></div>
+      <p class="fine"><?= e(t('Government fees included. Filed with the registry as soon as your order is in.')) ?></p>
     </div>
     <figure class="sheet" aria-label="<?= e(t('Preview of your corporate name')) ?>">
       <div class="sh-top"><span><?= e(t('Draft')) ?></span><span><?= e(t('Preview, not a government document')) ?></span></div>
@@ -60,31 +64,37 @@ $mark = ['y' => '✓ ', 'x' => '✗ ', 'w' => '▲ '];
   </div>
 </section>
 
-<section class="ch ch-file" id="file" data-tone="dark" data-flow="#0f1d45" style="--chbg:#0f1d45" aria-label="<?= e(t('File')) ?>">
-  <div class="ch-media"><video autoplay muted loop playsinline preload="none" poster="/media/desk-poster.webp" aria-hidden="true" data-autoplay><source src="/media/desk.mp4" type="video/mp4"></video></div>
-  <div class="ch-side">
-    <h2><?= e(t('We file it. Fast.')) ?></h2>
-    <ol class="steps3">
-      <li><b><?= e(t('One guided form.')) ?></b><span><?= e(t('Checked as you type.')) ?></span></li>
-      <li><b><?= e(t('Every detail verified.')) ?></b><span><?= e(t('Against your registry’s rules.')) ?></span></li>
-      <li><b><?= e(t('Filed with the registry.')) ?></b><span><?= e(t('Documents land in your portal.')) ?></span></li>
-    </ol>
-    <p class="fine"><?= e(t('From')) ?> <?= e(money($regFrom)) ?>. <?= e(t('Government fees included.')) ?></p>
-    <a class="btn btn-light btn-lg" href="/register"><?= e(t('Choose your structure')) ?></a>
+<section class="ch ch-manage" <?= $attr(2) ?>>
+  <div class="wrap ch-grid">
+    <div class="ch-copy">
+      <a class="ch-k" href="/manage-business"><i></i><?= e(t('Manage Business')) ?></a>
+      <h2 data-split><?= e(t('Stay compliant. Skip the paperwork.')) ?></h2>
+      <ul class="plist">
+        <li><a href="/manage-business/annual-returns"><?= e(t('Annual returns')) ?></a><b><?= e($from($fp('bm_annual'))) ?></b></li>
+        <li><a href="/manage-business/corporate-changes"><?= e(t('Corporate changes')) ?></a><b><?= e($from($fp('bm_changes'))) ?></b></li>
+        <li><a href="/manage-business/corporate-documents"><?= e(t('Certificates and copies')) ?></a><b><?= e($from($fp('bm_documents'))) ?></b></li>
+      </ul>
+      <a class="btn btn-primary btn-lg" href="/manage-business"><?= e(t('Manage your business')) ?></a>
+    </div>
+    <div class="year" aria-hidden="true">
+      <?php foreach ($months as $i => $m): $isDue = $i === $due; $isRem = $i === ($due + 11) % 12; ?>
+        <div class="mo<?= $isDue ? ' due' : '' ?><?= $isRem ? ' rem' : '' ?>" style="--i:<?= $i ?>"><span><?= e(t($m)) ?></span><?php if ($isDue): ?><em><?= e(t('Annual return filed')) ?></em><?php elseif ($isRem): ?><em><?= e(t('We remind you')) ?></em><?php endif; ?></div>
+      <?php endforeach; ?>
+    </div>
   </div>
 </section>
 
-<section class="ch ch-online" id="online" data-tone="light" data-flow="#e6ecfb" style="--chbg:#e6ecfb" aria-label="<?= e(t('Online')) ?>">
+<section class="ch ch-web" <?= $attr(3) ?>>
   <div class="wrap ch-grid">
     <div class="ch-copy">
-      <h2><?= e(t('Get found.')) ?></h2>
-      <p><?= e(t('One name. Your domain, inbox and website.')) ?></p>
+      <a class="ch-k" href="/website"><i></i><?= e(t('Web Services')) ?></a>
+      <h2 data-split><?= e(t('Get found. Get customers.')) ?></h2>
       <ul class="plist">
-        <li><span><?= e(t('Domain name')) ?></span><b><?= e(t('From')) ?> <?= e(money($fp('domain_register'))) ?>/<?= e(t('yr')) ?></b></li>
-        <li><span><?= e(t('Business email')) ?></span><b><?= e(t('From')) ?> <?= e(money($fp('email_starter'))) ?>/<?= e(t('mo')) ?></b></li>
-        <li><span><?= e(t('Website')) ?></span><b><?= e(t('From')) ?> <?= e(money($fp('website_launch'))) ?>/<?= e(t('mo')) ?></b></li>
+        <li><a href="/domain"><?= e(t('Domain name')) ?></a><b><?= e($from($fp('domain_register'), 'yr')) ?></b></li>
+        <li><a href="/email"><?= e(t('Business email')) ?></a><b><?= e($from($fp('email_starter'), 'mo')) ?></b></li>
+        <li><a href="/website"><?= e(t('Website, hosted and maintained')) ?></a><b><?= e($from($fp('website_launch'), 'mo')) ?></b></li>
       </ul>
-      <a class="btn btn-primary btn-lg" href="/bundle"><?= e(t('Bundle and save 15%')) ?></a>
+      <a class="btn btn-light btn-lg" href="/website"><?= e(t('Build my website')) ?></a>
     </div>
     <div class="stack" aria-hidden="true">
       <div class="st-url"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="u">www.<b data-slug-out>mapleandpine</b>.ca</span></div>
@@ -97,29 +107,55 @@ $mark = ['y' => '✓ ', 'x' => '✗ ', 'w' => '▲ '];
   </div>
 </section>
 
-<section class="ch ch-care" id="care" data-tone="light" data-flow="#ffffff" style="--chbg:#ffffff" aria-label="<?= e(t('Care')) ?>">
+<section class="ch ch-bundle" <?= $attr(4) ?>>
   <div class="wrap ch-grid">
     <div class="ch-copy">
-      <h2><?= e(t('Stay compliant.')) ?></h2>
-      <p><?= e(t('We track the dates. We file the returns.')) ?></p>
-      <a class="btn btn-primary btn-lg" href="/manage-business"><?= e(t('Manage your business')) ?></a>
+      <a class="ch-k" href="/bundle"><i></i><?= e(t('Bundle & Save')) ?></a>
+      <h2 data-split><?= e(t('Do it all. Save up to 15%.')) ?></h2>
+      <p><?= e(t('The more you add, the less you pay. Applied automatically.')) ?></p>
+      <a class="btn btn-primary btn-lg" href="/bundle"><?= e(t('Build your bundle')) ?></a>
     </div>
-    <div class="year" aria-hidden="true">
-      <?php foreach ($months as $i => $m): $isDue = $i === $due; $isRem = $i === ($due + 11) % 12; ?>
-        <div class="mo<?= $isDue ? ' due' : '' ?><?= $isRem ? ' rem' : '' ?>"><span><?= e(t($m)) ?></span><?php if ($isDue): ?><em><?= e(t('Annual return filed')) ?></em><?php elseif ($isRem): ?><em><?= e(t('We remind you')) ?></em><?php endif; ?></div>
+    <ol class="tierbars" aria-label="<?= e(t('Bundle discounts')) ?>">
+      <?php foreach ([[2, 5], [3, 10], [4, 12], ['5+', 15]] as $k => [$n, $pc]): ?>
+        <li style="--h:<?= $pc * 6 ?>%;--i:<?= $k ?>"><b><?= $pc ?>%</b><i></i><span><?= e($n) ?> <?= e(t('services')) ?></span></li>
       <?php endforeach; ?>
-    </div>
+    </ol>
   </div>
 </section>
 
-<section class="ch ch-start" id="start" data-tone="dark" data-flow="#111418" style="--chbg:#111418" aria-label="<?= e(t('Start')) ?>">
-  <div class="wrap">
-    <h2><?= e(t('Start here.')) ?></h2>
-    <ul class="idx">
-    <?php foreach ($idx as [$href, $tt, $dd, $pr, $img]): ?>
-      <li><a href="<?= e($href) ?>"><span class="ix-t"><?= e(t($tt)) ?></span><span class="ix-d"><?= e(t($dd)) ?></span><span class="ix-p"><?= e(str_starts_with($pr, 'From ') ? t('From') . substr($pr, 4) : t($pr)) ?></span><img src="/media/<?= e($img) ?>.webp" alt="" loading="lazy" width="1400" height="934"></a></li>
-    <?php endforeach; ?>
+<section class="ch ch-funding" <?= $attr(5) ?>>
+  <div class="wrap ch-grid">
+    <div class="ch-copy">
+      <a class="ch-k" href="/opportunities"><i></i><?= e(t('Opportunities')) ?></a>
+      <h2 data-split><?= e(t('Funding is out there.')) ?></h2>
+      <p><?= e(t('Grants, loans and government programs. Most start with a registered business.')) ?></p>
+      <a class="btn btn-light btn-lg" href="/opportunities"><?= e(t('Find funding')) ?></a>
+    </div>
+    <ul class="progs" aria-label="<?= e(t('Programs')) ?>">
+      <li><b>IRAP</b><span><?= e(t('National Research Council of Canada')) ?></span></li>
+      <li><b>ACOA</b><span><?= e(t('Atlantic Canada Opportunities Agency')) ?></span></li>
+      <li><b>CSBFP</b><span><?= e(t('Canada Small Business Financing Program')) ?></span></li>
+      <li><b>ISC</b><span><?= e(t('Innovative Solutions Canada')) ?></span></li>
     </ul>
+  </div>
+</section>
+
+<section class="ch ch-start" <?= $attr(6) ?>>
+  <div class="wrap">
+    <div class="start-head"><h2 data-split><?= e(t('Start here.')) ?></h2><p><?= e(t('Pick a path. We’ll take it from there.')) ?></p></div>
+    <div class="paths">
+    <?php foreach ($paths as $k => [$p, $img, $line, $links]): ?>
+      <article class="path<?= $k === 0 ? ' on' : '' ?>" style="<?= pillar_css($p) ?>" tabindex="0">
+        <img src="/media/<?= e($img) ?>.webp" alt="" loading="lazy" width="1400" height="934">
+        <div class="path-in">
+          <p class="path-n"><?= sprintf('%02d', $k + 1) ?></p>
+          <h3><a href="<?= e(PILLARS[$p]['home']) ?>"><?= e(t(PILLARS[$p]['name'])) ?></a></h3>
+          <p class="path-l"><?= e(t($line)) ?></p>
+          <ul><?php foreach ($links as [$h, $n, $c]): ?><li><a href="<?= e($h) ?>"><span><?= e(t($n)) ?></span><?php if ($c !== null): ?><b><?= e(t('From')) ?> <?= e(money($c)) ?></b><?php endif; ?></a></li><?php endforeach; ?></ul>
+        </div>
+      </article>
+    <?php endforeach; ?>
+    </div>
   </div>
 </section>
 </div>

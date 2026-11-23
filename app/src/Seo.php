@@ -41,7 +41,7 @@ final class Seo
 
     public static function sitemap(): string
     {
-        $paths = ['/', '/register', '/register/nuans', '/register/sole-proprietorship', '/register/partnership', '/register/corporation', '/register/cooperative', '/manage-business', '/manage-business/annual-returns', '/manage-business/corporate-changes', '/manage-business/corporate-documents', '/manage-business/name-services', '/domain', '/email', '/website', '/website/maintenance', '/web-application', '/bundle', '/opportunities', '/services', '/how-it-works', '/start', '/about', '/contact', '/faq', '/blog', '/legal/privacy', '/legal/terms', '/legal/refunds', '/legal/cookies', '/legal/ai'];
+        $paths = ['/', '/register', '/register/nuans', '/register/sole-proprietorship', '/register/partnership', '/register/corporation', '/register/cooperative', '/manage-business', '/manage-business/annual-returns', '/manage-business/corporate-changes', '/manage-business/corporate-documents', '/manage-business/name-services', '/domain', '/email', '/website', '/website/maintenance', '/web-application', '/bundle', '/opportunities', '/services', '/start', '/about', '/contact', '/faq', '/blog', '/legal/privacy', '/legal/terms', '/legal/refunds', '/legal/cookies', '/legal/ai'];
         foreach (array_keys(Catalog::CATEGORIES) as $c) $paths[] = '/services/category/' . $c;
         foreach (Catalog::all() as $s) $paths[] = '/services/' . $s['slug'];
         foreach (Db::all("SELECT slug, updated_at FROM content_items WHERE status = 'published' AND kind = 'blog'") as $b) $paths[] = '/blog/' . $b['slug'];

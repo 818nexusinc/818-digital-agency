@@ -1,4 +1,5 @@
-<?php /* $faqs = [[question, answer], …]; $faqTitle optional. Answers are plain text. */ ?>
+<?php /* $faqs = [[question, answer], …]; $faqTitle optional. Answers are plain text. Also published as FAQPage structured data. */
+App\View::$shared['ld'][] = App\Seo::faq(array_map(fn($f) => ['q' => t($f[0]), 'a' => t($f[1])], $faqs)); ?>
 <section class="sec sec-faq"><div class="wrap narrow">
   <div class="sec-head center"><h2><?= e($faqTitle ?? 'Common questions') ?></h2></div>
   <div class="faq-l"><?php foreach ($faqs as [$q, $a]): ?><details><summary><?= e($q) ?></summary><p><?= e($a) ?></p></details><?php endforeach; ?></div>

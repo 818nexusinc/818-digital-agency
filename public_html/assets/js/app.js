@@ -288,19 +288,73 @@
     paint();
   }
 
-  /* Colour flow: the page takes the colour and tone of the chapter in view; the header frosts once you scroll. */
+  /* Colour flow: the page colour blends continuously from one chapter's colour to the next as you scroll,
+     the header and rail take the tone of the chapter in view, and the rail fills with progress. */
   var root = document.documentElement, flowChs = $$('.story .ch[data-flow]');
+  var hex = function (h) { h = h.replace('#', ''); return [parseInt(h.substr(0, 2), 16), parseInt(h.substr(2, 2), 16), parseInt(h.substr(4, 2), 16)]; };
+  var mix = function (a, b, t) { return 'rgb(' + a.map(function (v, i) { return Math.round(v + (b[i] - v) * t); }).join(',') + ')'; };
   var onScroll = function () { document.body.classList.toggle('scrolled', scrollY > 10); };
   onScroll(); window.addEventListener('scroll', onScroll, { passive: true });
   if (!flowChs.length) root.setAttribute('data-tone', 'light');
   else {
-    var applyFlow = function (c) { root.style.setProperty('--flow', c.getAttribute('data-flow')); root.setAttribute('data-tone', c.getAttribute('data-tone') || 'light'); };
-    applyFlow(flowChs[0]);
-    var pick = function () {
-      var mid = innerHeight * 0.45, best = null;
-      flowChs.forEach(function (c) { var r = c.getBoundingClientRect(); if (r.top <= mid && r.bottom > mid) best = c; });
-      if (best) applyFlow(best); else if (flowChs[flowChs.length - 1].getBoundingClientRect().bottom <= mid) { root.style.setProperty('--flow', '#ffffff'); root.setAttribute('data-tone', 'light'); }
+    var cols = flowChs.map(function (c) { return hex(c.getAttribute('data-flow')); });
+    var railFill = $('[data-rail-fill]'), ticking = false;
+    var flow = function () {
+      ticking = false;
+      var mid = innerHeight * 0.5, cur = 0;
+      flowChs.forEach(function (c, i) { if (c.getBoundingClientRect().top <= mid) cur = i; });
+      var r = flowChs[cur].getBoundingClientRect(), col = cols[cur];
+      var next = cur + 1 < flowChs.length ? cur + 1 : null;
+      if (next !== null) {
+        // blend across the last 40% of the chapter, eased
+        var start = r.height * 0.6, into = mid - r.top - start, span = r.height * 0.4;
+        var t = Math.max(0, Math.min(1, into / span)); t = t * t * (3 - 2 * t);
+        root.style.setProperty('--flow', mix(cols[cur], cols[next], t));
+      } else root.style.setProperty('--flow', 'rgb(' + col.join(',') + ')');
+      if (flowChs[flowChs.length - 1].getBoundingClientRect().bottom <= mid) { root.style.setProperty('--flow', '#ffffff'); root.setAttribute('data-tone', 'light'); }
+      else {
+        var hdrCh = flowChs.filter(function (c) { var b = c.getBoundingClientRect(); return b.top <= 40 && b.bottom > 40; })[0] || flowChs[cur];
+        root.setAttribute('data-tone', hdrCh.getAttribute('data-tone') || 'light');
+      }
+      if (railFill) { var st = $('.story'), sb = st.getBoundingClientRect(); railFill.parentNode.parentNode.style.setProperty('--rp', Math.max(0, Math.min(100, (-sb.top + mid) / sb.height * 100)) + '%'); }
     };
-    window.addEventListener('scroll', pick, { passive: true }); pick();
+    window.addEventListener('scroll', function () { if (!ticking) { ticking = true; requestAnimationFrame(flow); } }, { passive: true });
+    window.addEventListener('resize', flow); flow();
+  }
+
+  /* Chapters and sections get .in-view once, which starts their own animations (split headings, bars, calendar). */
+  $$('[data-split]').forEach(function (h) {
+    var words = h.textContent.trim().split(/\s+/); h.textContent = ''; h.setAttribute('aria-label', words.join(' '));
+    words.forEach(function (w, i) { var o = document.createElement('span'); o.className = 'w'; o.setAttribute('aria-hidden', 'true'); var n = document.createElement('span'); n.textContent = w; n.style.setProperty('--wi', i); o.appendChild(n); h.appendChild(o); h.appendChild(document.createTextNode(' ')); });
+  });
+  var viewEls = $$('.story .ch, main section');
+  if (still || !('IntersectionObserver' in window)) viewEls.forEach(function (el) { el.classList.add('in-view'); });
+  else {
+    var vio2 = new IntersectionObserver(function (es) { es.forEach(function (en) { if (en.isIntersecting) { en.target.classList.add('in-view'); vio2.unobserve(en.target); } }); }, { threshold: 0.18 });
+    viewEls.forEach(function (el) { vio2.observe(el); });
+  }
+
+  /* Start here: the path under the pointer or focus opens. */
+  $$('.paths .path').forEach(function (p, i, all) {
+    var open = function () { all.forEach(function (x) { x.classList.toggle('on', x === p); }); };
+    p.addEventListener('mouseenter', open); p.addEventListener('focusin', open); p.addEventListener('click', open);
+  });
+
+  /* Mobile drawer: lock the page behind it and close it on Escape. */
+  var mb = $('.menu-btn'), nb = $('#site-navbar');
+  if (mb && nb) {
+    mb.addEventListener('click', function () { setTimeout(function () { document.body.classList.toggle('nav-open', nb.classList.contains('open')); }, 0); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && nb.classList.contains('open')) { nb.classList.remove('open'); document.body.classList.remove('nav-open'); mb.setAttribute('aria-expanded', 'false'); } });
+  }
+
+  /* Site-wide reveal: tag common blocks on every page so they rise in once; hero images unmask. */
+  if (!still && 'IntersectionObserver' in window && !$('.story')) {
+    $$('main .sec-head, main .hub-card, main .feature-row > *, main .faq-l details, main .prog, main .wz, main .wz-sum, main .help-card, main .refund-note, main .cta-l, main .about-grid > *, main .dom-box, main table').forEach(function (el) { if (!el.hasAttribute('data-rv')) el.setAttribute('data-rv', ''); });
+    document.documentElement.classList.add('js-rv');
+    var later = $$('[data-rv]:not(.in)');
+    later.forEach(function (el) { var sib = Array.prototype.filter.call(el.parentNode.children, function (c) { return c.hasAttribute('data-rv'); }); el.style.setProperty('--d', (Math.min(sib.indexOf(el), 6) * 0.07) + 's'); });
+    var rvo2 = new IntersectionObserver(function (es) { es.forEach(function (en) { if (en.isIntersecting) { en.target.classList.add('in'); rvo2.unobserve(en.target); } }); }, { threshold: 0.08, rootMargin: '0px 0px -30px 0px' });
+    later.forEach(function (el) { rvo2.observe(el); });
+    $$('.sh-frame').forEach(function (f) { f.classList.add('rv-img'); rvo2.observe(f); });
   }
 })();
