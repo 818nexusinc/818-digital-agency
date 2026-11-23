@@ -3,10 +3,13 @@
    All text is inserted with textContent. Prices shown here are previews; the server recalculates everything. */
 (function () {
   'use strict';
+  var I18N = (function () { try { return JSON.parse(document.documentElement.getAttribute('data-i18n') || '{}'); } catch (e) { return {}; } })();
+  var T = function (s) { return I18N[s] || s; };
   var $ = function (s, r) { return (r || document).querySelector(s); };
   var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
   var csrf = (document.querySelector('meta[name="csrf"]') || {}).content || '';
-  var money = function (c) { return '$' + (c / 100).toLocaleString('en-CA', { minimumFractionDigits: c % 100 ? 2 : 0, maximumFractionDigits: 2 }); };
+  var FR = /^fr/.test(document.documentElement.lang);
+  var money = function (c) { var n = (c / 100).toLocaleString(FR ? 'fr-CA' : 'en-CA', { minimumFractionDigits: c % 100 ? 2 : 0, maximumFractionDigits: 2 }); return FR ? n + '\u00a0$' : '$' + n; };
   var RULES = {
     postal: [/^[ABCEGHJ-NPRSTVXY]\d[ABCEGHJ-NPRSTV-Z][ -]?\d[ABCEGHJ-NPRSTV-Z]\d$/i, 'Enter a valid Canadian postal code (e.g. E1C 4X8).'],
     phone: [/^[+\d][\d\s().-]{6,19}$/, 'Enter a valid phone number.'],
@@ -26,15 +29,15 @@
     if (el.disabled || el.closest('[hidden]') && !el.closest('.wz-step:not([hidden])')) return true;
     var v = (el.value || '').trim(), msg = '';
     if (el.type === 'radio') {
-      if (el.required && !$$('input[name="' + CSS.escape(el.name) + '"]', el.form).some(function (r) { return r.checked; })) msg = 'Please choose an option.';
+      if (el.required && !$$('input[name="' + CSS.escape(el.name) + '"]', el.form).some(function (r) { return r.checked; })) msg = T('Please choose an option.');
     } else if (el.type === 'checkbox') {
-      if (el.required && !el.checked) msg = el.name === 'agree' ? 'Please read and accept the Service Agreement to continue.' : 'Required.';
-    } else if (el.required && !v) msg = 'Required.';
-    else if (v && el.dataset.rule && RULES[el.dataset.rule] && !RULES[el.dataset.rule][0].test(v)) msg = RULES[el.dataset.rule][1];
-    else if (v && el.type === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v)) msg = 'Enter a valid email address.';
-    else if (v && el.minLength > 0 && v.length < el.minLength) msg = 'Please write at least ' + el.minLength + ' characters.';
-    else if (v && el.type === 'number' && el.min !== '' && +v < +el.min) msg = 'Minimum is ' + el.min + '.';
-    else if (v && el.type === 'date' && el.dataset.future && v < new Date().toISOString().slice(0, 10)) msg = 'Choose today or a later date.';
+      if (el.required && !el.checked) msg = el.name === 'agree' ? 'Please read and accept the Service Agreement to continue.' : T('Required.');
+    } else if (el.required && !v) msg = T('Required.');
+    else if (v && el.dataset.rule && RULES[el.dataset.rule] && !RULES[el.dataset.rule][0].test(v)) msg = T(RULES[el.dataset.rule][1]);
+    else if (v && el.type === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v)) msg = T('Enter a valid email address.');
+    else if (v && el.minLength > 0 && v.length < el.minLength) msg = T('Please write at least {n} characters.').replace('{n}', el.minLength);
+    else if (v && el.type === 'number' && el.min !== '' && +v < +el.min) msg = T('Minimum is {n}.').replace('{n}', el.min);
+    else if (v && el.type === 'date' && el.dataset.future && v < new Date().toISOString().slice(0, 10)) msg = T('Choose today or a later date.');
     setErr(el, msg);
     return !msg;
   }
@@ -83,7 +86,7 @@
         if (f.disabled || ((f.type === 'radio' || f.type === 'checkbox') && !f.checked)) return;
         var c = +f.dataset.cents;
         if (f.dataset.by) { var src = $$('[name="' + f.dataset.by + '"]', form).filter(function (x) { return x.type !== 'radio' || x.checked; })[0]; c = src ? +(f.getAttribute('data-c-' + src.value) || 0) : 0; }
-        if (!c) return; sum += c; lines.push([f.dataset.line || f.dataset.text || 'Item', c, f.dataset.per || '']);
+        if (!c) return; sum += c; lines.push([f.dataset.line || f.dataset.text || T('Item'), c, f.dataset.per || '']);
       });
       var txt = sum ? money(sum) : '—';
       if (totalEl) totalEl.textContent = txt;
@@ -112,8 +115,8 @@
       });
       $$('[data-repeat]', s).forEach(function (rep) {
         var n = $$('.rep-item', rep).length, fe = $(':scope > .fe', rep);
-        var msg = n < +rep.dataset.min ? 'Add at least ' + rep.dataset.min + '.' : '';
-        if (!msg && rep.dataset.total) { var t = $$('[name$="[' + rep.dataset.total + ']"]', rep).reduce(function (a, f) { return a + (+f.value || 0); }, 0); if (Math.round(t) !== 100) msg = 'Shares must total 100% (now ' + t + '%).'; }
+        var msg = n < +rep.dataset.min ? T('Add at least {n}.').replace('{n}', rep.dataset.min) : '';
+        if (!msg && rep.dataset.total) { var t = $$('[name$="[' + rep.dataset.total + ']"]', rep).reduce(function (a, f) { return a + (+f.value || 0); }, 0); if (Math.round(t) !== 100) msg = T('Shares must total 100% (now {n}%).').replace('{n}', t); }
         if (fe) fe.textContent = msg; if (msg) ok = false;
       });
       if (!ok) { var bad = $('.bad input, .bad select, .bad textarea', s); if (bad) bad.focus(); }
@@ -175,20 +178,20 @@
       var last = steps[steps.length - 1];
       if (!validStep(last)) return;
       for (var i = 0; i < steps.length - 1; i++) if (!validStep(steps[i])) { show(i); return; }
-      var btn = $('[data-wz-submit]', form), label = btn.textContent; btn.disabled = true; btn.textContent = 'Working…';
+      var btn = $('[data-wz-submit]', form), label = btn.textContent; btn.disabled = true; btn.textContent = T('Working…');
       fetch(form.dataset.endpoint || '/order/add', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-Token': csrf }, body: JSON.stringify(payload()) })
         .then(function (r) { return r.json().then(function (j) { return [r.ok, j]; }); })
         .then(function (res) {
           var ok = res[0] && res[1].ok, j = res[1];
-          if (!ok) { var fe = $('.agree + .fe', last) || $('.fe', last); if (fe) fe.textContent = (j && (j.error || j.message)) || 'Something went wrong. Please try again.'; btn.disabled = false; btn.textContent = label; return; }
+          if (!ok) { var fe = $('.agree + .fe', last) || $('.fe', last); if (fe) fe.textContent = (j && (j.error || j.message)) || T('Something went wrong. Please try again.'); btn.disabled = false; btn.textContent = label; return; }
           if (j.redirect) { var pill = $('.cart-pill'); if (pill) { var n = $('.n', pill) || pill.appendChild(document.createElement('span')); n.className = 'n'; n.textContent = j.count; } window.location.href = j.redirect; return; }
           var done = $('.wz-done', last); $$('.wz-nav, .wz-review, .agree, p.muted', last).forEach(function (x) { x.hidden = true; });
           done.hidden = false; done.textContent = '';
-          var h = document.createElement('h4'); h.textContent = 'Request received'; var p = document.createElement('p');
-          p.textContent = 'Thank you. We have emailed you a confirmation' + (j.reference ? ' (reference ' + j.reference + ')' : '') + ' and will reply within one business day.';
+          var h = document.createElement('h4'); h.textContent = T('Request received'); var p = document.createElement('p');
+          p.textContent = T('Thank you. We have emailed you a confirmation{ref} and will reply within one business day.').replace('{ref}', j.reference ? ' (' + T('reference') + ' ' + j.reference + ')' : '');
           done.appendChild(h); done.appendChild(p);
         })
-        .catch(function () { btn.disabled = false; btn.textContent = label; var fe = $('.agree + .fe', last); if (fe) fe.textContent = 'Network error. Please try again.'; });
+        .catch(function () { btn.disabled = false; btn.textContent = label; var fe = $('.agree + .fe', last); if (fe) fe.textContent = T('Network error. Please try again.'); });
     });
     conditions(); price(); show(0); show.ready = true;
   }
@@ -205,30 +208,30 @@
     var tlds = JSON.parse(box.dataset.tlds || '{}'), out = $('[data-dom-results]', box), inp = $('#dom-q', box), agreeWrap = $('[data-dom-agree]', box), err = $('[data-dom-err]', box);
     function row(domain) {
       var r = document.createElement('div'); r.className = 'dom-res';
-      var a = document.createElement('div'); var b = document.createElement('b'); b.textContent = domain; var st = document.createElement('div'); st.className = 'st unk'; st.textContent = 'Checking…'; a.appendChild(b); a.appendChild(st);
+      var a = document.createElement('div'); var b = document.createElement('b'); b.textContent = domain; var st = document.createElement('div'); st.className = 'st unk'; st.textContent = T('Checking…'); a.appendChild(b); a.appendChild(st);
       var tld = domain.split('.').slice(1).join('.'), right = document.createElement('div'); right.style.textAlign = 'right';
       var pr = document.createElement('div'); pr.textContent = tlds[tld] ? money(tlds[tld]) + '/yr' : ''; pr.style.fontWeight = '650';
-      var btn = document.createElement('button'); btn.type = 'button'; btn.className = 'btn btn-primary btn-sm'; btn.textContent = 'Add to cart'; btn.hidden = true;
+      var btn = document.createElement('button'); btn.type = 'button'; btn.className = 'btn btn-primary btn-sm'; btn.textContent = T('Add to cart'); btn.hidden = true;
       right.appendChild(pr); right.appendChild(btn); r.appendChild(a); r.appendChild(right); out.appendChild(r);
       post('/api/v1/domain-check', { domain: domain }).then(function (j) {
-        if (!j._ok) { st.textContent = j.error || 'Could not verify. Try again.'; return; }
+        if (!j._ok) { st.textContent = j.error || T('Could not verify. Try again.'); return; }
         if (j.status === 'available') { st.className = 'st ok'; st.textContent = '✓ Available'; btn.hidden = !tlds[tld]; if (!tlds[tld]) st.textContent += ' (extension not offered yet)'; agreeWrap.hidden = false; }
-        else if (j.status === 'registered') { st.className = 'st no'; st.textContent = 'Already registered'; }
-        else { st.textContent = 'Availability confirmed before registration'; btn.hidden = !tlds[tld]; agreeWrap.hidden = false; }
+        else if (j.status === 'registered') { st.className = 'st no'; st.textContent = T('Already registered'); }
+        else { st.textContent = T('Availability confirmed before registration'); btn.hidden = !tlds[tld]; agreeWrap.hidden = false; }
       });
       btn.addEventListener('click', function () {
         err.textContent = '';
-        if (!$('[data-agree]', box).checked) { err.textContent = 'Please read and accept the Service Agreement to continue.'; return; }
-        btn.disabled = true; btn.textContent = 'Adding…';
+        if (!$('[data-agree]', box).checked) { err.textContent = T('Please read and accept the Service Agreement to continue.'); return; }
+        btn.disabled = true; btn.textContent = T('Adding…');
         post('/order/add', { slug: 'domain_register', domain: domain, tld: tld, agree: true, details: { domain: domain } }).then(function (j) {
-          if (j._ok && j.redirect) location.href = j.redirect; else { btn.disabled = false; btn.textContent = 'Add to cart'; err.textContent = j.error || 'Could not add this domain.'; }
+          if (j._ok && j.redirect) location.href = j.redirect; else { btn.disabled = false; btn.textContent = T('Add to cart'); err.textContent = j.error || T('Could not add this domain.'); }
         });
       });
     }
     function search(q) {
       q = (q || '').trim().toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '');
       if (!q) return; out.textContent = ''; err.textContent = '';
-      if (!/^[a-z0-9-]+(\.[a-z.]{2,})?$/.test(q)) { err.textContent = 'Enter a name like mybusiness or mybusiness.ca'; return; }
+      if (!/^[a-z0-9-]+(\.[a-z.]{2,})?$/.test(q)) { err.textContent = T('Enter a name like mybusiness or mybusiness.ca'); return; }
       var base = q.split('.')[0], list = q.indexOf('.') > 0 ? [q] : [];
       Object.keys(tlds).slice(0, 4).forEach(function (t) { var d = base + '.' + t; if (list.indexOf(d) < 0) list.push(d); });
       list.slice(0, 5).forEach(row);
@@ -246,22 +249,22 @@
     function calc() {
       var prov = val('province'), rs = regSlug[val('reg_type')], regC = (D.reg[rs] || {})[prov];
       var items = {
-        registration: [regC, 'one', 'Business registration'], management: [D.bm, 'one', 'Annual return filing'], domain: [D.tlds[val('tld')], 'yr', 'Domain .' + val('tld')],
-        email: [D.email[val('email_plan')], 'mo', 'Business email'], website: [D.website[val('website_plan')], 'mo', 'Website'], maintenance: [D.maint[val('maint_plan')], 'mo', 'Maintenance']
+        registration: [regC, 'one', T('Business registration')], management: [D.bm, 'one', T('Annual return filing')], domain: [D.tlds[val('tld')], 'yr', T('Domain') + ' .' + val('tld')],
+        email: [D.email[val('email_plan')], 'mo', T('Business email')], website: [D.website[val('website_plan')], 'mo', T('Website')], maintenance: [D.maint[val('maint_plan')], 'mo', T('Maintenance')]
       };
       $$('.pill input[name="reg_type"]', form).forEach(function (r) { var c = (D.reg[regSlug[r.value]] || {})[prov]; r.disabled = c === null || c === undefined; });
       var chosen = Object.keys(items).filter(function (k) { var cb = $('[name="services[' + k + ']"]', form); return cb.checked && items[k][0]; });
       var p = pct(chosen.length), t = { one: 0, yr: 0, mo: 0 }, saved = 0, lines = $('[data-b-lines]', form); lines.textContent = '';
-      Object.keys(items).forEach(function (k) { var el = $('[data-price="' + k + '"]', form), it = items[k]; el.textContent = it[0] ? money(it[0]) + (it[1] === 'one' ? '' : '/' + it[1]) : 'Not available'; });
+      Object.keys(items).forEach(function (k) { var el = $('[data-price="' + k + '"]', form), it = items[k]; el.textContent = it[0] ? money(it[0]) + (it[1] === 'one' ? '' : '/' + it[1]) : T('Not available'); });
       chosen.forEach(function (k) {
         var it = items[k], d = Math.floor(it[0] * p / 100); t[it[1]] += it[0] - d; saved += d;
         var li = document.createElement('li'), a = document.createElement('span'), b = document.createElement('b');
         a.textContent = it[2]; b.textContent = money(it[0] - d) + (it[1] === 'one' ? '' : '/' + it[1]); li.appendChild(a); li.appendChild(b); lines.appendChild(li);
       });
       $('[data-b-empty]', form).hidden = chosen.length > 0;
-      $('[data-b-save]', form).textContent = p ? p + '% bundle discount · you save ' + money(saved) : (chosen.length === 1 ? 'Add one more service to save 5%.' : '');
+      $('[data-b-save]', form).textContent = p ? T('{p}% bundle discount · you save {s}').replace('{p}', p).replace('{s}', money(saved)) : (chosen.length === 1 ? T('Add one more service to save 5%.') : '');
       var tot = $('[data-b-totals]', form); tot.textContent = '';
-      [['One-time', t.one], ['Yearly', t.yr], ['Monthly', t.mo]].forEach(function (r) { if (!r[1]) return; var a = document.createElement('dt'); a.textContent = r[0]; var b = document.createElement('dd'); b.textContent = money(r[1]); tot.appendChild(a); tot.appendChild(b); });
+      [[T('One-time'), t.one], [T('Yearly'), t.yr], [T('Monthly'), t.mo]].forEach(function (r) { if (!r[1]) return; var a = document.createElement('dt'); a.textContent = r[0]; var b = document.createElement('dd'); b.textContent = money(r[1]); tot.appendChild(a); tot.appendChild(b); });
       var today = t.one + t.yr + t.mo, m = $('[data-b-mtotal]'); if (m) m.textContent = today ? money(today) : '—';
       $$('[data-tiers] li', form).forEach(function (li) { li.classList.toggle('on', +li.dataset.n === Object.keys(tiers).filter(function (k) { return chosen.length >= +k; }).pop() * 1); });
       return chosen;
@@ -272,12 +275,12 @@
     function submit(e) {
       if (e) e.preventDefault();
       var err = $('[data-b-err]', form), chosen = calc(); err.textContent = '';
-      if (!chosen.length) { err.textContent = 'Please select at least one service.'; return; }
-      if (!$('[name="agree"]', form).checked) { err.textContent = 'Please read and accept the Service Agreement to continue.'; $('[name="agree"]', form).focus(); return; }
+      if (!chosen.length) { err.textContent = T('Please select at least one service.'); return; }
+      if (!$('[name="agree"]', form).checked) { err.textContent = T('Please read and accept the Service Agreement to continue.'); $('[name="agree"]', form).focus(); return; }
       var svc = {}; chosen.forEach(function (k) { svc[k] = 1; });
-      var btn = $('[data-b-submit]', form); btn.disabled = true; btn.textContent = 'Adding…';
+      var btn = $('[data-b-submit]', form); btn.disabled = true; btn.textContent = T('Adding…');
       post('/order/bundle', { province: val('province'), reg_type: val('reg_type'), tld: val('tld'), email_plan: val('email_plan'), website_plan: val('website_plan'), maint_plan: val('maint_plan'), services: svc, agree: true })
-        .then(function (j) { if (j._ok && j.redirect) location.href = j.redirect; else { btn.disabled = false; btn.textContent = 'Add bundle to cart'; err.textContent = j.error || 'Could not add the bundle.'; } });
+        .then(function (j) { if (j._ok && j.redirect) location.href = j.redirect; else { btn.disabled = false; btn.textContent = T('Add bundle to cart'); err.textContent = j.error || T('Could not add the bundle.'); } });
     }
     form.addEventListener('submit', submit);
     var mgo = $('[data-b-mgo]'); if (mgo) mgo.addEventListener('click', function () { submit(); if ($('[data-b-err]', form).textContent) $('[data-b-err]', form).scrollIntoView({ block: 'center' }); });

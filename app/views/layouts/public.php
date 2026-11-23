@@ -5,7 +5,7 @@ $fullTitle = ($title ?? '') ? $title . ' | ' . Settings::get('company.name') : S
 $canon = url($path ?? '/');
 $cartCount = count(Cart::lines());
 ?><!doctype html>
-<html lang="en">
+<html lang="<?= lang() === 'fr' ? 'fr-CA' : 'en-CA' ?>"<?= lang() === 'fr' ? " data-i18n='" . e(js_dict()) . "'" : '' ?>>
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title><?= e($fullTitle) ?></title>
@@ -28,7 +28,7 @@ $cartCount = count(Cart::lines());
   <div class="topbar"><div class="wrap nav">
     <a class="brand" href="/" aria-label="818 Digital Agency home"><?php include APP_ROOT . '/views/partials/logo.php'; ?><span class="wm"><b>818 Digital Agency</b><span>by 818 Nexus Inc.</span></span></a>
     <div class="nav-cta">
-      <a class="util-link" href="/how-it-works">How it works</a>
+      <a class="lang-sw" href="?lang=<?= lang() === 'fr' ? 'en' : 'fr' ?>" hreflang="<?= lang() === 'fr' ? 'en' : 'fr' ?>" aria-label="<?= lang() === 'fr' ? 'English' : 'Français' ?>"><span<?= lang() === 'en' ? ' class="on"' : '' ?>>EN</span><span<?= lang() === 'fr' ? ' class="on"' : '' ?>>FR</span></a><a class="util-link" href="/how-it-works">How it works</a>
       <a class="cart-pill" href="/cart" aria-label="Cart (<?= $cartCount ?> items)"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6h15l-1.5 9h-12z"/><path d="M6 6 5 3H2"/><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/></svg><?php if ($cartCount): ?><span class="n"><?= $cartCount ?></span><?php endif; ?></a>
       <?php if (!empty($user)): ?><a class="btn btn-primary btn-sm" href="<?= App\Auth::isStaff($user) ? '/admin' : '/portal' ?>"><?= App\Auth::isStaff($user) ? 'Control Tower' : 'My portal' ?></a>
       <?php else: ?><a class="btn btn-ghost btn-sm" href="/login">Log in</a><a class="btn btn-primary btn-sm" href="/signup">Create account</a><?php endif; ?>

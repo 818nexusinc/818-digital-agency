@@ -1,6 +1,8 @@
 /* 818 Digital Agency — progressive enhancement. All text is inserted with textContent (no HTML injection). */
 (function () {
   'use strict';
+  var I18N = (function () { try { return JSON.parse(document.documentElement.getAttribute('data-i18n') || '{}'); } catch (e) { return {}; } })();
+  var T = function (s) { return I18N[s] || s; };
   var csrf = (document.querySelector('meta[name="csrf"]') || {}).content || '';
   var $ = function (s, r) { return (r || document).querySelector(s); };
   var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
@@ -32,7 +34,7 @@
   $$('[data-toggle]').forEach(function (b) {
     b.addEventListener('click', function () { var t = document.getElementById(b.getAttribute('data-toggle')); if (t) { t.classList.toggle('open'); b.setAttribute('aria-expanded', t.classList.contains('open')); } });
   });
-  $$('[data-copy]').forEach(function (b) { b.addEventListener('click', function () { var t = $(b.getAttribute('data-copy')); if (t && navigator.clipboard) navigator.clipboard.writeText(t.textContent).then(function () { b.textContent = 'Copied'; }); }); });
+  $$('[data-copy]').forEach(function (b) { b.addEventListener('click', function () { var t = $(b.getAttribute('data-copy')); if (t && navigator.clipboard) navigator.clipboard.writeText(t.textContent).then(function () { b.textContent = T('Copied'); }); }); });
   $$('form[data-confirm]').forEach(function (f) { f.addEventListener('submit', function (e) { if (!window.confirm(f.getAttribute('data-confirm'))) e.preventDefault(); }); });
 
   /* ── Chat widget ─────────────────────────────────────────────── */
@@ -122,7 +124,7 @@
   var dform = $('#domain-check');
   if (dform) dform.addEventListener('submit', function (e) {
     e.preventDefault(); var out = $('#domain-result'), v = $('#domain-input').value.trim(); if (!v) return;
-    out.textContent = 'Checking…';
+    out.textContent = T('Checking…');
     api('/api/v1/domain-check', { domain: v }).then(function (r) {
       out.textContent = '';
       if (!r.ok) { out.textContent = r.error; return; }
@@ -133,7 +135,7 @@
       if (r.status !== 'registered') {
         var f = document.createElement('form'); f.method = 'post'; f.action = '/cart/add'; f.style.display = 'inline';
         [['_csrf', csrf], ['slug', 'domain_register'], ['domain', r.domain], ['tld', r.domain.split('.').pop()]].forEach(function (p) { var i = document.createElement('input'); i.type = 'hidden'; i.name = p[0]; i.value = p[1]; f.appendChild(i); });
-        var btn = document.createElement('button'); btn.className = 'btn btn-primary btn-sm'; btn.textContent = 'Add to cart'; f.appendChild(btn); out.appendChild(f);
+        var btn = document.createElement('button'); btn.className = 'btn btn-primary btn-sm'; btn.textContent = T('Add to cart'); f.appendChild(btn); out.appendChild(f);
       }
       if (r.note) { var n = document.createElement('div'); n.className = 'hint'; n.textContent = r.note; out.appendChild(n); }
     });

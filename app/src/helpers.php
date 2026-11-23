@@ -9,9 +9,10 @@ function now(int $offsetSeconds = 0): string { return gmdate('Y-m-d H:i:s', time
 
 /** Format integer cents as CAD. */
 function money(?int $cents, bool $showFree = false): string {
-    if ($cents === null) return 'Quote';
-    if ($cents === 0 && $showFree) return 'Included';
-    return '$' . number_format($cents / 100, ($cents % 100 === 0) ? 0 : 2);
+    if ($cents === null) return t('Quote');
+    if ($cents === 0 && $showFree) return t('Included');
+    $d = ($cents % 100 === 0) ? 0 : 2;
+    return lang() === 'fr' ? number_format($cents / 100, $d, ',', "\u{00A0}") . "\u{00A0}\$" : '$' . number_format($cents / 100, $d);
 }
 
 function jenc(mixed $v): string { return json_encode($v, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR); }
@@ -62,3 +63,35 @@ function t(string $s): string
 }
 /** Translate, then format with sprintf (for strings with prices or names). */
 function tf(string $s, mixed ...$a): string { return vsprintf(t($s), $a); }
+
+/** French pass over a rendered HTML page: swaps text nodes and UI attributes that match the dictionary or a pattern. */
+function tr_html(string $html): string
+{
+    if (lang() !== 'fr' || $html === '') return $html;
+    foreach (headers_list() as $h) if (stripos($h, 'content-type:') === 0 && stripos($h, 'text/html') === false) return $html;
+    static $pat = null;
+    $pat ??= is_file(APP_ROOT . '/i18n/fr_patterns.php') ? (require APP_ROOT . '/i18n/fr_patterns.php') : [];
+    $one = function (string $raw) use ($pat): ?string {
+        $s = trim(preg_replace('/\s+/u', ' ', html_entity_decode($raw, ENT_QUOTES | ENT_HTML5, 'UTF-8')));
+        if ($s === '' || !preg_match('/\p{L}{2}/u', $s)) return null;
+        $f = t($s);
+        if ($f === $s) { foreach ($pat as $re => $to) { if (preg_match($re, $s)) { $f = preg_replace_callback($re, fn($m) => preg_replace_callback('/\{(\d)\}/', fn($k) => t($m[(int)$k[1]] ?? ''), $to), $s); break; } } }
+        if ($f === $s) return null;
+        preg_match('/^\s*/u', $raw, $a); preg_match('/\s*$/u', $raw, $b);
+        return $a[0] . htmlspecialchars($f, ENT_QUOTES | ENT_HTML5, 'UTF-8', false) . $b[0];
+    };
+    $parts = preg_split('/(<script\b.*?<\/script>|<style\b.*?<\/style>|<textarea\b.*?<\/textarea>)/is', $html, -1, PREG_SPLIT_DELIM_CAPTURE);
+    foreach ($parts as $i => &$p) {
+        if ($i % 2) continue;
+        $p = preg_replace_callback('/>([^<>]+)</u', fn($m) => '>' . ($one($m[1]) ?? $m[1]) . '<', $p);
+        $p = preg_replace_callback('/\b(placeholder|aria-label|title|alt|data-label|data-confirm|data-text|data-line)="([^"]*)"/u', fn($m) => $m[1] . '="' . ($one($m[2]) ?? $m[2]) . '"', $p);
+    }
+    return implode('', $parts);
+}
+/** Strings the browser scripts need, as JSON for <html data-i18n>. */
+function js_dict(): string
+{
+    if (lang() !== 'fr') return '';
+    $d = is_file(APP_ROOT . '/i18n/fr_js.php') ? (require APP_ROOT . '/i18n/fr_js.php') : [];
+    return jenc($d);
+}

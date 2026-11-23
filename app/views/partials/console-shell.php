@@ -14,7 +14,7 @@ $ini = strtoupper(implode('', array_map(fn($w) => mb_substr($w, 0, 1), array_sli
 $crumb = '';
 foreach ($groups as $g => $links) foreach ($links as $h => $l) if (($path ?? "") !== $home && (($path ?? '') === $h || ($h !== $home && str_starts_with((string)($path ?? ''), $h . '/')))) $crumb = $g;
 ?><!doctype html>
-<html lang="<?= lang() === 'fr' ? 'fr-CA' : 'en-CA' ?>"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title><?= e(t($title ?? $areaName)) ?> · <?= e(t($areaName)) ?></title><meta name="robots" content="noindex">
+<html lang="<?= lang() === 'fr' ? 'fr-CA' : 'en-CA' ?>"<?= lang() === 'fr' ? " data-i18n='" . e(js_dict()) . "'" : '' ?>><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title><?= e(t($title ?? $areaName)) ?> · <?= e(t($areaName)) ?></title><meta name="robots" content="noindex">
 <meta name="csrf" content="<?= e($csrf ?? '') ?>"><link rel="icon" href="/assets/img/favicon.svg"><link rel="preconnect" href="https://api.fontshare.com"><link rel="preconnect" href="https://cdn.fontshare.com" crossorigin>
 <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=sentient@1,2&amp;display=swap"><link rel="stylesheet" href="/assets/css/app.css?v=<?= APP_VERSION ?>"><link rel="stylesheet" href="/assets/css/console5.css?v=<?= APP_VERSION ?>"></head>
 <body class="con con-<?= e($area) ?>"<?= ($path ?? '') === '/portal/assistant' ? ' data-chat-inline' : '' ?>>
