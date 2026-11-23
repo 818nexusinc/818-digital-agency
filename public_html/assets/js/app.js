@@ -287,4 +287,20 @@
     $$('[data-end]').forEach(function (r) { r.addEventListener('change', paint); });
     paint();
   }
+
+  /* Colour flow: the page takes the colour and tone of the chapter in view; the header frosts once you scroll. */
+  var root = document.documentElement, flowChs = $$('.story .ch[data-flow]');
+  var onScroll = function () { document.body.classList.toggle('scrolled', scrollY > 10); };
+  onScroll(); window.addEventListener('scroll', onScroll, { passive: true });
+  if (!flowChs.length) root.setAttribute('data-tone', 'light');
+  else {
+    var applyFlow = function (c) { root.style.setProperty('--flow', c.getAttribute('data-flow')); root.setAttribute('data-tone', c.getAttribute('data-tone') || 'light'); };
+    applyFlow(flowChs[0]);
+    var pick = function () {
+      var mid = innerHeight * 0.45, best = null;
+      flowChs.forEach(function (c) { var r = c.getBoundingClientRect(); if (r.top <= mid && r.bottom > mid) best = c; });
+      if (best) applyFlow(best); else if (flowChs[flowChs.length - 1].getBoundingClientRect().bottom <= mid) { root.style.setProperty('--flow', '#ffffff'); root.setAttribute('data-tone', 'light'); }
+    };
+    window.addEventListener('scroll', pick, { passive: true }); pick();
+  }
 })();

@@ -14,8 +14,8 @@ $person = function (string $group, int $i, array $p, bool $dir) use ($addrFields
 };
 ?>
 <div class="topbar"><div><a class="small" href="/portal/projects/<?= e($p['number']) ?>">← <?= e($p['title']) ?></a><h1><?= e(Filings::TYPE_LABELS[$t]) ?></h1><span class="muted small"><?= e(Filings::JURISDICTIONS[$j][0]) ?> · <?= e($f['number']) ?></span></div><?php $badge($f['status']); ?></div>
-<ol class="steps-bar"><?php foreach (['Your details', 'Validation', 'Sign & authorize', 'Submitted', 'Registered'] as $i => $s): $doneIdx = match ($f['status']) { 'awaiting_details', 'needs_changes' => 0, 'awaiting_authorization' => 2, 'authorized', 'in_review', 'awaiting_approval', 'ready_to_file' => 3, 'submitted' => 3, 'accepted', 'completed' => 5, default => 0 }; ?><li class="<?= $i < $doneIdx ? 'done' : ($i === $doneIdx ? 'now' : '') ?>"><?= e($s) ?></li><?php endforeach; ?></ol>
-<?php if (!empty($v['errors'])): ?><div class="alert alert-error" id="issues"><b>Please fix the following before signing:</b><ul style="margin:8px 0 0"><?php foreach ($v['errors'] as $er): ?><li><?= e($er) ?></li><?php endforeach; ?></ul></div><?php endif; ?>
+<ol class="steps-bar"><?php foreach (['Your details', 'Checked', 'In progress', 'Submitted', 'Registered'] as $i => $s): $doneIdx = match ($f['status']) { 'awaiting_details', 'needs_changes' => 0, 'awaiting_authorization' => 2, 'authorized', 'in_review', 'awaiting_approval', 'ready_to_file' => 3, 'submitted' => 3, 'accepted', 'completed' => 5, default => 0 }; ?><li class="<?= $i < $doneIdx ? 'done' : ($i === $doneIdx ? 'now' : '') ?>"><?= e($s) ?></li><?php endforeach; ?></ol>
+<?php if (!empty($v['errors'])): ?><div class="alert alert-error" id="issues"><b>Please fix the following so we can file:</b><ul style="margin:8px 0 0"><?php foreach ($v['errors'] as $er): ?><li><?= e($er) ?></li><?php endforeach; ?></ul></div><?php endif; ?>
 <?php if (!empty($v['warnings'])): ?><div class="alert alert-warn"><?php foreach ($v['warnings'] as $wr): ?><div><?= e($wr) ?></div><?php endforeach; ?></div><?php endif; ?>
 <?php if ($f['status'] === 'rejected' && $f['rejected_reason']): ?><div class="alert alert-error">The registry returned the filing: <?= e($f['rejected_reason']) ?></div><?php endif; ?>
 <?php if (in_array($f['status'], ['authorized', 'in_review', 'awaiting_approval', 'ready_to_file', 'submitted'], true)): ?><div class="alert alert-info">Authorized by <?= e($f['auth_signer']) ?> on <?= e($f['authorized_at']) ?> UTC. Our Filing Agent is handling the submission — you'll get an email when the registry responds.</div><?php endif; ?>
@@ -23,7 +23,7 @@ $person = function (string $group, int $i, array $p, bool $dir) use ($addrFields
 
 <?php if ($editable): ?>
 <form class="panel" method="post" action="/portal/projects/<?= e($p['number']) ?>/filing"><?= App\Csrf::field() ?>
-  <p class="muted small">These details go to the government registry exactly as entered. Use full legal names and street addresses (no PO boxes for registered offices). Saving re-validates the filing; any change after signing requires a new signature.</p>
+  <p class="muted small">These details go to the government registry exactly as entered. Use full legal names and street addresses (no PO boxes for registered offices). When the details pass our checks, we start work on your filing straight away, under the authorization you gave with your order.</p>
   <?php if ($corp): ?>
     <h2>Corporate name</h2>
     <div class="grid g3"><div class="field"><label>Name type</label><select name="entity[name_type]"><option value="named"<?= ($ent['name_type'] ?? '') === 'named' ? ' selected' : '' ?>>Named corporation</option><option value="numbered"<?= ($ent['name_type'] ?? '') === 'numbered' ? ' selected' : '' ?>>Numbered corporation</option></select></div>
@@ -51,7 +51,7 @@ $person = function (string $group, int $i, array $p, bool $dir) use ($addrFields
     <h2>Contact</h2><?= $person('directors', 0, $d['directors'][0] ?? [], false) ?>
   <?php endif; ?>
   <div class="field" style="margin-top:16px"><label>Official contact email (registry notices)</label><input type="email" name="contact_email" value="<?= e($d['contact_email'] ?? '') ?>" required></div>
-  <button class="btn btn-primary">Save &amp; validate</button>
+  <button class="btn btn-primary">Save &amp; submit</button>
 </form>
 <?php endif; ?>
 

@@ -6,7 +6,7 @@ $nuans = $min('nuans'); $sole = $min('sole_prop'); $part = $min('partnership'); 
 $hero = ['tone' => 'blue', 'pills' => ['Every province + federal', 'From ' . money(min(array_filter([$sole, $part, $corp])))],
   'title' => 'Your business, officially registered.', 'sub' => 'Pick a structure, answer a few questions and we file it with the registry. Government fees included.',
   'actions' => [['#structures', 'Choose your structure', true], ['/register/nuans', 'NUANS name search (' . money($nuans) . ')']],
-  'media' => ['video' => 'team-talk'], 'chips' => [['pen', 'You approve and sign', 'Before anything is filed'], ['shield', 'Filed with the registry', 'Status in your portal']]];
+  'media' => ['video' => 'team-talk'], 'chips' => [['bolt', 'Worked on immediately', 'As soon as your order is in'], ['shield', 'Filed with the registry', 'Status in your portal']]];
 include APP_ROOT . '/views/partials/svc/hero.php';
 $cards = [
   ['nuans', '/register/nuans', 'search', 'violet', '#6d3fd8', 'Start here', 'NUANS Name Search', 'Check your business name is available before you incorporate.', $nuans, 'One-time · PDF report', ['Searches registered names and trademarks across Canada', 'Report usually the same day', 'Valid for 90 days', 'Up to 3 proposed names']],
@@ -45,6 +45,6 @@ $cards = [
   ['Which business structure is right for me?', 'Sole proprietorships are simplest for one owner. Partnerships suit two or more owners. Corporations give limited liability and tax flexibility. Co-operatives are member-owned and democratically run.'],
   ['Do I need a NUANS name search before I register?', 'Only for a named corporation, federally and in most provinces. Sole proprietorships, partnerships and numbered corporations don’t need one.'],
   ['Which provinces do you cover?', 'Every province and federal incorporation under the CBCA. Territories are coming soon.'],
-  ['How long does registration take?', 'Usually 1 to 7 business days depending on the structure and registry, once you have signed the final filing.'],
+  ['How long does registration take?', 'Usually 1 to 7 business days depending on the structure and registry, once your order is paid.'],
   ['What documents will I receive?', 'Your registration or incorporation certificate, the filed documents and next-step guidance, all saved in your portal.'],
 ]; include APP_ROOT . '/views/partials/svc/faq.php'; ?>

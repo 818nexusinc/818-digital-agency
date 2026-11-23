@@ -57,6 +57,7 @@ final class Wizard
         if (empty($in['agree'])) throw new UserError('Please read and accept the Service Agreement to continue.');
         $opts = ['province' => (string)($in['province'] ?? ''), 'tld' => (string)($in['tld'] ?? ''), 'domain' => (string)($in['domain'] ?? '')];
         $details = self::details($in['details'] ?? []);
+        if (Filings::typeFor($slug) && $details) $details['_authorization'] = ['at' => now(), 'ip' => client_ip(), 'ua' => mb_substr((string)($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 255), 'text' => Filings::AUTH_TEXT];
         Cart::add($slug, $opts, 1, null, $details);
         $added = 1;
         foreach (array_unique(array_filter((array)($in['addons'] ?? []), 'is_string')) as $a) {

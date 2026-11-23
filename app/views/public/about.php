@@ -13,7 +13,7 @@ include APP_ROOT . '/views/partials/svc/hero.php';
 <section class="sec"><div class="wrap about-grid">
   <?php foreach ([['globe', 'blue', 'Our mission', 'We believe every Canadian deserves access to professional business services. From St. John’s to Victoria, we bring the same quality, speed and care to every customer.'],
     ['stack', 'violet', 'What we do', 'We combine business registration and management with domains, email, websites and custom software, in one account with clear prices.'],
-    ['users', 'teal', 'How we work', 'Our own AI platform handles routine work around the clock, and our team in Atlantic Canada reviews quality, pricing and every sensitive decision. Nothing is filed without your signature.'],
+    ['users', 'teal', 'How we work', 'Our own AI platform handles routine work around the clock, and our team in Atlantic Canada reviews quality, pricing and every sensitive decision. Your filing starts the moment your order is in.'],
     ['certificate', 'green', 'Trust & privacy', '818 Digital Agency is part of ' . App\Settings::get('company.legal') . ', a registered Canadian corporation. We handle personal information under Canadian privacy law and never store card details.']] as [$ic, $tone, $t, $d]): ?>
   <div><span class="mc-ic tone-<?= $tone ?>"><?= nx_icon($ic) ?></span><span><h3><?= e($t) ?></h3><p><?= e($d) ?></p></span></div>
   <?php endforeach; ?>

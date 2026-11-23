@@ -438,18 +438,26 @@ tcase('jurisdiction-aware validation blocks bad data', function () {
     ok(str_contains($err, 'NUANS') && str_contains($err, 'New Brunswick') && str_contains($err, 'postal'), $err);
     eq(App\Filings::validate('ON', 'sole_prop_registration', App\Filings::normalize(['entity' => ['proposed_name' => 'Acme Inc.', 'activity' => 'x']], $f))['errors'] !== [], true);
 });
-tcase('authorization: signer must be listed; any later change voids the signature', function () {
+tcase('authorization is given on submission; any later change voids it', function () {
     [$f] = filingOrder('f3@example.com', 'corp_named', 'NB');
-    $f = App\Filings::saveDetails($f, goodCorp('NB'), 'customer');
+    $f = App\Filings::saveDetails($f, goodCorp('NB'), 'staff');
     eq($f['status'], 'awaiting_authorization');
-    throws(fn() => App\Filings::authorize($f, 'Random Person', 'Director', true));
-    throws(fn() => App\Filings::authorize($f, 'Cleo Bright', 'Director', false));
-    $f = App\Filings::authorize($f, 'Cleo Bright', 'Director', true);
+    $f = App\Filings::saveDetails($f, goodCorp('NB'), 'customer');
+    eq($f['status'], 'authorized');
     eq($f['auth_hash'], $f['data_hash']);
+    eq(App\Filings::gates($f)['authorization'][0], true);
     $changed = goodCorp('NB'); $changed['entity']['proposed_name'] = 'Maple Shine';
-    $f = App\Filings::saveDetails($f, $changed, 'customer');
+    $f = App\Filings::saveDetails($f, $changed, 'staff');
     ok($f['auth_hash'] === null, 'authorization survived a data change');
     eq(App\Filings::gates($f)['authorization'][0], false);
+});
+tcase('order form submission authorizes a clean filing immediately', function () {
+    $details = goodCorp('NB'); $details['_authorization'] = ['at' => now(), 'ip' => '203.0.113.9', 'ua' => 'test', 'text' => App\Filings::AUTH_TEXT];
+    $o = paidOrder('auth.form@example.com', [['slug' => 'corp_named', 'opts' => ['province' => 'NB', 'details' => $details], 'qty' => 1]]);
+    $f = Db::one('SELECT f.* FROM filings f JOIN projects p ON p.id = f.project_id WHERE p.order_id = ?', [$o['id']]);
+    ok(in_array($f['status'], ['authorized', 'in_review', 'awaiting_approval', 'ready_to_file', 'submitted'], true), 'not started: ' . $f['status']);
+    eq($f['auth_hash'], $f['data_hash']);
+    ok(!isset(jdec($f['data'])['_authorization']), 'authorization metadata kept out of the filing data');
 });
 tcase('unpaid or unsigned filings are never submitted', function () {
     $c = customer('unpaid@example.com');
@@ -463,7 +471,7 @@ tcase('unpaid or unsigned filings are never submitted', function () {
 });
 tcase('NB (no registry API): auto mode prepares the package and queues one-click portal filing; outcome completes the project', function () {
     [$f, $p] = filingOrder('f4@example.com', 'corp_numbered', 'NB');
-    $f = App\Filings::authorize(App\Filings::saveDetails($f, goodCorp('NB', false), 'customer'), 'Cleo Bright', 'Director', true);
+    $f = App\Filings::saveDetails($f, goodCorp('NB', false), 'customer');
     $r = App\Filings::submit((int)$f['id'], 'filing');
     eq($r['status'], 'ready_to_file');
     ok((bool)Db::val("SELECT 1 FROM approvals WHERE kind = 'file_on_portal' AND subject_id = ?", [$f['id']]));
@@ -477,7 +485,7 @@ tcase('NB (no registry API): auto mode prepares the package and queues one-click
 tcase('BC with API credentials: fully automatic submit → poll → registered', function () {
     Integrations::save('bc_registry', ['api_key' => 'bc-key-123456', 'account_id' => '2288'], ['base_url' => 'https://bcregistry-test.apigee.net']);
     [$f, $p] = filingOrder('f5@example.com', 'corp_numbered', 'BC');
-    $f = App\Filings::authorize(App\Filings::saveDetails($f, goodCorp('BC', false), 'customer'), 'Cleo Bright', 'Director', true);
+    $f = App\Filings::saveDetails($f, goodCorp('BC', false), 'customer');
     HttpFake::$queue = [['status' => 201, 'json' => ['filing' => ['header' => ['filingId' => 206616, 'status' => 'PAID'], 'business' => ['identifier' => 'Tsqdm363tn']]]]];
     $r = App\Filings::submit((int)$f['id'], 'filing');
     eq($r['status'], 'submitted');
@@ -495,7 +503,7 @@ tcase('BC with API credentials: fully automatic submit → poll → registered',
 tcase('registry API error is retried, then escalated', function () {
     Integrations::save('bc_registry', ['api_key' => 'bc-key-123456', 'account_id' => '2288']);
     [$f] = filingOrder('f6@example.com', 'corp_numbered', 'BC');
-    $f = App\Filings::authorize(App\Filings::saveDetails($f, goodCorp('BC', false), 'customer'), 'Cleo Bright', 'Director', true);
+    $f = App\Filings::saveDetails($f, goodCorp('BC', false), 'customer');
     for ($i = 0; $i < 3; $i++) { HttpFake::$queue = [['status' => 503, 'json' => ['message' => 'down']]]; try { App\Filings::submit((int)$f['id'], 'filing'); } catch (RuntimeException) {} }
     ok((bool)Db::val("SELECT 1 FROM approvals WHERE kind = 'failed_filing' AND subject_id = ?", [$f['id']]));
     eq(App\Filings::get((int)$f['id'])['status'], 'authorized');
@@ -504,7 +512,7 @@ tcase('registry API error is retried, then escalated', function () {
 tcase('approval policy: owner approves, then the filing proceeds', function () {
     Settings::set('filing.mode.NS', 'approval');
     [$f] = filingOrder('f7@example.com', 'corp_numbered', 'NS');
-    $f = App\Filings::authorize(App\Filings::saveDetails($f, goodCorp('NS', false), 'customer'), 'Cleo Bright', 'Director', true);
+    $f = App\Filings::saveDetails($f, goodCorp('NS', false), 'customer');
     eq(App\Filings::submit((int)$f['id'], 'filing')['status'], 'awaiting_approval');
     $ap = (int)Db::val("SELECT id FROM approvals WHERE kind = 'government_filing' AND subject_id = ?", [$f['id']]);
     Approvals::decide($ap, 'approve', ['email' => 'owner@x.ca', 'id' => 1], 'go');
@@ -521,7 +529,7 @@ tcase('Filing agent reviews and submits via tools after authorization (workflow)
     [$f, $p] = filingOrder('f9@example.com', 'sole_prop', 'NB');
     $data = ['entity' => ['proposed_name' => 'Bright Cleaning', 'activity' => 'Cleaning'], 'registered_office' => ['street' => '1 Main', 'city' => 'Moncton', 'province' => 'NB', 'postal' => 'E1C1E2'],
         'contact_email' => 'f9@example.com', 'owners' => [['first' => 'Fay', 'last' => 'Nine', 'address' => ['street' => '1 Main', 'city' => 'Moncton', 'province' => 'NB', 'postal' => 'E1C1E2']]]];
-    App\Filings::authorize(App\Filings::saveDetails($f, $data, 'customer'), 'Fay Nine', 'Owner', true);
+    App\Filings::saveDetails($f, $data, 'customer');
     Workflows::tick();
     $tid = (int)Db::val("SELECT id FROM agent_tasks WHERE agent_slug = 'filing' AND kind = 'filing_review' AND project_id = ?", [$p['id']]);
     ok($tid > 0, 'review task not queued');

@@ -956,3 +956,74 @@ html:has(.story){scroll-snap-type:y proximity;scroll-padding-top:var(--hh,118px)
 .st-btn{align-self:flex-start}
 @media(max-width:620px){.site .nav-cta{gap:6px}.site .nav-cta .btn-primary{display:none}.lang-sw{margin-right:0}.lang-sw span{padding:4px 7px}.site .brand .wm span{display:none}}
 @media(max-width:440px){.site .brand .wm{display:none}}
+
+/* ── v7 · transparent header, colour flow, opening-day hero ──────────── */
+/* Header: transparent everywhere; it picks up a frosted tint of the page colour once you scroll. */
+.site .site-header{background:transparent!important;border-bottom:1px solid transparent;backdrop-filter:none;transition:background .5s,border-color .5s,color .5s}
+.site .site-header .navbar{background:transparent;border-top:1px solid transparent}
+.site .site-header .topbar{background:transparent}
+.site.scrolled .site-header{background:color-mix(in srgb,var(--flow,#fff) 82%,transparent)!important;backdrop-filter:saturate(150%) blur(16px);border-bottom-color:color-mix(in srgb,var(--fg,#111418) 10%,transparent)}
+.site .site-header .navbar{border-top-color:color-mix(in srgb,var(--fg,#111418) 8%,transparent)}
+.site .mn-top,.site .mn-item>a,.site .mn-item>button,.site .util-link,.site .brand .wm b,.site .brand .wm span,.site .cart-pill,.site .menu-btn{color:var(--fg,#111418);transition:color .5s}
+.site .site-header .btn-ghost{color:var(--fg,#111418);border-color:color-mix(in srgb,var(--fg,#111418) 30%,transparent)}
+.site .site-header .btn-primary{background:var(--fg,#111418);border-color:var(--fg,#111418);color:var(--bg-inv,#fff)}
+.site .lang-sw{border-color:color-mix(in srgb,var(--fg,#111418) 25%,transparent)}.site .lang-sw span{color:color-mix(in srgb,var(--fg,#111418) 60%,transparent)}
+.site .lang-sw span.on{background:var(--fg,#111418);color:var(--bg-inv,#fff)}
+.site .cart-pill{border-color:color-mix(in srgb,var(--fg,#111418) 25%,transparent);background:transparent}
+.site .brand svg [fill="#0e1628"],.site .brand svg [fill="#111"]{fill:var(--fg,#111418)}
+html[data-tone=dark]{--fg:#fff;--bg-inv:#111418}
+html[data-tone=light]{--fg:#111418;--bg-inv:#fff}
+
+/* Home: header floats over the opening video; the page colour flows from chapter to chapter. */
+html:has(.story) .site-header{position:fixed;left:0;right:0;top:0}
+html:has(.story){scroll-padding-top:0}
+html:has(.story) body{background:var(--flow,#0d1117);transition:background-color .9s cubic-bezier(.4,0,.2,1)}
+html:has(.story) .site-footer,html:has(.story) main>section:not(.ch),html:has(.story) .story~section{position:relative;background:#fff}
+.story .ch{background:transparent;border-bottom:0;min-height:100svh;padding-top:var(--hh,118px);color:var(--fg)}
+.story .ch h2,.story .ch h1{color:var(--fg)}
+.story .ch .ch-copy p,.story .ch .fine,.story .ch .ix-d,.story .steps3 span{color:color-mix(in srgb,var(--fg) 68%,transparent)}
+.ch-idea{padding-top:0!important}
+.ch-idea .ch-bg{transform:none;animation:none}
+.ch-idea:after{background:linear-gradient(180deg,rgba(8,10,14,.55) 0%,rgba(8,10,14,0) 28%),linear-gradient(0deg,rgba(8,10,14,.85) 0%,rgba(8,10,14,.25) 50%,rgba(8,10,14,0) 75%)}
+.ch-idea h1{max-width:none;font-size:clamp(3.6rem,10vw,11rem)}
+.ch-idea p{font-size:clamp(1.15rem,1.6vw,1.45rem);max-width:26em}
+
+/* chapter tones */
+.ch-file{background:transparent!important}
+.ch-file .ch-side h2{color:#fff}
+.ch-file .steps3 li{border-top-color:rgba(255,255,255,.16)}
+.ch-file .steps3 li:before{color:#8fa8ff}
+.ch-file .steps3 b{color:#fff}
+.ch-file .ch-media:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent 70%,#0f1d45)}
+.ch-care{background:transparent!important}
+.ch-start .idx{border-top-color:rgba(255,255,255,.5)}.ch-start .idx li{border-bottom-color:rgba(255,255,255,.12)}
+.ch-start .idx a{color:#fff}.ch-start .idx a:hover .ix-t{color:#8fa8ff}
+.ch-online .plist li{border-color:rgba(17,20,24,.12)}
+.st-site video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.75}
+.ch-name .sheet{box-shadow:0 1px 0 rgba(17,20,24,.04),0 30px 60px -40px rgba(17,20,24,.25)}
+
+/* stamp replaces the old signature line */
+.stamp{margin-top:30px;display:flex;justify-content:flex-end;background:#fff;position:relative}
+.stamp span{display:inline-block;border:2px solid var(--acc);color:var(--acc);padding:8px 16px;font-size:14px;font-weight:600;letter-spacing:.02em;border-radius:4px;transform:rotate(-4deg) scale(1.4);opacity:0;transition:transform .45s cubic-bezier(.3,1.6,.5,1),opacity .2s}
+.sheet.signed .stamp span{opacity:1;transform:rotate(-4deg) scale(1)}
+
+/* rail follows the tone */
+.rail a{color:color-mix(in srgb,var(--fg,#111418) 50%,transparent)}.rail a[aria-current]{color:var(--fg,#111418)}
+.rail.on-dark a{color:color-mix(in srgb,var(--fg) 50%,transparent)}.rail.on-dark a[aria-current]{color:var(--fg)}
+
+@media(max-width:900px){.story .ch{min-height:auto;padding-top:calc(var(--hh,64px) + 40px)}.ch-idea{min-height:100svh}.ch-file{padding-top:0!important}.ch-file .ch-media:after{background:linear-gradient(180deg,transparent 70%,#0f1d45)}}
+@media(prefers-reduced-motion:reduce){html:has(.story) body{transition:none}.stamp span{transition:none}}
+.site .mn-btn{color:var(--fg,#111418)!important;background:transparent!important;transition:color .5s}
+.site .mn-btn svg{stroke:currentColor}
+.site .mn-hi svg{color:inherit}
+.site .brand svg circle[stroke="#0b1530"]{stroke:var(--fg,#0b1530);transition:stroke .5s}
+.site .site-header .menu-btn{border-color:color-mix(in srgb,var(--fg,#111418) 25%,transparent);background:transparent}
+.site .mega,.site .mega *{--fg:#111418}
+.story .ch[data-tone=dark]{--fg:#fff}.story .ch[data-tone=light]{--fg:#111418}
+.site .nm-field input{background:transparent!important}
+.st-site video{opacity:.5}
+.st-site-in{background:linear-gradient(0deg,rgba(0,0,0,.85),rgba(0,0,0,.35) 60%,rgba(0,0,0,.1))}
+.st-brand{font-size:clamp(2rem,3.4vw,3.2rem)}
+@media(max-width:900px){html:has(.story) body{transition:none}.story .ch{background:var(--chbg)!important}.ch-file .ch-side{background:var(--chbg)}}
+@media(max-width:900px){.story .ch.ch-idea{min-height:100svh;padding-top:0}.ch-idea h1{font-size:clamp(3.2rem,15vw,5rem)}.ch-in{padding-bottom:12vh}}
+@media(max-width:900px){.ch-idea .ch-bg{object-position:68% 50%}}

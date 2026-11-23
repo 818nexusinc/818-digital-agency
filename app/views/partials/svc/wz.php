@@ -77,7 +77,7 @@ function wz_step(int $i, string $title, string $body, bool $last = false, string
 /** Final review step: summary of everything entered + agreement + submit. */
 function wz_review(int $i, string $submit, bool $quote = false): string {
     return '<section class="wz-step" data-step="' . $i . '" hidden><h3>Review &amp; submit</h3><p class="muted">Check everything below. You can go back to change any step.</p><dl class="wz-review" data-wz-review></dl>'
-        . '<label class="ck agree"><input type="checkbox" name="agree" value="1" required data-label="Agreement"><span>I have read and agree to the <a href="/legal/terms" target="_blank" rel="noopener">Service Agreement</a> and <a href="/legal/refunds" target="_blank" rel="noopener">Refund Policy</a>.' . ($quote ? '' : ' Nothing is filed until I review and sign the final filing in my portal.') . '</span></label><p class="fe" aria-live="polite"></p>'
+        . '<label class="ck agree"><input type="checkbox" name="agree" value="1" required data-label="Agreement"><span>I have read and agree to the <a href="/legal/terms" target="_blank" rel="noopener">Service Agreement</a> and <a href="/legal/refunds" target="_blank" rel="noopener">Refund Policy</a>.' . ($quote ? '' : ' I confirm these details are accurate and authorize 818 Digital Agency to file them with the registry on my behalf once my order is paid.') . '</span></label><p class="fe" aria-live="polite"></p>'
         . '<div class="wz-nav"><button type="button" class="btn btn-ghost" data-wz-back>Back</button><button type="submit" class="btn btn-primary" data-wz-submit>' . e($submit) . '</button></div>'
         . '<div class="wz-done" hidden></div></section>';
 }

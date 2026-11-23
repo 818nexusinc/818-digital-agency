@@ -391,7 +391,7 @@ $r->post('/portal/projects/{num}/filing', function ($p) use ($ownProject) {
     $pr = $ownProject($p['num']);
     $f = App\Filings::openForProject($pr) ?? throw new HttpError(404, 'No filing.');
     $f = App\Filings::saveDetails($f, $_POST, 'customer');
-    Session::flash($f['status'] === 'awaiting_authorization' ? 'success' : 'error', $f['status'] === 'awaiting_authorization' ? 'Details validated. Please review and sign below.' : 'A few details need attention — see the highlighted items.');
+    Session::flash($f['status'] === 'awaiting_authorization' ? 'success' : 'error', $f['status'] === 'awaiting_authorization' ? 'Details checked. We’re starting on your filing now.' : 'A few details need attention — see the highlighted items.');
     View::redirect('/portal/projects/' . $pr['number'] . '/filing#' . ($f['status'] === 'awaiting_authorization' ? 'sign' : 'issues'));
 }, ['auth' => true]);
 $r->post('/portal/projects/{num}/filing/authorize', function ($p) use ($ownProject) {

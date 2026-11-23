@@ -5,12 +5,12 @@ $fp = function (string $slug) { $s = Catalog::find($slug); return $s ? Catalog::
 $regFrom = min(array_filter([$fp('sole_prop'), $fp('partnership'), $fp('corp_numbered')]));
 $jur = ['FED' => 'Federal (CBCA)'] + Catalog::PROVINCES;
 $idx = [
-  ['/register', 'Register a business', 'Sole proprietorship, partnership, corporation or co-op.', 'From ' . money($regFrom), 'signing'],
-  ['/manage-business', 'Manage a registered business', 'Annual returns, changes, certificates.', 'From ' . money($fp('bm_documents')), 'docs-typing'],
-  ['/domain', 'Domain name', '.ca, .com and more, with DNS set up.', 'From ' . money($fp('domain_register')) . '/yr', 'laptop'],
-  ['/email', 'Business email', 'Mailboxes on your own domain.', 'From ' . money($fp('email_starter')) . '/mo', 'notes'],
-  ['/website', 'Website', 'Designed, hosted and maintained.', 'From ' . money($fp('website_launch')) . '/mo', 'developer'],
-  ['/web-application', 'Custom software', 'Portals, booking systems, dashboards.', 'Quoted in writing', 'team-deal'],
+  ['/register', 'Register a business', 'Any structure, any province.', 'From ' . money($regFrom), 'signing'],
+  ['/manage-business', 'Manage a registered business', 'Returns, changes, certificates.', 'From ' . money($fp('bm_documents')), 'docs-typing'],
+  ['/domain', 'Domain name', '.ca, .com and more.', 'From ' . money($fp('domain_register')) . '/yr', 'laptop'],
+  ['/email', 'Business email', 'On your own domain.', 'From ' . money($fp('email_starter')) . '/mo', 'notes'],
+  ['/website', 'Website', 'Built and looked after.', 'From ' . money($fp('website_launch')) . '/mo', 'developer'],
+  ['/web-application', 'Custom software', 'Built around how you work.', 'Quoted in writing', 'team-deal'],
 ];
 $chap = [['idea', 'Idea'], ['name', 'Name'], ['file', 'File'], ['online', 'Online'], ['care', 'Care'], ['start', 'Start']];
 $due = (int)date('n') % 12; // a sample anniversary month for the illustration
@@ -22,21 +22,21 @@ $mark = ['y' => '✓ ', 'x' => '✗ ', 'w' => '▲ '];
 </nav>
 
 <div class="story">
-<section class="ch ch-idea" id="idea" aria-label="<?= e(t('Idea')) ?>">
-  <img class="ch-bg" src="/media/owners-open.webp" alt="" width="1600" height="900" fetchpriority="high">
+<section class="ch ch-idea" id="idea" data-tone="dark" data-flow="#0d1117" style="--chbg:#0d1117" aria-label="<?= e(t('Idea')) ?>">
+  <video class="ch-bg" autoplay muted loop playsinline preload="auto" poster="/media/opening-day-poster.webp" aria-hidden="true" data-autoplay><source src="/media/opening-day.mp4" type="video/mp4"></video>
   <div class="wrap ch-in">
-    <h1 class="st-in"><?= e(t('It starts with an idea.')) ?></h1>
-    <p class="st-in"><?= e(t('We take it from there: the registration, a name online, email and a website. Filed, built and looked after by a team in Moncton, New Brunswick.')) ?></p>
-    <div class="ch-act st-in"><a class="btn btn-light btn-lg" href="/register"><?= e(t('Start your business')) ?></a><a class="lnk-light" href="#name"><?= e(t('See how it works')) ?></a></div>
+    <h1 class="st-in"><?= e(t('Open for business.')) ?></h1>
+    <p class="st-in"><?= e(t('We register it, put it online and build the website. You run it.')) ?></p>
+    <div class="ch-act st-in"><a class="btn btn-light btn-lg" href="/register"><?= e(t('Start your business')) ?></a><a class="lnk-light" href="#name"><?= e(t('How it works')) ?></a></div>
   </div>
   <a class="ch-next" href="#name" aria-label="<?= e(t('Next chapter')) ?>"><span><?= e(t('Scroll')) ?></span><i></i></a>
 </section>
 
-<section class="ch ch-name" id="name" aria-label="<?= e(t('Name')) ?>">
+<section class="ch ch-name" id="name" data-tone="light" data-flow="#f4f5f7" style="--chbg:#f4f5f7" aria-label="<?= e(t('Name')) ?>">
   <div class="wrap ch-grid">
     <div class="ch-copy">
-      <h2><?= e(t('Give it a name.')) ?></h2>
-      <p><?= e(t('Type the name you have in mind and pick where you will register. This is roughly how it will read on your paperwork.')) ?></p>
+      <h2><?= e(t('Name it.')) ?></h2>
+      <p><?= e(t('Type it. See it on paper.')) ?></p>
       <div class="nm-form">
         <label class="nm-field"><span><?= e(t('Business name')) ?></span><input type="text" maxlength="60" autocomplete="off" spellcheck="false" placeholder="Maple &amp; Pine" data-bizname></label>
         <div class="nm-row">
@@ -44,7 +44,7 @@ $mark = ['y' => '✓ ', 'x' => '✗ ', 'w' => '▲ '];
           <fieldset class="nm-end"><legend><?= e(t('Ending')) ?></legend><?php foreach (['Inc.', 'Ltd.', 'Corp.'] as $k => $en): ?><label><input type="radio" name="hm_end" value="<?= $en ?>"<?= $k ? '' : ' checked' ?> data-end><span><?= $en ?></span></label><?php endforeach; ?></fieldset>
         </div>
       </div>
-      <p class="ch-links"><a class="lnk" href="/register/nuans" data-name-link="/register/nuans"><?= e(t('Check it with an official NUANS search')) ?></a> <span class="muted"><?= e(money($fp('nuans'))) ?></span></p>
+      <p class="ch-links"><a class="lnk" href="/register/nuans" data-name-link="/register/nuans"><?= e(t('Check it with NUANS')) ?></a> <span class="muted"><?= e(money($fp('nuans'))) ?></span></p>
     </div>
     <figure class="sheet" aria-label="<?= e(t('Preview of your corporate name')) ?>">
       <div class="sh-top"><span><?= e(t('Draft')) ?></span><span><?= e(t('Preview, not a government document')) ?></span></div>
@@ -55,53 +55,53 @@ $mark = ['y' => '✓ ', 'x' => '✗ ', 'w' => '▲ '];
         <div><dt><?= e(t('Directors')) ?></dt><dd><?= e(t('You, and anyone you add')) ?></dd></div>
         <div><dt><?= e(t('Corporation number')) ?></dt><dd><?= e(t('Issued by the registry')) ?></dd></div>
       </dl>
-      <div class="sh-sign"><svg viewBox="0 0 220 50" aria-hidden="true"><path d="M6 36c14-22 22-26 26-18s-8 22 0 18 16-28 24-24-6 26 4 22 14-20 22-18 2 16 10 14 12-12 20-12 6 10 14 8 18-10 30-8 30 2 50-2"/></svg><span><?= e(t('Your signature, once you have reviewed it')) ?></span></div>
+      <div class="stamp" aria-hidden="true"><span><?= e(t('Ready to file')) ?></span></div>
     </figure>
   </div>
 </section>
 
-<section class="ch ch-file" id="file" aria-label="<?= e(t('File')) ?>">
+<section class="ch ch-file" id="file" data-tone="dark" data-flow="#0f1d45" style="--chbg:#0f1d45" aria-label="<?= e(t('File')) ?>">
   <div class="ch-media"><video autoplay muted loop playsinline preload="none" poster="/media/desk-poster.webp" aria-hidden="true" data-autoplay><source src="/media/desk.mp4" type="video/mp4"></video></div>
   <div class="ch-side">
-    <h2><?= e(t('Sign once. We file it.')) ?></h2>
+    <h2><?= e(t('We file it. Fast.')) ?></h2>
     <ol class="steps3">
-      <li><b><?= e(t('Answer a guided form.')) ?></b><span><?= e(t('It checks names, addresses and directors as you type.')) ?></span></li>
-      <li><b><?= e(t('We check it against the registry’s rules.')) ?></b><span><?= e(t('Anything that needs fixing comes back to you in plain language.')) ?></span></li>
-      <li><b><?= e(t('You sign. We submit it.')) ?></b><span><?= e(t('Your documents arrive in your portal. Nothing is filed without your signature.')) ?></span></li>
+      <li><b><?= e(t('One guided form.')) ?></b><span><?= e(t('Checked as you type.')) ?></span></li>
+      <li><b><?= e(t('Every detail verified.')) ?></b><span><?= e(t('Against your registry’s rules.')) ?></span></li>
+      <li><b><?= e(t('Filed with the registry.')) ?></b><span><?= e(t('Documents land in your portal.')) ?></span></li>
     </ol>
-    <p class="fine"><?= e(t('We file with Corporations Canada and every provincial registry.')) ?> <?= e(t('From')) ?> <?= e(money($regFrom)) ?>, <?= e(t('government fees included.')) ?></p>
-    <a class="btn btn-primary btn-lg" href="/register"><?= e(t('Choose your structure')) ?></a>
+    <p class="fine"><?= e(t('From')) ?> <?= e(money($regFrom)) ?>. <?= e(t('Government fees included.')) ?></p>
+    <a class="btn btn-light btn-lg" href="/register"><?= e(t('Choose your structure')) ?></a>
   </div>
 </section>
 
-<section class="ch ch-online" id="online" aria-label="<?= e(t('Online')) ?>">
+<section class="ch ch-online" id="online" data-tone="light" data-flow="#e6ecfb" style="--chbg:#e6ecfb" aria-label="<?= e(t('Online')) ?>">
   <div class="wrap ch-grid">
     <div class="ch-copy">
-      <h2><?= e(t('Then, get found.')) ?></h2>
-      <p><?= e(t('The same name becomes your web address, your inbox and your website. One account, one bill.')) ?></p>
+      <h2><?= e(t('Get found.')) ?></h2>
+      <p><?= e(t('One name. Your domain, inbox and website.')) ?></p>
       <ul class="plist">
         <li><span><?= e(t('Domain name')) ?></span><b><?= e(t('From')) ?> <?= e(money($fp('domain_register'))) ?>/<?= e(t('yr')) ?></b></li>
         <li><span><?= e(t('Business email')) ?></span><b><?= e(t('From')) ?> <?= e(money($fp('email_starter'))) ?>/<?= e(t('mo')) ?></b></li>
-        <li><span><?= e(t('Website, hosted and maintained')) ?></span><b><?= e(t('From')) ?> <?= e(money($fp('website_launch'))) ?>/<?= e(t('mo')) ?></b></li>
+        <li><span><?= e(t('Website')) ?></span><b><?= e(t('From')) ?> <?= e(money($fp('website_launch'))) ?>/<?= e(t('mo')) ?></b></li>
       </ul>
-      <a class="btn btn-primary btn-lg" href="/bundle"><?= e(t('Bundle them and save up to 15%')) ?></a>
+      <a class="btn btn-primary btn-lg" href="/bundle"><?= e(t('Bundle and save 15%')) ?></a>
     </div>
     <div class="stack" aria-hidden="true">
       <div class="st-url"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="u">www.<b data-slug-out>mapleandpine</b>.ca</span></div>
       <div class="st-site">
-        <img src="/media/cafe-owner.webp" alt="" loading="lazy" width="1400" height="934">
-        <div class="st-site-in"><p class="st-brand" data-name-out>Maple &amp; Pine</p><p class="st-tag"><?= e(t('Open Tuesday to Sunday')) ?></p><span class="st-btn"><?= e(t('Book a table')) ?></span></div>
+        <video autoplay muted loop playsinline preload="none" poster="/media/packing-poster.webp" data-autoplay><source src="/media/packing.mp4" type="video/mp4"></video>
+        <div class="st-site-in"><p class="st-brand" data-name-out>Maple &amp; Pine</p><p class="st-tag"><?= e(t('Shipping across Canada')) ?></p><span class="st-btn"><?= e(t('Shop now')) ?></span></div>
       </div>
-      <div class="st-mail"><span class="av-s">M</span><span><b><?= e(t('New message')) ?></b><small>hello@<span data-slug-out>mapleandpine</span>.ca</small></span></div>
+      <div class="st-mail"><span class="av-s">M</span><span><b><?= e(t('New order')) ?></b><small>hello@<span data-slug-out>mapleandpine</span>.ca</small></span></div>
     </div>
   </div>
 </section>
 
-<section class="ch ch-care" id="care" aria-label="<?= e(t('Care')) ?>">
+<section class="ch ch-care" id="care" data-tone="light" data-flow="#ffffff" style="--chbg:#ffffff" aria-label="<?= e(t('Care')) ?>">
   <div class="wrap ch-grid">
     <div class="ch-copy">
-      <h2><?= e(t('Stay in good standing.')) ?></h2>
-      <p><?= e(t('Corporations file an annual return every year, and records change. We keep the dates, remind you ahead of time and file it for you.')) ?></p>
+      <h2><?= e(t('Stay compliant.')) ?></h2>
+      <p><?= e(t('We track the dates. We file the returns.')) ?></p>
       <a class="btn btn-primary btn-lg" href="/manage-business"><?= e(t('Manage your business')) ?></a>
     </div>
     <div class="year" aria-hidden="true">
@@ -112,9 +112,9 @@ $mark = ['y' => '✓ ', 'x' => '✗ ', 'w' => '▲ '];
   </div>
 </section>
 
-<section class="ch ch-start" id="start" aria-label="<?= e(t('Start')) ?>">
+<section class="ch ch-start" id="start" data-tone="dark" data-flow="#111418" style="--chbg:#111418" aria-label="<?= e(t('Start')) ?>">
   <div class="wrap">
-    <h2><?= e(t('Where would you like to start?')) ?></h2>
+    <h2><?= e(t('Start here.')) ?></h2>
     <ul class="idx">
     <?php foreach ($idx as [$href, $tt, $dd, $pr, $img]): ?>
       <li><a href="<?= e($href) ?>"><span class="ix-t"><?= e(t($tt)) ?></span><span class="ix-d"><?= e(t($dd)) ?></span><span class="ix-p"><?= e(str_starts_with($pr, 'From ') ? t('From') . substr($pr, 4) : t($pr)) ?></span><img src="/media/<?= e($img) ?>.webp" alt="" loading="lazy" width="1400" height="934"></a></li>
@@ -125,7 +125,7 @@ $mark = ['y' => '✓ ', 'x' => '✗ ', 'w' => '▲ '];
 </div>
 
 <section class="sec"><div class="wrap">
-  <div class="sec-head"><h2>How we compare</h2><p>Against hiring a lawyer, or filing it all yourself.</p></div>
+  <div class="sec-head"><h2>Why 818</h2><p>Versus a lawyer. Versus doing it yourself.</p></div>
   <div class="cmp-wrap"><table class="cmp">
     <thead><tr><th scope="col"><span class="sr">Feature</span></th><th scope="col" class="us">818 Digital Agency<small>Recommended</small></th><th scope="col">Traditional lawyer</th><th scope="col">DIY government portal</th></tr></thead>
     <tbody>
@@ -148,7 +148,7 @@ $mark = ['y' => '✓ ', 'x' => '✗ ', 'w' => '▲ '];
 <?php foreach ($reviews as $rv): ?><figure class="card" style="margin:0"><div aria-label="<?= (int)$rv['rating'] ?> out of 5"><?= str_repeat('★', (int)$rv['rating']) ?></div><blockquote style="margin:10px 0"><?= e($rv['body']) ?></blockquote><figcaption class="muted small"><?= e($rv['display_name'] ?: 'Verified customer') ?></figcaption></figure><?php endforeach; ?></div></div></section><?php endif; ?>
 
 <section class="news" id="news"><div class="wrap">
-  <div><h2>Stay updated on new services</h2><p>Get early access and launch offers when new services and provinces go live.</p></div>
+  <div><h2>Be first to know.</h2><p>New services and launch offers. No spam.</p></div>
   <div><?php if (!empty($_GET['subscribed'])): ?><p class="alert alert-success">Thanks! You're on the list. You can unsubscribe anytime from any email.</p>
   <?php else: ?><form method="post" action="/subscribe"><?= Csrf::field() ?><label class="sr" for="news-email">Email address</label><input id="news-email" type="email" name="email" required placeholder="you@yourbusiness.ca" autocomplete="email"><input type="text" name="website" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true"><button class="btn btn-primary">Notify me</button></form>
   <small>By subscribing you agree to receive occasional emails from 818 Nexus Inc. No spam. Unsubscribe anytime.</small><?php endif; ?></div>

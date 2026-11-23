@@ -5,8 +5,8 @@ $named = Catalog::find('corp_named'); $numbered = Catalog::find('corp_numbered')
 $by = ['field' => 'slug', 'maps' => ['corp_named' => $named['province_prices'] ?? [], 'corp_numbered' => $numbered['province_prices'] ?? []]];
 $provs = ['FED' => 'Federal'] + Catalog::PROVINCES; unset($provs['FED']);
 $hero = ['tone' => 'amber', 'pills' => ['Provincial or federal (CBCA)', 'Named or numbered'],
-  'title' => 'Incorporate in minutes. We handle the filing.', 'sub' => 'Answer a few questions. We prepare your articles of incorporation and file them once you sign.',
-  'media' => ['img' => 'signing'], 'chips' => [['shield', 'Limited liability', 'Protect personal assets'], ['pen', 'You sign first', 'Nothing filed without approval']]];
+  'title' => 'Incorporate in minutes. We handle the filing.', 'sub' => 'Answer a few questions. We prepare your articles of incorporation and file them right away.',
+  'media' => ['img' => 'signing'], 'chips' => [['shield', 'Limited liability', 'Protect personal assets'], ['bolt', 'Started immediately', 'No extra paperwork']]];
 include APP_ROOT . '/views/partials/svc/hero.php';
 $director = wz_field('directors[{i}][first]', 'First name *', 'text', ['data-rule' => 'person', 'placeholder' => 'Legal first name'])
   . wz_field('directors[{i}][last]', 'Last name *', 'text', ['data-rule' => 'person', 'placeholder' => 'Legal last name'])
@@ -64,6 +64,6 @@ $director = wz_field('directors[{i}][first]', 'First name *', 'text', ['data-rul
   ['What is a NUANS report?', 'A search of Canadian business names and trademarks that shows whether your proposed name is too similar to an existing one. It is required for named corporations federally and in most provinces, and is included with a named corporation here.'],
   ['Provincial or federal incorporation?', 'Federal (CBCA) protects your name across Canada and suits businesses operating in several provinces. Provincial is often simpler and cheaper if you operate in one province. You may still need to register extra-provincially where you operate.'],
   ['How many directors are required?', 'At least one. Some provinces require a minimum share of directors to be resident Canadians; we check this before filing.'],
-  ['How long does incorporation take?', 'Most incorporations complete within the delivery time shown, once you have signed the final filing. Expedited processing is available where the registry allows it.'],
+  ['How long does incorporation take?', 'Most incorporations complete within the delivery time shown, once your order is paid. Expedited processing is available where the registry allows it.'],
   ['What is a minute book?', 'The binder of your corporation’s records: articles, by-laws, resolutions, registers and share certificates. Corporations are legally required to keep these records.'],
 ]; include APP_ROOT . '/views/partials/svc/faq.php'; ?>

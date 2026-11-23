@@ -62,7 +62,9 @@ final class Filings
         if (is_array($form) && $form) {
             $form['contact_email'] = $form['contact_email'] ?? ($form['owners'][0]['email'] ?? $form['directors'][0]['email'] ?? $form['applicant']['email'] ?? '');
             if ($jur !== 'FED' && is_array($form['registered_office'] ?? null) && empty($form['registered_office']['province'])) $form['registered_office']['province'] = $jur;
-            // Details typed into the order form become the filing draft; the customer still reviews and signs before anything is filed.
+            // Details typed into the order form become the filing. The customer authorized filing when they submitted the form,
+            // so a clean filing goes straight to work; one with issues waits for corrections in the portal.
+            $orderAuth = is_array($form['_authorization'] ?? null) ? $form['_authorization'] : null; unset($form['_authorization']);
             $data = self::normalize($form + ['entity' => []], ['data' => jenc($data)]);
             $validation = self::validate($jur, $type, $data);
             $status = empty($validation['errors']) ? 'awaiting_authorization' : 'needs_changes';
@@ -70,7 +72,11 @@ final class Filings
         $id = Db::insert('filings', ['number' => refno('FIL'), 'project_id' => $project['id'], 'customer_id' => $project['customer_id'], 'jurisdiction' => $jur,
             'filing_type' => $type, 'status' => $status, 'data' => jenc($data), 'validation' => jenc($validation ?: new \stdClass()), 'created_at' => now(), 'updated_at' => now()]);
         self::event($id, 'opened', self::TYPE_LABELS[$type] . ' — ' . self::JURISDICTIONS[$jur][0] . ($form ? ' (details from the order form)' : ''), 'system');
-        return Db::one('SELECT * FROM filings WHERE id = ?', [$id]);
+        $f = Db::one('SELECT * FROM filings WHERE id = ?', [$id]);
+        Db::update('filings', ['data_hash' => self::hash($data)], 'id = ?', [$id]);
+        $f['data_hash'] = self::hash($data);
+        if ($status === 'awaiting_authorization' && !empty($orderAuth)) return self::autoAuthorize($f, 'order form', $orderAuth);
+        return self::get($id);
     }
 
     public static function get(int $id): ?array { return Db::one('SELECT * FROM filings WHERE id = ?', [$id]); }
@@ -87,7 +93,7 @@ final class Filings
         self::event($id, 'status', $status . ($note ? ' — ' . $note : ''), $actor);
         $f = self::get($id);
         if ($f['project_id']) {
-            $msg = ['needs_changes' => 'We need a few corrections to your filing details.', 'awaiting_authorization' => 'Your filing is ready — please review and authorize it.',
+            $msg = ['needs_changes' => 'We need a few corrections to your filing details.', 'awaiting_authorization' => 'Your filing details are complete.', 'authorized' => 'Your filing is being worked on now.',
                 'submitted' => 'Your filing was submitted to the ' . self::JURISDICTIONS[$f['jurisdiction']][0] . '.', 'ready_to_file' => 'Your filing is fully prepared and queued for submission to the registry.',
                 'accepted' => 'The registry accepted your filing.' . ($f['registry_number'] ? ' Registry number: ' . $f['registry_number'] . '.' : ''), 'rejected' => 'The registry returned your filing — our team is correcting it.',
                 'completed' => 'Your registration is complete and documents are in your portal.'][$status] ?? null;
@@ -108,10 +114,28 @@ final class Filings
         Db::update('filings', $upd, 'id = ?', [$f['id']]);
         self::setStatus((int)$f['id'], $status, $actor, $v['errors'] ? count($v['errors']) . ' issue(s)' : 'validated');
         Audit::log('filing.details', 'filing', $f['number'], ['actor' => $actor, 'errors' => count($v['errors'])]);
+        // A customer submitting corrected details authorizes the filing with the same declaration they accepted at checkout.
+        if ($status === 'awaiting_authorization' && $actor === 'customer') return self::autoAuthorize(self::get((int)$f['id']), 'portal correction', ['at' => now(), 'ip' => client_ip(), 'ua' => (string)($_SERVER['HTTP_USER_AGENT'] ?? 'cli')]);
         return self::get((int)$f['id']);
     }
 
-    /** Customer e-signature. Records signer, capacity, IP, user agent, time and locks the exact data hash. */
+    public const AUTH_TEXT = 'I confirm these details are accurate and complete, and I authorize 818 Digital Agency to prepare and file them with the registry on my behalf once my order is paid.';
+
+    /** Authorization given when the customer submitted the details (no separate signing step). Locks the exact data hash. */
+    public static function autoAuthorize(array $f, string $via, array $auth): array
+    {
+        $d = jdec($f['data']); $pp = self::people($d);
+        $signer = trim(($pp[0]['first'] ?? '') . ' ' . ($pp[0]['last'] ?? '')) ?: ((string)($d['contact_email'] ?? '') ?: 'Customer');
+        Db::update('filings', ['auth_signer' => mb_substr($signer, 0, 120), 'auth_capacity' => 'Submitted via ' . $via, 'auth_ip' => mb_substr((string)($auth['ip'] ?? ''), 0, 45),
+            'auth_ua' => mb_substr((string)($auth['ua'] ?? ''), 0, 255), 'auth_hash' => $f['data_hash'], 'authorized_at' => (string)($auth['at'] ?? now())], 'id = ?', [$f['id']]);
+        self::setStatus((int)$f['id'], 'authorized', 'customer', 'authorized on submission (' . $via . ')');
+        Audit::log('filing.authorized', 'filing', $f['number'], ['via' => $via, 'hash' => $f['data_hash'], 'declaration' => self::AUTH_TEXT]);
+        if ($f['project_id']) { $m = Db::one("SELECT id FROM project_milestones WHERE project_id = ? AND title = 'Filing details & authorization' AND status = 'pending'", [$f['project_id']]); if ($m) Projects::completeMilestone((int)$m['id'], 'customer'); }
+        Events::emit('filing.authorized', ['filing_id' => (int)$f['id'], 'project_id' => $f['project_id'] ? (int)$f['project_id'] : null, 'customer_id' => (int)$f['customer_id']]);
+        return self::get((int)$f['id']);
+    }
+
+    /** Customer e-signature (kept for filings opened before authorization-on-submission). Records signer, capacity, IP, user agent, time and locks the exact data hash. */
     public static function authorize(array $f, string $signer, string $capacity, bool $attest): array
     {
         if ($f['status'] !== 'awaiting_authorization') throw new UserError('This filing is not ready for authorization.');
