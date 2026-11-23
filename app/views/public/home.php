@@ -30,7 +30,7 @@ $paths = [
   <div class="wrap ch-in">
     <h1 class="st-in"><span class="ln"><span><?= e(t('Open for')) ?></span></span> <span class="ln"><span><?= e(t('business.')) ?></span></span></h1>
     <p class="st-in"><?= e(t('Register it. Get it online. Keep it compliant. One Canadian team does it all.')) ?></p>
-    <div class="ch-act st-in"><a class="btn btn-light btn-lg" href="/register"><?= e(t('Start your business')) ?></a><a class="lnk-light" href="#register"><?= e(t('Explore services')) ?></a></div>
+    <div class="ch-act st-in"><a class="btn btn-light btn-lg" href="/register"><?= e(t('Start your business')) ?></a><a class="btn btn-outline-light btn-lg" href="#register"><?= e(t('Explore services')) ?></a></div>
   </div>
   <a class="ch-next" href="#register" aria-label="<?= e(t('Next chapter')) ?>"><span><?= e(t('Scroll')) ?></span><i></i></a>
 </section>
@@ -47,7 +47,7 @@ $paths = [
           <fieldset class="nm-end"><legend><?= e(t('Ending')) ?></legend><?php foreach (['Inc.', 'Ltd.', 'Corp.'] as $k => $en): ?><label><input type="radio" name="hm_end" value="<?= $en ?>"<?= $k ? '' : ' checked' ?> data-end><span><?= $en ?></span></label><?php endforeach; ?></fieldset>
         </div>
       </div>
-      <div class="ch-cta"><a class="btn btn-light btn-lg" href="/register"><?= e(t('Register from')) ?> <?= e(money($regFrom)) ?></a><a class="lnk-light" href="/register/nuans" data-name-link="/register/nuans"><?= e(t('Check the name first')) ?></a></div>
+      <div class="ch-cta"><a class="btn btn-light btn-lg" href="/register"><?= e(t('Register from')) ?> <?= e(money($regFrom)) ?></a><a class="btn btn-outline-light btn-lg" href="/register/nuans" data-name-link="/register/nuans"><?= e(t('Check the name first')) ?></a></div>
       <p class="fine"><?= e(t('Government fees included. Filed with the registry as soon as your order is in.')) ?></p>
     </div>
     <figure class="sheet" aria-label="<?= e(t('Preview of your corporate name')) ?>">

@@ -98,12 +98,12 @@ function js_dict(): string
 
 /* ── Business pillars: each main business has its own colour, used on the homepage, in its submenu and on its pages. */
 const PILLARS = [
-    'register' => ['name' => 'Register Business', 'home' => '/register', 'acc' => '#2b3fd1', 'soft' => '#eef0fe', 'deep' => '#141b52', 'ink' => '#0e1433'],
-    'manage'   => ['name' => 'Manage Business', 'home' => '/manage-business', 'acc' => '#0b7a62', 'soft' => '#e6f4ef', 'deep' => '#0b3b31', 'ink' => '#082a23'],
-    'web'      => ['name' => 'Web Services', 'home' => '/website', 'acc' => '#b42a6a', 'soft' => '#fbeaf2', 'deep' => '#3d0f29', 'ink' => '#2a0a1c'],
-    'bundle'   => ['name' => 'Bundle & Save', 'home' => '/bundle', 'acc' => '#9a5b00', 'soft' => '#fff2d9', 'deep' => '#3e2600', 'ink' => '#2b1a00'],
-    'opps'     => ['name' => 'Opportunities', 'home' => '/opportunities', 'acc' => '#c21f32', 'soft' => '#fdecee', 'deep' => '#4a0c15', 'ink' => '#33080e'],
-    'brand'    => ['name' => '818 Digital Agency', 'home' => '/', 'acc' => '#1e44c8', 'soft' => '#eef2fd', 'deep' => '#0d1117', 'ink' => '#0d1117'],
+    'register' => ['name' => 'Register Business', 'home' => '/register', 'acc' => '#3346d3', 'soft' => '#eef0ff', 'deep' => '#3346d3', 'ink' => '#141d5c'],
+    'manage'   => ['name' => 'Manage Business', 'home' => '/manage-business', 'acc' => '#0b8063', 'soft' => '#e3f6ef', 'deep' => '#0d8a6b', 'ink' => '#073d30'],
+    'web'      => ['name' => 'Web Services', 'home' => '/website', 'acc' => '#c0275f', 'soft' => '#ffecf3', 'deep' => '#c92f67', 'ink' => '#4d0d26'],
+    'bundle'   => ['name' => 'Bundle & Save', 'home' => '/bundle', 'acc' => '#a35c00', 'soft' => '#fff4dc', 'deep' => '#b66a05', 'ink' => '#3d2400'],
+    'opps'     => ['name' => 'Opportunities', 'home' => '/opportunities', 'acc' => '#c62a3c', 'soft' => '#ffedef', 'deep' => '#cf3346', 'ink' => '#4d0c16'],
+    'brand'    => ['name' => '818 Digital Agency', 'home' => '/', 'acc' => '#1e44c8', 'soft' => '#eef2fd', 'deep' => '#10141c', 'ink' => '#10141c'],
 ];
 function pillar(string $path): string
 {

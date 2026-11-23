@@ -45,8 +45,8 @@ $links = ['nuans' => '/register/nuans', 'sole_prop' => '/register/sole-proprieto
       <button class="mn-btn<?= pillar($cur) === $id ? ' on' : '' ?>" type="button" aria-expanded="false" aria-controls="mega-<?= $id ?>"><i class="mn-dot" aria-hidden="true"></i><?= e($m['label']) ?><span class="mn-chev"><?= nx_icon('chev') ?></span></button>
       <div class="mega" id="mega-<?= $id ?>" hidden>
         <div class="wrap mega-in">
-          <div class="mega-lead"><p class="mega-k"><?= e($m['label']) ?></p><p class="mega-title"><?= e($m['title']) ?></p><p class="mega-sub"><?= e($m['sub']) ?></p><a class="mega-all" href="<?= e($m['all'][0]) ?>"><?= e($m['all'][1]) ?></a></div>
-          <ul class="mega-grid">
+          <div class="mega-lead"><p class="mega-k"><?= e($m['label']) ?></p><p class="mega-title"><?= e($m['title']) ?></p><p class="mega-sub"><?= e($m['sub']) ?></p><a class="btn btn-light btn-sm mega-all" href="<?= e($m['all'][0]) ?>"><?= e($m['all'][1]) ?></a></div>
+          <ul class="mega-grid" style="--cols:<?= count($m['items']) ?>">
           <?php foreach ($m['items'] as [$slug, $ic, $name, $desc, $badge]): ?>
             <li><a class="mega-card" href="<?= e($links[$slug] ?? '/services/' . $slug) ?>"><span class="mc-ic"><?= nx_icon($ic) ?></span><span class="mc-body"><span class="mc-name"><?= e($name) ?></span><span class="mc-desc"><?= e($desc) ?></span></span><span class="mc-badge"><?= e($badge) ?></span></a></li>
           <?php endforeach; ?>
