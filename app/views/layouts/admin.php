@@ -9,7 +9,7 @@ $groups = ['Operate' => ['/admin' => 'Control Tower', '/admin/approvals' => ['Ac
   'System' => ['/admin/integrations' => 'Integrations', '/admin/settings' => 'Settings & team', '/admin/audit' => 'Audit log', '/admin/system' => 'System health', '/classic' => 'Classic v2.6 (archive)']];
 ?><!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title><?= e($title ?? 'Admin') ?> · 818 Control Tower</title><meta name="robots" content="noindex">
-<meta name="csrf" content="<?= e($csrf ?? '') ?>"><link rel="icon" href="/assets/img/favicon.svg"><link rel="stylesheet" href="/assets/css/app.css?v=<?= APP_VERSION ?>"></head><body>
+<meta name="csrf" content="<?= e($csrf ?? '') ?>"><link rel="icon" href="/assets/img/favicon.svg"><link rel="preconnect" href="https://api.fontshare.com"><link rel="preconnect" href="https://cdn.fontshare.com" crossorigin><link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=sentient@1,2&amp;display=swap"><link rel="stylesheet" href="/assets/css/app.css?v=<?= APP_VERSION ?>"></head><body>
 <div class="mobile-top"><a class="brand" href="/admin"><?php include APP_ROOT . '/views/partials/logo.php'; ?></a><button class="menu-btn" data-toggle="side" aria-label="Menu">☰</button></div>
 <div class="shell"><aside class="side" id="side"><a class="brand" href="/admin"><?php include APP_ROOT . '/views/partials/logo.php'; ?><span class="wm"><b>818</b><span>CONTROL TOWER</span></span></a>
   <nav aria-label="Admin"><?php foreach ($groups as $g => $links): ?><h6><?= e($g) ?></h6><?php foreach ($links as $h => $l): [$lbl, $n] = is_array($l) ? $l : [$l, 0]; $cur = ($path ?? '') === $h || ($h !== '/admin' && str_starts_with($path ?? '', $h . '/')); ?>

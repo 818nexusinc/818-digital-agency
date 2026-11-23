@@ -1,6 +1,6 @@
 <?php $links = ['/portal' => 'Dashboard', '/portal/projects' => 'Projects', '/portal/orders' => 'Orders & billing', '/portal/documents' => 'Documents', '/portal/support' => 'Support', '/portal/assistant' => 'AI workspace', '/portal/account' => 'Account & privacy']; ?><!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title><?= e($title ?? 'Portal') ?> · 818 Portal</title><meta name="robots" content="noindex">
-<meta name="csrf" content="<?= e($csrf ?? '') ?>"><link rel="icon" href="/assets/img/favicon.svg"><link rel="stylesheet" href="/assets/css/app.css?v=<?= APP_VERSION ?>"></head>
+<meta name="csrf" content="<?= e($csrf ?? '') ?>"><link rel="icon" href="/assets/img/favicon.svg"><link rel="preconnect" href="https://api.fontshare.com"><link rel="preconnect" href="https://cdn.fontshare.com" crossorigin><link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=sentient@1,2&amp;display=swap"><link rel="stylesheet" href="/assets/css/app.css?v=<?= APP_VERSION ?>"></head>
 <body<?= ($path ?? '') === '/portal/assistant' ? ' data-chat-inline' : '' ?>>
 <div class="mobile-top"><a class="brand" href="/portal"><?php include APP_ROOT . '/views/partials/logo.php'; ?></a><button class="menu-btn" data-toggle="side" aria-label="Menu">☰</button></div>
 <div class="shell">
