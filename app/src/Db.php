@@ -17,7 +17,8 @@ final class Db
         if (!$dsn) {
             $host = Env::get('DB_HOST', 'localhost');
             $name = Env::get('DB_NAME', '');
-            $dsn = $name !== '' ? "mysql:host={$host};dbname={$name};charset=utf8mb4" : 'sqlite:' . STORAGE_ROOT . '/app.sqlite';
+            $port = (int)Env::get('DB_PORT', '3306') ?: 3306;
+            $dsn = $name !== '' ? "mysql:host={$host};port={$port};dbname={$name};charset=utf8mb4" : 'sqlite:' . STORAGE_ROOT . '/app.sqlite';
         }
         self::connect($dsn, Env::get('DB_USER'), Env::get('DB_PASS'));
         if (ON_VERCEL && self::$driver === 'sqlite') self::previewInstall();
@@ -62,13 +63,30 @@ final class Db
         } finally { if ($lock) { flock($lock, LOCK_UN); fclose($lock); } }
     }
 
+    /** Encryption of the database connection: 'verified', 'encrypted', 'none' or '' (not MySQL). */
+    public static string $tls = '';
+
     public static function connect(string $dsn, ?string $user = null, ?string $pass = null): void
     {
-        self::$pdo = new PDO($dsn, $user, $pass, [
-            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-            PDO::ATTR_EMULATE_PREPARES => false,
-        ]);
+        $base = [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC, PDO::ATTR_EMULATE_PREPARES => false];
+        if (!str_starts_with($dsn, 'mysql:')) { self::$pdo = new PDO($dsn, $user, $pass, $base); }
+        else {
+            // DB_SSL: "require" (encrypted or fail), "off", or unset = encrypt when the server supports it. DB_SSL_VERIFY=true also checks the certificate.
+            $mode = strtolower((string)Env::get('DB_SSL', 'auto'));
+            $base[PDO::ATTR_TIMEOUT] = 8;
+            $ca = null; foreach (['/etc/ssl/certs/ca-certificates.crt', '/etc/pki/tls/certs/ca-bundle.crt', '/etc/ssl/cert.pem'] as $f) if (is_readable($f)) { $ca = $f; break; }
+            $verify = Env::bool('DB_SSL_VERIFY');
+            $tlsOpts = $base + [PDO::MYSQL_ATTR_SSL_CA => $ca ?? '', PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => $verify];
+            if ($mode === 'off') { self::$pdo = new PDO($dsn, $user, $pass, $base); }
+            else {
+                try { self::$pdo = new PDO($dsn, $user, $pass, $tlsOpts); }
+                catch (\PDOException $e) {
+                    if ($mode === 'require') throw $e;
+                    self::$pdo = new PDO($dsn, $user, $pass, $base);
+                }
+            }
+            try { $c = self::$pdo->query("SHOW SESSION STATUS LIKE 'Ssl_cipher'")->fetch(); self::$tls = !empty($c['Value']) ? ($verify ? 'verified' : 'encrypted') : 'none'; } catch (\Throwable) { self::$tls = 'none'; }
+        }
         self::$driver = self::$pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
         if (self::$driver === 'sqlite') {
             self::$pdo->exec('PRAGMA foreign_keys = ON');

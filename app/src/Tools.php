@@ -358,7 +358,7 @@ final class Tools
 
     public static function listLeads(array $in): array
     {
-        $f = (string)($in['filter'] ?? 'new');
+        $f = (string)($in['filter'] ?? 'new'); if (!in_array($f, ['new', 'overdue', 'high', 'all'], true)) $f = 'new';
         $where = match ($f) { 'overdue' => "l.next_follow_up_at < ? AND l.status NOT IN ('converted','closed')", 'high' => "l.score >= 60 AND l.status NOT IN ('converted','closed')", 'all' => '1=1', default => 'l.created_at >= ?' };
         $p = match ($f) { 'overdue' => [now()], 'new' => [Db::since(7)], default => [] };
         $rows = Db::all("SELECT l.id, c.name, c.business_name, l.score, l.status, l.urgency, l.summary, l.created_at FROM leads l JOIN customers c ON c.id = l.customer_id WHERE {$where} ORDER BY l.score DESC LIMIT 20", $p);

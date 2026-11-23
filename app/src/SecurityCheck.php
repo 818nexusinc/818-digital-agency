@@ -28,6 +28,9 @@ final class SecurityCheck
             Db::$driver === 'mysql' ? 'MySQL connected.' : ($preview ? 'Preview mode: a temporary database that resets. Orders, leads and accounts are not kept.' : 'SQLite file database (fine for local testing).'),
             'Set DB_HOST, DB_NAME, DB_USER and DB_PASS in Vercel, then run the one-time /setup.', 'high');
 
+        if (Db::$driver === 'mysql') $add('Configuration', 'Encrypted database connection', Db::$tls === 'none' ? 'fail' : 'pass',
+            ['verified' => 'TLS with a verified certificate.', 'encrypted' => 'TLS encrypted.', 'none' => 'Not encrypted: data travels to the database in plain text.'][Db::$tls] ?? 'Unknown.',
+            'Enable SSL for MySQL on the database server (or ask the host to), then set DB_SSL=require in Vercel.', 'high');
         $url = url('/');
         $add('Configuration', 'HTTPS address', str_starts_with($url, 'https://') ? 'pass' : 'fail', 'Site address: ' . $url, 'Set APP_URL to the https:// address of the production domain.', 'high');
         $add('Configuration', 'Production domain', str_contains($url, '.vercel.app') ? 'warn' : 'pass',
