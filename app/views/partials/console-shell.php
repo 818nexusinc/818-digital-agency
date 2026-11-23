@@ -1,0 +1,49 @@
+<?php
+/* Shared console shell for the Control Tower and the client portal.
+   Expects: $area ('admin'|'portal'), $groups [group => [href => label | [label, count]]], $areaName, $home, $title, $path, $user, $content */
+include_once APP_ROOT . '/views/partials/icons.php';
+$ico = function (string $h): string {
+    foreach (['approvals' => 'inbox', 'projects' => 'folder', 'filings' => 'certificate', 'tickets' => 'help', 'support' => 'help', 'leads' => 'search', 'customers' => 'users',
+        'proposals' => 'text', 'orders' => 'cart', 'agents' => 'bot', 'tasks' => 'check', 'workflows' => 'network', 'kb' => 'stack', 'content' => 'edit', 'growth' => 'chart',
+        'finance' => 'cash', 'catalog' => 'layout', 'integrations' => 'bolt', 'settings' => 'cog', 'audit' => 'shield', 'system' => 'refresh', 'classic' => 'clock',
+        'documents' => 'certificate', 'assistant' => 'bot', 'account' => 'user', 'services' => 'layout', 'cart' => 'cart'] as $k => $i) if (str_contains($h, $k)) return $i;
+    return 'home';
+};
+$nm = trim((string)($user['name'] ?? ''));
+$ini = strtoupper(implode('', array_map(fn($w) => mb_substr($w, 0, 1), array_slice(preg_split('/\s+/', $nm ?: 'U'), 0, 2))));
+$crumb = '';
+foreach ($groups as $g => $links) foreach ($links as $h => $l) if (($path ?? "") !== $home && (($path ?? '') === $h || ($h !== $home && str_starts_with((string)($path ?? ''), $h . '/')))) $crumb = $g;
+?><!doctype html>
+<html lang="<?= lang() === 'fr' ? 'fr-CA' : 'en-CA' ?>"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title><?= e(t($title ?? $areaName)) ?> · <?= e(t($areaName)) ?></title><meta name="robots" content="noindex">
+<meta name="csrf" content="<?= e($csrf ?? '') ?>"><link rel="icon" href="/assets/img/favicon.svg"><link rel="preconnect" href="https://api.fontshare.com"><link rel="preconnect" href="https://cdn.fontshare.com" crossorigin>
+<link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=sentient@1,2&amp;display=swap"><link rel="stylesheet" href="/assets/css/app.css?v=<?= APP_VERSION ?>"><link rel="stylesheet" href="/assets/css/console5.css?v=<?= APP_VERSION ?>"></head>
+<body class="con con-<?= e($area) ?>"<?= ($path ?? '') === '/portal/assistant' ? ' data-chat-inline' : '' ?>>
+<a class="skip" href="#main"><?= e(t('Skip to content')) ?></a>
+<div class="shell">
+<aside class="side" id="side">
+  <a class="c-brand" href="<?= e($home) ?>"><?php include APP_ROOT . '/views/partials/logo.php'; ?><span><b>818</b><small><?= e(t($areaName)) ?></small></span></a>
+  <label class="c-find"><?= nx_icon('search') ?><span class="sr"><?= e(t('Find a page')) ?></span><input type="search" placeholder="<?= e(t('Jump to…')) ?>" data-navfind autocomplete="off"><kbd>/</kbd></label>
+  <nav aria-label="<?= e(t($areaName)) ?>">
+  <?php foreach ($groups as $g => $links): ?><div class="c-grp"><?php if (!is_int($g)): ?><h6><?= e(t($g)) ?></h6><?php endif; ?>
+    <?php foreach ($links as $h => $l): [$lbl, $n] = is_array($l) ? $l : [$l, 0]; $cur = ($path ?? '') === $h || ($h !== $home && str_starts_with((string)($path ?? ''), $h)); ?>
+    <a href="<?= e($h) ?>"<?= $cur ? ' aria-current="page"' : '' ?>><?= nx_icon($h === $home ? 'home' : $ico($h)) ?><span><?= e(t($lbl)) ?></span><?php if ($n): ?><i class="count"><?= (int)$n ?></i><?php endif; ?></a>
+    <?php endforeach; ?></div>
+  <?php endforeach; ?>
+  </nav>
+  <div class="c-me"><span class="av"><?= e($ini) ?></span><span class="who"><b><?= e($nm) ?></b><small><?= e(t(ucfirst((string)($user['role'] ?? '')))) ?></small></span>
+    <form method="post" action="/logout"><?= App\Csrf::field() ?><button class="c-ico" title="<?= e(t('Sign out')) ?>" aria-label="<?= e(t('Sign out')) ?>"><?= nx_icon('out') ?></button></form></div>
+</aside>
+<div class="c-main">
+  <header class="c-top">
+    <button class="c-ico c-menu" data-toggle="side" aria-label="<?= e(t('Menu')) ?>"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <nav class="c-crumb" aria-label="Breadcrumb"><a href="<?= e($home) ?>"><?= e(t($areaName)) ?></a><?php if ($crumb && !is_int($crumb)): ?><span>/</span><span><?= e(t($crumb)) ?></span><?php endif; ?><span>/</span><b><?= e(t($title ?? '')) ?></b></nav>
+    <div class="c-actions">
+      <a class="c-lang" href="?lang=<?= lang() === 'fr' ? 'en' : 'fr' ?>" hreflang="<?= lang() === 'fr' ? 'en' : 'fr' ?>"><?= lang() === 'fr' ? 'EN' : 'FR' ?></a>
+      <a class="c-pill" href="/"><?= nx_icon('globe') ?><span><?= e(t('View website')) ?></span></a>
+      <span class="av" title="<?= e($nm) ?>"><?= e($ini) ?></span>
+    </div>
+  </header>
+  <main class="main" id="main"><?php include APP_ROOT . '/views/partials/flash.php'; ?><?= $content ?></main>
+</div></div>
+<?php if ($area === 'portal') include APP_ROOT . '/views/partials/chat.php'; ?>
+<script src="/assets/js/app.js?v=<?= APP_VERSION ?>" nonce="<?= e($nonce ?? '') ?>" defer></script></body></html>

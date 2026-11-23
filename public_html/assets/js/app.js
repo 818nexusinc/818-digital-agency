@@ -241,4 +241,13 @@
       li.forEach(function (x, i) { x.className = i < at ? 'done' : (i === at ? 'now' : ''); });
     }, 1800);
   }
+
+  /* Console: "/" focuses the page finder, which filters the sidebar; Enter opens the first match. */
+  var nf = $('[data-navfind]');
+  if (nf) {
+    var navA = $$('.side nav a');
+    nf.addEventListener('input', function () { var q = nf.value.trim().toLowerCase(); navA.forEach(function (a) { a.hidden = q && a.textContent.toLowerCase().indexOf(q) < 0; }); $$('.c-grp').forEach(function (g) { g.hidden = !$$('a:not([hidden])', g).length; }); });
+    nf.addEventListener('keydown', function (e) { if (e.key === 'Enter') { var f = navA.filter(function (a) { return !a.hidden; })[0]; if (f) location.href = f.href; } if (e.key === 'Escape') { nf.value = ''; nf.dispatchEvent(new Event('input')); nf.blur(); } });
+    document.addEventListener('keydown', function (e) { var tg = e.target.tagName; if ((e.key === '/' || ((e.metaKey || e.ctrlKey) && e.key === 'k')) && !/INPUT|TEXTAREA|SELECT/.test(tg)) { e.preventDefault(); var sd = $('#side'); if (sd && innerWidth <= 960) sd.classList.add('open'); nf.focus(); } });
+  }
 })();
