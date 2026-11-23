@@ -2,10 +2,8 @@
 Options -Indexes
 DirectoryIndex index.php
 
-# Keep the PHP handler your host configured for the previous site (PHP 8.1+ required).
-AddHandler application/x-httpd-php85 .php
+# PHP version is chosen in the hosting panel (PHP 8.2 or newer). Do not force a handler here.
 <IfModule LiteSpeed>
-  php_value phpversion 8.5
   CacheLookup off
 </IfModule>
 
@@ -28,6 +26,9 @@ RewriteRule ^ - [L]
 RewriteCond %{REQUEST_FILENAME} -f
 RewriteCond %{REQUEST_URI} ^/api/[a-z0-9\-]+\.php$ [NC]
 RewriteRule ^ - [L]
+
+# One-time installer (switches itself off after use).
+RewriteRule ^install\.php$ - [L]
 
 # Everything else goes to the front controller (including /sitemap.xml, /robots.txt, /llms.txt).
 RewriteCond %{REQUEST_URI} !^/index\.php
