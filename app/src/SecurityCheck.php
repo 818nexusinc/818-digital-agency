@@ -115,6 +115,8 @@ final class SecurityCheck
             if ($home === null) $add('Live website', 'Website reachable', 'warn', 'Could not reach ' . $base . ' from the server to test it.', 'Re-run after deploying.', 'low');
             else {
                 $h = $home['headers'];
+                // Headers this very response carries (set by public_html/index.php) are authoritative; merge them in case the self-request was answered differently.
+                foreach (headers_list() as $line) if (str_contains($line, ':')) { [$k, $v] = explode(':', $line, 2); $k = strtolower(trim($k)); if ($k !== 'set-cookie' && !isset($h[$k])) $h[$k] = trim($v); }
                 foreach (['strict-transport-security' => ['HTTPS enforced (HSTS)', 'high'], 'content-security-policy' => ['Content Security Policy', 'high'], 'x-frame-options' => ['Clickjacking protection', 'medium'],
                     'x-content-type-options' => ['MIME sniffing blocked', 'medium'], 'referrer-policy' => ['Referrer policy', 'low'], 'permissions-policy' => ['Camera/mic/location blocked', 'low']] as $hk => [$label, $sev]) {
                     $add('Live website', $label, isset($h[$hk]) ? 'pass' : (str_starts_with($base, 'http://') && $hk === 'strict-transport-security' ? 'info' : 'fail'),
