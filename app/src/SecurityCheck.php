@@ -28,9 +28,14 @@ final class SecurityCheck
             Db::$driver === 'mysql' ? 'MySQL connected.' : ($preview ? 'Preview mode: a temporary database that resets. Orders, leads and accounts are not kept.' : 'SQLite file database (fine for local testing).'),
             'Set DB_HOST, DB_NAME, DB_USER and DB_PASS in Vercel, then run the one-time /setup.', 'high');
 
-        if (Db::$driver === 'mysql') $add('Configuration', 'Encrypted database connection', Db::$tls === 'none' ? 'fail' : 'pass',
+        $dbHost = strtolower((string)Env::get('DB_HOST', 'localhost'));
+        $own = array_filter(array_unique([(string)($_SERVER['SERVER_ADDR'] ?? ''), (string)@gethostbyname((string)parse_url(url('/'), PHP_URL_HOST)), (string)@gethostbyname((string)gethostname())]));
+        $sameMachine = in_array($dbHost, ['localhost', '127.0.0.1', '::1'], true) || in_array(@gethostbyname($dbHost), $own, true);
+        if (Db::$driver === 'mysql' && $sameMachine) $add('Configuration', 'Database connection stays on this server', 'pass',
+            'The website and database run on the same server (' . $dbHost . '), so database traffic never crosses the internet.' . ($dbHost !== 'localhost' && $dbHost !== '127.0.0.1' ? ' Restrict Remote MySQL Access to this server\'s own IP only.' : ''), '', 'high');
+        elseif (Db::$driver === 'mysql') $add('Configuration', 'Encrypted database connection', Db::$tls === 'none' ? 'fail' : 'pass',
             ['verified' => 'TLS with a verified certificate.', 'encrypted' => 'TLS encrypted.', 'none' => 'Not encrypted: data travels to the database in plain text.'][Db::$tls] ?? 'Unknown.',
-            'Enable SSL for MySQL on the database server (or ask the host to), then set DB_SSL=require in Vercel.', 'high');
+            'Enable SSL for MySQL on the database server (or ask the host to), then set DB_SSL=require in your environment settings.', 'high');
         if (Env::bool('DB_DISABLED')) {
             $pr = Db::probeMysql();
             $add('Configuration', 'Parked database connection test', $pr['ok'] ? 'pass' : 'fail',
