@@ -1,6 +1,11 @@
 <?php
 /* French (Canada) UI strings. English is the key. Generated from the rendered site; edit freely. */
 return [
+    'Enter the 6-digit code from your authenticator app.' => 'Entrez le code à 6 chiffres de votre application d’authentification.',
+    'Lost your phone?' => 'Téléphone perdu?',
+    'Type one of your recovery codes (like 1a2b-3c4d) in the box above instead. Each code works once.' => 'Tapez plutôt l’un de vos codes de récupération (comme 1a2b-3c4d) dans la case ci-dessus. Chaque code fonctionne une seule fois.',
+    'Verify' => 'Vérifier',
+    'Code' => 'Code',
     'We could not verify this submission. Please refresh the page, make sure JavaScript is on, and try again.' => 'Nous n’avons pas pu vérifier cet envoi. Actualisez la page, vérifiez que JavaScript est activé, puis réessayez.',
     'Too many submissions from your network. Please try again later or email us.' => 'Trop d’envois depuis votre réseau. Réessayez plus tard ou écrivez-nous.',
     'Thanks — a member of our team will follow up.' => 'Merci — un membre de notre équipe fera le suivi.',

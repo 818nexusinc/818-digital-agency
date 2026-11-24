@@ -459,3 +459,20 @@
     }
   }
 })();
+
+/* Two-step setup: draw the QR code locally (nothing is sent anywhere) and compare this device's clock with the server. */
+(function () {
+  function draw() {
+    document.querySelectorAll('[data-qr]').forEach(function (el) {
+      if (el.dataset.done || typeof qrcode !== 'function') return;
+      var q = qrcode(0, 'M'); q.addData(el.getAttribute('data-qr')); q.make();
+      el.innerHTML = q.createSvgTag({ cellSize: 5, margin: 2, scalable: true }); el.dataset.done = '1';
+    });
+    var st = document.querySelector('[data-server-time]'), cc = document.querySelector('[data-clock-check]');
+    if (st && cc) {
+      var drift = Math.round(Date.now() / 1000 - parseInt(st.getAttribute('data-server-time'), 10));
+      cc.textContent = Math.abs(drift) > 45 ? ' · This computer’s clock is ' + Math.abs(drift) + ' seconds ' + (drift > 0 ? 'ahead' : 'behind') + '. Make sure your phone sets its time automatically.' : ' · Clocks match.';
+    }
+  }
+  if (document.readyState === 'complete') draw(); else addEventListener('load', draw);
+})();

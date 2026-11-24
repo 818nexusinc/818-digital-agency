@@ -642,5 +642,17 @@ tcase('automation center runs due jobs and respects switches', function () {
     Settings::set('auto.indexnow_weekly.on', '1');
 });
 
+tcase('two-step codes: drift tolerance and one-time recovery codes', function () {
+    $sec = App\Totp::secret();
+    ok(App\Totp::verify($sec, App\Totp::code($sec, time() - 55)), '55s slow phone accepted');
+    ok(!App\Totp::verify($sec, App\Totp::code($sec, time() - 150)), 'old code refused');
+    $uid = (int)Db::val("SELECT id FROM users ORDER BY id LIMIT 1") ?: 1;
+    $codes = App\Auth::newRecoveryCodes($uid); eq(count($codes), 8);
+    $m = new ReflectionMethod(App\Auth::class, 'useRecoveryCode'); $m->setAccessible(true);
+    ok($m->invoke(null, $uid, strtoupper($codes[0])), 'recovery code works (any case)');
+    ok(!$m->invoke(null, $uid, $codes[0]), 'recovery code is single-use');
+    ok($m->invoke(null, $uid, str_replace('-', '', $codes[1])), 'works without the dash');
+});
+
 echo "\n" . ($fail ? "\033[31m{$fail} failed\033[0m, " : '') . "\033[32m{$pass} passed\033[0m\n";
 exit($fail ? 1 : 0);

@@ -187,7 +187,8 @@ final class Totp
     public static function verify(string $secret, string $code): bool
     {
         $code = preg_replace('/\D/', '', $code);
-        foreach ([-1, 0, 1] as $w) if (hash_equals(self::code($secret, time() + $w * 30), $code)) return true;
+        // ±60 seconds: phones and servers drift a little.
+        foreach ([0, -1, 1, -2, 2] as $w) if (hash_equals(self::code($secret, time() + $w * 30), $code)) return true;
         return false;
     }
 

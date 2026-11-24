@@ -89,6 +89,12 @@ final class Auth
         Session::regenerate();
         $_SESSION['uid'] = (int)$u['id'];
         $_SESSION['role'] = $u['role'];
+        // Emergency: MFA_RESET_EMAIL in the server's .env turns two-step off for that one account at its next sign-in.
+        if ((int)$u['mfa_enabled'] === 1 && strtolower((string)Env::get('MFA_RESET_EMAIL', '')) === strtolower((string)$u['email'])) {
+            Db::update('users', ['mfa_secret_enc' => null, 'mfa_enabled' => 0, 'updated_at' => now()], 'id = ?', [$u['id']]);
+            Audit::security('mfa.reset_by_env', (string)$u['email']);
+            $u['mfa_enabled'] = 0;
+        }
         if ((int)$u['mfa_enabled'] === 1) { $_SESSION['mfa_pending'] = 1; self::forget(); return 'mfa'; }
         self::complete((int)$u['id']);
         return 'ok';
@@ -102,10 +108,34 @@ final class Auth
         if (!RateLimit::hit('mfa:' . $id, 6, 600)) throw new UserError('Too many codes tried. Wait 10 minutes.');
         $u = Db::one('SELECT * FROM users WHERE id = ?', [$id]);
         $secret = Crypto::decrypt($u['mfa_secret_enc'] ?? null);
-        if (!$secret || !Totp::verify($secret, $code)) { Audit::security('mfa.failed', (string)$id); return false; }
+        $ok = $secret && Totp::verify($secret, $code);
+        if (!$ok && self::useRecoveryCode((int)$id, $code)) { $ok = true; Audit::security('mfa.recovery_used', (string)$id); }
+        if (!$ok) {
+            Audit::security('mfa.failed', (string)$id);
+            if (!$secret && $u['mfa_secret_enc']) throw new UserError('Your two-step key can no longer be read on this server (its encryption key changed). Sign in with one of your recovery codes, then set up two-step verification again.');
+            return false;
+        }
         unset($_SESSION['mfa_pending']);
         self::complete((int)$id);
         return true;
+    }
+
+    /** Eight one-time recovery codes. Only hashes are stored; the codes are shown once. */
+    public static function newRecoveryCodes(int $id): array
+    {
+        $codes = []; for ($i = 0; $i < 8; $i++) $codes[] = strtolower(bin2hex(random_bytes(2)) . '-' . bin2hex(random_bytes(2)));
+        Settings::set('mfa.recovery.' . $id, jenc(array_map(fn($c) => password_hash($c, PASSWORD_DEFAULT), $codes)));
+        return $codes;
+    }
+
+    private static function useRecoveryCode(int $id, string $code): bool
+    {
+        $code = strtolower(trim($code));
+        if (!preg_match('/^[a-f0-9]{4}-?[a-f0-9]{4}$/', $code)) return false;
+        if (!str_contains($code, '-')) $code = substr($code, 0, 4) . '-' . substr($code, 4);
+        $hashes = jdec((string)Settings::get('mfa.recovery.' . $id) ?: '[]');
+        foreach ($hashes as $i => $h) if (password_verify($code, (string)$h)) { unset($hashes[$i]); Settings::set('mfa.recovery.' . $id, jenc(array_values($hashes))); return true; }
+        return false;
     }
 
     private static function complete(int $id): void

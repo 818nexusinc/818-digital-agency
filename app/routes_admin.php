@@ -368,7 +368,7 @@ $r->get('/admin/settings', function () use ($me) {
     $vals = [];
     foreach (Settings::DEFAULTS as $k => $_) $vals[$k] = Settings::get($k);
     View::page('admin/settings', ['title' => 'Settings', 'vals' => $vals, 'users' => Db::all("SELECT id, email, name, role, status, mfa_enabled, last_login_at FROM users WHERE role <> 'customer' ORDER BY id"),
-        'perms' => Db::all('SELECT * FROM role_permissions ORDER BY role, permission'), 'me' => $me(), 'mfa_secret' => $_SESSION['mfa_setup'] ?? null]);
+        'perms' => Db::all('SELECT * FROM role_permissions ORDER BY role, permission'), 'me' => $me(), 'mfa_secret' => $_SESSION['mfa_setup'] ?? null, 'recovery' => (function () { $c = $_SESSION['mfa_recovery_show'] ?? null; unset($_SESSION['mfa_recovery_show']); return $c; })()]);
 }, $P('settings.read'));
 $r->post('/admin/settings', function () use ($me) {
     $act = Request::str('action', 30);
@@ -376,13 +376,21 @@ $r->post('/admin/settings', function () use ($me) {
         if (!Rbac::can($me(), 'settings.write')) throw new HttpError(403, 'No permission.');
         foreach ((array)Request::input('s', []) as $k => $v) if (array_key_exists($k, Settings::DEFAULTS)) Settings::set($k, mb_substr(trim((string)$v), 0, 2000));
     } elseif ($act === 'mfa_start') {
+        $_SESSION['mfa_setup'] ??= Totp::secret(); // keep the same key if the page is reloaded, so a scanned code keeps working
+    } elseif ($act === 'mfa_restart') {
         $_SESSION['mfa_setup'] = Totp::secret();
     } elseif ($act === 'mfa_confirm') {
-        $sec = $_SESSION['mfa_setup'] ?? throw new UserError('Start MFA setup first.');
-        if (!Totp::verify($sec, Request::str('code', 10))) throw new UserError('Code did not match — check your device clock and try again.');
+        $sec = $_SESSION['mfa_setup'] ?? throw new UserError('Start two-step setup first.');
+        if (!Totp::verify($sec, Request::str('code', 10))) { Session::flash('error', 'That code did not match. Use the newest code in the app (it changes every 30 seconds). If it still fails, check that your phone sets its time automatically, or press "Start again" and scan the new QR code.'); View::redirect('/admin/settings#mfa'); return; }
         Db::update('users', ['mfa_secret_enc' => Crypto::encrypt($sec), 'mfa_enabled' => 1, 'updated_at' => now()], 'id = ?', [$me()['id']]);
         unset($_SESSION['mfa_setup']);
+        $_SESSION['mfa_recovery_show'] = App\Auth::newRecoveryCodes((int)$me()['id']);
         Audit::log('user.mfa_enabled', 'user', $me()['id']);
+    } elseif ($act === 'mfa_disable') {
+        if (!password_verify((string)Request::input('password', ''), (string)Db::val('SELECT password_hash FROM users WHERE id = ?', [$me()['id']]))) throw new UserError('Enter your current password to turn off two-step verification.');
+        Db::update('users', ['mfa_secret_enc' => null, 'mfa_enabled' => 0, 'updated_at' => now()], 'id = ?', [$me()['id']]);
+        Settings::set('mfa.recovery.' . $me()['id'], '');
+        Audit::security('mfa.disabled', (string)$me()['id']);
     } elseif ($act === 'user') {
         if ($me()['role'] !== 'owner') throw new HttpError(403, 'Only the owner can manage team accounts.');
         $role = in_array(Request::str('role', 20), ['admin', 'staff'], true) ? Request::str('role', 20) : 'staff';

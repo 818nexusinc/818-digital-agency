@@ -46,4 +46,4 @@ foreach ($groups as $g => $links) foreach ($links as $h => $l) if (($path ?? "")
   <main class="main" id="main"><?php include APP_ROOT . '/views/partials/flash.php'; ?><?= $content ?></main>
 </div></div>
 <?php if ($area === 'portal') include APP_ROOT . '/views/partials/chat.php'; ?>
-<script src="/assets/js/app.js?v=<?= APP_VERSION ?>" nonce="<?= e($nonce ?? '') ?>" defer></script></body></html>
+<?php if (($path ?? '') === '/admin/settings'): ?><script src="/assets/js/qrcode.js?v=<?= APP_VERSION ?>" nonce="<?= e($nonce ?? '') ?>" defer></script><?php endif; ?><script src="/assets/js/app.js?v=<?= APP_VERSION ?>" nonce="<?= e($nonce ?? '') ?>" defer></script></body></html>
