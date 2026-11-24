@@ -7,7 +7,7 @@ declare(strict_types=1);
  */
 
 define('APP_ROOT', __DIR__);
-define('APP_VERSION', '4.7.1');
+define('APP_VERSION', '4.8.0');
 
 spl_autoload_register(static function (string $class): void {
     if (!str_starts_with($class, 'App\\')) return;
@@ -33,6 +33,24 @@ define('ON_VERCEL', (bool)getenv('VERCEL'));
 if (ON_VERCEL && !getenv('APP_URL') && ($vh = getenv('VERCEL_PROJECT_PRODUCTION_URL') ?: getenv('VERCEL_URL'))) putenv('APP_URL=https://' . $vh);
 define('STORAGE_ROOT', App\Env::get('STORAGE_PATH') ?: (ON_VERCEL ? sys_get_temp_dir() . '/818-storage' : APP_ROOT . '/storage'));
 foreach (['logs', 'locks', 'cache', 'backups', 'uploads', 'sessions'] as $__d) if (!is_dir(STORAGE_ROOT . '/' . $__d)) @mkdir(STORAGE_ROOT . '/' . $__d, 0750, true);
+// The encryption key also lives in storage/keys (never part of a release or an update), so replacing files or the
+// .env can't make saved API keys and two-step secrets unreadable. Older keys are kept so old data can still be read.
+if (!ON_VERCEL) {
+    $__kd = STORAGE_ROOT . '/keys'; if (!is_dir($__kd)) @mkdir($__kd, 0700, true);
+    $__kf = $__kd . '/app.key'; $__env = (string)App\Env::get('APP_KEY', ''); $__file = is_file($__kf) ? trim((string)@file_get_contents($__kf)) : '';
+    if ($__env === '' && $__file !== '') App\Env::set('APP_KEY', $__file);
+    elseif ($__env !== '' && $__file === '') { @file_put_contents($__kf, $__env); @chmod($__kf, 0600); }
+    elseif ($__env !== '' && $__file !== '' && $__env !== $__file) { $__old = $__kd . '/old-' . substr(sha1($__file), 0, 10) . '.key'; if (!is_file($__old)) { @file_put_contents($__old, $__file); @chmod($__old, 0600); } @file_put_contents($__kf, $__env); }
+    if (!is_file($__kd . '/.htaccess')) @file_put_contents($__kd . '/.htaccess', "Require all denied\n");
+    // Same for the whole settings file: keep a private copy, and bring it back if a release or a mistake replaced .env.
+    $__ef = APP_ROOT . '/.env'; $__eb = $__kd . '/env.backup'; $__ec = is_file($__ef) ? (string)@file_get_contents($__ef) : '';
+    if (str_contains($__ec, 'APP_INSTALLED=1')) { if (!is_file($__eb) || md5_file($__eb) !== md5($__ec)) { @file_put_contents($__eb, $__ec); @chmod($__eb, 0600); } }
+    elseif (is_file($__eb) && str_contains((string)@file_get_contents($__eb), 'APP_INSTALLED=1')) {
+        if (@file_put_contents($__ef, (string)file_get_contents($__eb)) !== false) @chmod($__ef, 0600);
+        App\Env::load($__eb);
+        if ((string)App\Env::get('APP_KEY', '') === '' && $__file !== '') App\Env::set('APP_KEY', $__file);
+    }
+}
 date_default_timezone_set('UTC');
 ini_set('display_errors', App\Env::bool('APP_DEBUG') ? '1' : '0');
 error_reporting(E_ALL);

@@ -7,6 +7,9 @@ declare(strict_types=1);
 $appRoot = is_file(dirname(__DIR__) . '/app/bootstrap.php') ? dirname(__DIR__) . '/app' : __DIR__ . '/_app';
 $envFile = $appRoot . '/.env';
 $cur = is_file($envFile) ? (string)file_get_contents($envFile) : '';
+// A private copy of the settings is kept in storage/keys; if the live .env was replaced, put it back instead of reinstalling.
+$bk = $appRoot . '/storage/keys/env.backup';
+if (!preg_match('/^APP_INSTALLED=1/m', $cur) && is_file($bk) && preg_match('/^APP_INSTALLED=1/m', (string)file_get_contents($bk))) { @file_put_contents($envFile, (string)file_get_contents($bk)); @chmod($envFile, 0600); $cur = (string)file_get_contents($envFile); }
 header('X-Robots-Tag: noindex'); header('Cache-Control: no-store'); header("Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; form-action 'self'");
 if (preg_match('/^APP_INSTALLED=1/m', $cur)) { http_response_code(404); exit('Not found'); }
 
@@ -27,7 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $q = fn($v) => '"' . str_replace(['\\', '"'], ['\\\\', '\"'], $v) . '"';
         $env = "# 818 Digital Agency — production settings. Written by install.php on " . gmdate('Y-m-d H:i') . " UTC. Keep private; back up APP_KEY.\n"
-            . "APP_URL={$url}\nAPP_DEBUG=false\nAPP_KEY=" . ($val('APP_KEY') ?: 'base64:' . base64_encode(random_bytes(32))) . "\n\n"
+            . "APP_URL={$url}\nAPP_DEBUG=false\nAPP_KEY=" . ($val('APP_KEY') ?: (is_file($appRoot . '/storage/keys/app.key') ? trim((string)file_get_contents($appRoot . '/storage/keys/app.key')) : '') ?: 'base64:' . base64_encode(random_bytes(32))) . "\n\n"
             . "DB_HOST={$host}\nDB_PORT={$port}\nDB_NAME={$name}\nDB_USER={$user}\nDB_PASS=" . $q($pass) . "\nDB_SSL=off\n\n"
             . "SESSION_SECURE=true\nMAIL_DRIVER=" . ($val('MAIL_DRIVER') ?: 'auto') . "\nMAIL_FROM=" . ($val('MAIL_FROM') ?: 'hello@818nexus.ca') . "\nOWNER_EMAIL={$email}\n"
             . "CRON_SECRET=" . bin2hex(random_bytes(24)) . "\nAPP_INSTALLED=1\n";

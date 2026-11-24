@@ -5,12 +5,20 @@ namespace App;
 /** Encryption at rest for secrets (libsodium secretbox keyed by APP_KEY). */
 final class Crypto
 {
-    private static function key(): string
+    private static function key(?string $raw = null): string
     {
-        $k = (string)Env::get('APP_KEY', '');
+        $k = $raw ?? (string)Env::get('APP_KEY', '');
         if (str_starts_with($k, 'base64:')) $k = base64_decode(substr($k, 7), true) ?: '';
         if (strlen($k) < 32) throw new \RuntimeException('APP_KEY missing or too short. Run: php bin/setup.php');
         return substr(hash('sha256', $k, true), 0, SODIUM_CRYPTO_SECRETBOX_KEYBYTES);
+    }
+
+    /** Earlier keys kept in storage/keys, so data saved before a key change can still be read. */
+    private static function oldKeys(): array
+    {
+        $o = [];
+        foreach (glob(STORAGE_ROOT . '/keys/old-*.key') ?: [] as $f) { $v = trim((string)@file_get_contents($f)); if ($v !== '') { try { $o[] = self::key($v); } catch (\Throwable) {} } }
+        return $o;
     }
 
     public static function encrypt(string $plain): string
@@ -24,8 +32,9 @@ final class Crypto
         if (!$blob || !str_starts_with($blob, 'v1:')) return null;
         $raw = base64_decode(substr($blob, 3), true);
         if ($raw === false || strlen($raw) < SODIUM_CRYPTO_SECRETBOX_NONCEBYTES) return null;
-        $p = sodium_crypto_secretbox_open(substr($raw, SODIUM_CRYPTO_SECRETBOX_NONCEBYTES), substr($raw, 0, SODIUM_CRYPTO_SECRETBOX_NONCEBYTES), self::key());
-        return $p === false ? null : $p;
+        $nonce = substr($raw, 0, SODIUM_CRYPTO_SECRETBOX_NONCEBYTES); $box = substr($raw, SODIUM_CRYPTO_SECRETBOX_NONCEBYTES);
+        foreach (array_merge([self::key()], self::oldKeys()) as $k) { $p = sodium_crypto_secretbox_open($box, $nonce, $k); if ($p !== false) return $p; }
+        return null;
     }
 }
 

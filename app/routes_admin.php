@@ -45,6 +45,23 @@ $r->get('/admin', function () use ($me) {
         })(),
         'autos' => array_map(fn($k) => ['name' => App\Automations::JOBS[$k][0], 'last' => App\Automations::last($k), 'on' => App\Automations::enabled($k)], ['lead_followups', 'draft_followups', 'blog_weekly', 'agents_selftest', 'security_daily', 'backup_nightly']),
         'spamToday' => App\Spam::stats(1)['total'],
+        'trend' => (function () {
+            $from = gmdate('Y-m-d', time() - 13 * 86400); $days = []; for ($i = 13; $i >= 0; $i--) $days[gmdate('Y-m-d', time() - $i * 86400)] = 0;
+            $rev = $days; foreach (Db::all("SELECT SUBSTR(paid_at, 1, 10) d, SUM(total_cents) v FROM orders WHERE paid_at >= ? GROUP BY SUBSTR(paid_at, 1, 10)", [$from . ' 00:00:00']) as $r) if (isset($rev[$r['d']])) $rev[$r['d']] = (int)$r['v'];
+            $lead = $days; foreach (Db::all("SELECT SUBSTR(created_at, 1, 10) d, COUNT(*) v FROM leads WHERE created_at >= ? GROUP BY SUBSTR(created_at, 1, 10)", [$from . ' 00:00:00']) as $r) if (isset($lead[$r['d']])) $lead[$r['d']] = (int)$r['v'];
+            return ['revenue' => array_values($rev), 'leads' => array_values($lead)];
+        })(),
+        'pillars' => (function () {
+            $map = ['registration' => 'register', 'management' => 'manage', 'domains' => 'web', 'email' => 'web', 'websites' => 'web', 'apps' => 'web', 'growth' => 'web'];
+            $out = []; foreach (['register', 'manage', 'web', 'bundle'] as $k) $out[$k] = ['orders' => 0, 'cents' => 0, 'projects' => 0];
+            $since = gmdate('Y-m-d H:i:s', time() - 30 * 86400);
+            foreach (Db::all("SELECT s.category c, COUNT(DISTINCT o.id) n, SUM(oi.unit_cents * oi.qty) v FROM order_items oi JOIN orders o ON o.id = oi.order_id JOIN services s ON s.slug = oi.service_slug WHERE o.paid_at >= ? GROUP BY s.category", [$since]) as $r)
+                if (isset($map[$r['c']])) { $out[$map[$r['c']]]['orders'] += (int)$r['n']; $out[$map[$r['c']]]['cents'] += (int)$r['v']; }
+            foreach (Db::all("SELECT s.category c, COUNT(*) n FROM projects p JOIN services s ON s.slug = p.service_slug WHERE p.status NOT IN ('completed','cancelled') GROUP BY s.category") as $r)
+                if (isset($map[$r['c']])) $out[$map[$r['c']]]['projects'] += (int)$r['n'];
+            $out['bundle']['orders'] = (int)Db::val("SELECT COUNT(*) FROM orders WHERE paid_at >= ? AND meta LIKE '%bundle%'", [$since]);
+            return $out;
+        })(),
         'approvals' => Db::all("SELECT * FROM approvals WHERE status = 'pending' ORDER BY CASE risk WHEN 'high' THEN 0 WHEN 'medium' THEN 1 ELSE 2 END, id DESC LIMIT 8"),
         'failed' => Db::all("SELECT * FROM agent_tasks WHERE status = 'failed' ORDER BY updated_at DESC LIMIT 5"),
         'leads' => Db::all("SELECT l.*, c.name, c.email, c.business_name FROM leads l JOIN customers c ON c.id = l.customer_id WHERE l.status NOT IN ('converted','closed') ORDER BY l.score DESC, l.id DESC LIMIT 6"),
@@ -349,10 +366,15 @@ $r->get('/admin/integrations', function () {
     $rows = [];
     foreach (Integrations::DEFS as $slug => [$cat, $name, $fields, $desc]) {
         $row = Db::one('SELECT * FROM integrations WHERE slug = ?', [$slug]);
-        $rows[] = ['slug' => $slug, 'cat' => $cat, 'name' => $name, 'desc' => $desc, 'fields' => $fields, 'row' => $row, 'configured' => Integrations::configured($slug),
+        $configured = Integrations::configured($slug);
+        $stale = !$configured && !empty($row['secrets_enc']) && $row['secrets_enc'] !== '{}' && App\Crypto::decrypt((string)$row['secrets_enc']) === null;
+        $rows[] = ['slug' => $slug, 'cat' => $cat, 'name' => $name, 'desc' => $desc, 'fields' => $fields, 'row' => $row, 'configured' => $configured, 'stale' => $stale,
             'env' => array_filter($fields, fn($env) => (bool)Env::get($env)), 'logs' => Db::all('SELECT * FROM integration_logs WHERE slug = ? ORDER BY id DESC LIMIT 3', [$slug])];
     }
-    View::page('admin/integrations', ['title' => 'Integration hub', 'rows' => $rows]);
+    // Connected first (with errors at the top of that group), then ones needing attention, then the rest.
+    usort($rows, fn($a, $b) => [$a['configured'] ? 0 : ($a['stale'] ? 1 : 2), $a['configured'] && !empty($a['row']['last_error']) ? 0 : 1, $a['name']]
+        <=> [$b['configured'] ? 0 : ($b['stale'] ? 1 : 2), $b['configured'] && !empty($b['row']['last_error']) ? 0 : 1, $b['name']]);
+    View::page('admin/integrations', ['title' => 'Integrations', 'rows' => $rows]);
 }, $P('integrations.read'));
 $r->post('/admin/integrations/{slug}', function ($p) {
     if (Request::input('test')) { $res = Integrations::test($p['slug']); Session::flash($res['ok'] ? 'success' : 'error', $res['message']); }

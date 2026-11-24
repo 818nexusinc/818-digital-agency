@@ -125,7 +125,7 @@ body.con{
 .ct-warn{background:var(--warn-s);border:1px solid #f1dc9c;border-radius:var(--r);padding:10px 14px;display:grid;gap:4px}
 .ct-warn p{margin:0;font-size:13.5px;color:#5c4300}.ct-warn a{color:#5c4300;font-weight:600}
 .ct-stats{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));background:var(--panel);border:1px solid var(--line);border-radius:var(--r)}
-.ct-stats div{padding:12px 16px;border-left:1px solid var(--line-2);display:grid;gap:2px}
+.ct-stats div{padding:12px 16px;border-left:1px solid var(--line-2);display:grid;gap:2px;align-content:start}
 .ct-stats div:first-child{border-left:0}
 .ct-stats span{font-size:12px;color:var(--mut)}
 .ct-stats b{font-size:19px;font-weight:650;letter-spacing:-.01em}
@@ -235,3 +235,58 @@ body.con{
 .mfa-codes{list-style:none;padding:0;margin:10px 0;display:grid;grid-template-columns:repeat(2,max-content);gap:6px 18px}
 .mfa-codes code{font:600 15px ui-monospace,Menlo,monospace;letter-spacing:.06em}
 @media(min-width:900px){.mfa-alt{display:none}}
+
+.con .int-g{font-size:13px;color:var(--mut);margin:20px 0 8px;font-weight:600}
+.con .int-g:first-of-type{margin-top:4px}
+
+/* ── v7.1: brand character ───────────────────────────── */
+/* Sidebar icons take each group's business colour, so sections are recognisable at a glance. */
+.con .c-grp:nth-child(1){--g:#2348d8}.con .c-grp:nth-child(2){--g:#be185d}.con .c-grp:nth-child(3){--g:#0d9488}.con .c-grp:nth-child(4){--g:#c2410c}.con .c-grp:nth-child(5){--g:#5b6470}
+.con .side nav a svg{color:var(--g);opacity:.9}
+.con .side nav a[aria-current=page]{box-shadow:inset 3px 0 0 var(--g),0 1px 0 rgba(27,31,36,.03)}
+.con .side nav a[aria-current=page] svg{color:var(--g)}
+
+/* Control Tower welcome panel in the logo navy, with the 818 rings as a quiet watermark. */
+.ct-hero{position:relative;overflow:hidden;display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap;
+  background:#0b1530;color:#dfe6f7;border-radius:12px;padding:26px 28px;isolation:isolate}
+.ct-hero:after{content:"";position:absolute;inset:0;z-index:-1;background:radial-gradient(70% 140% at 100% 0%,rgba(39,83,255,.38),transparent 60%)}
+.ct-rings{position:absolute;right:-18px;top:-26px;width:300px;height:auto;z-index:-1;opacity:.16}
+.ct-rings g{stroke:#7aa2ff}
+.ct-hi p{margin:0;color:#9fb0d6;font-size:13px}
+.con .ct-hi h1{color:#fff;margin:4px 0 6px;font-size:28px!important;font-weight:650!important;letter-spacing:-.02em}
+.ct-hi .ct-line{color:#c9d4ee;font-size:14px}
+.ct-hero .ct-quick{gap:6px}
+.ct-hero .ct-quick a{color:#fff;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);border-radius:8px;padding:7px 12px;font-size:13px;font-weight:600;text-decoration:none}
+.ct-hero .ct-quick a:hover{background:rgba(255,255,255,.16);color:#fff}
+.ct-hero .ct-quick a b{display:inline-block;background:#ffb020;color:#0b1530;border-radius:10px;padding:0 6px;margin-left:4px;font-size:12px}
+.ct-hero .ct-quick a:first-child{background:#2753ff;border-color:#2753ff}
+.ct-hero .ct-quick a:first-child:hover{background:#3d66ff}
+
+/* Trend lines in the stat strip */
+.ct-stats .has-spark{position:relative}
+.spark{width:100%;height:30px;margin-top:4px;display:block}
+.spark .line{fill:none;stroke-width:1.6;vector-effect:non-scaling-stroke}
+.spark .area{stroke:none;opacity:.12}
+.sp-rev .line{stroke:#2348d8}.sp-rev .area{fill:#2348d8}
+.sp-lead .line{stroke:#be185d}.sp-lead .area{fill:#be185d}
+.ct-stats small{font-size:11px;color:var(--faint)}
+
+/* Your four businesses, in the website's colours */
+.ct-biz{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.ct-p{position:relative;display:grid;gap:2px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px 14px 18px;text-decoration:none;color:var(--ink);overflow:hidden;transition:border-color .15s,background .15s}
+.ct-p:before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--pc)}
+.ct-p:hover{border-color:color-mix(in srgb,var(--pc) 45%,var(--line));background:color-mix(in srgb,var(--pc) 3%,#fff)}
+.ct-pn{font-weight:650;font-size:14.5px;color:var(--pc)}
+.ct-p small{color:var(--mut);font-size:12px}
+.ct-pv{margin-top:8px;font-size:13px;color:var(--ink-2)}.ct-pv b{font-size:20px;color:var(--ink);margin-right:2px}
+.ct-pp{font-size:12px;color:var(--mut)}
+
+/* Page headers on other screens get the section colour as a thin rule. */
+.con .topbar{border-bottom:0;padding-bottom:0;position:relative}
+.con .topbar:after{content:"";position:absolute;left:0;right:0;bottom:-16px;height:1px;background:var(--line)}
+.con .topbar{margin-bottom:30px}
+.con .topbar h1:before{content:"";display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--acc);margin-right:10px;vertical-align:2px}
+
+@media(max-width:1180px){.ct-biz{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.ct-biz{grid-template-columns:1fr}.ct-rings{width:200px}}
+.con .grid>.panel,.con .grid>.card{margin-top:0}

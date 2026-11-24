@@ -9,13 +9,22 @@ $cronOk = $cron && strtotime($cron . ' UTC') >= time() - 900;
 $aiOn = $providers['anthropic'] || $providers['openai'];
 $enabled = count(array_filter($agents, fn($a) => $a['status'] === 'enabled'));
 $first = trim(explode(' ', (string)($me['name'] ?? ''))[0] ?? '');
+$spark = function (array $v, string $cls): string {
+    $max = max(1, ...$v); $n = count($v); $pts = [];
+    foreach ($v as $i => $x) $pts[] = round($i * (120 / max(1, $n - 1)), 1) . ',' . round(30 - ($x / $max) * 26, 1);
+    return '<svg class="spark ' . $cls . '" viewBox="0 0 120 32" preserveAspectRatio="none" aria-hidden="true"><polyline points="0,32 ' . implode(' ', $pts) . ' 120,32" class="area"/><polyline points="' . implode(' ', $pts) . '" class="line"/></svg>';
+};
+$hour = (int)gmdate('G') - 4; $hour = ($hour + 24) % 24;
+$hello = $hour < 12 ? 'Good morning' : ($hour < 18 ? 'Good afternoon' : 'Good evening');
+$P = ['register' => ['Register', '/register', '#4f46e5', 'Incorporations and registrations'], 'manage' => ['Manage', '/manage-business', '#047857', 'Annual returns, changes, documents'],
+      'web' => ['Web Services', '/web-services', '#be185d', 'Domains, email, websites, apps'], 'bundle' => ['Bundles', '/bundle', '#c2410c', 'Register + web in one order']];
 ?>
 <div class="ct">
-<header class="ct-head">
-  <div><p class="ct-date"><?= e(gmdate('l, j F')) ?></p><h1>Today<?= $first && $first !== 'Owner' ? ', ' . e($first) : '' ?></h1></div>
-  <nav class="ct-quick" aria-label="Quick actions">
-    <a href="/admin/orders">Orders</a><a href="/admin/customers">Customers</a><a href="/admin/blog">Write an article</a><a class="btn btn-primary btn-sm" href="/admin/approvals">Action center<?= $m['approvals_pending'] ? ' (' . (int)$m['approvals_pending'] . ')' : '' ?></a>
-  </nav>
+<header class="ct-hero">
+  <svg class="ct-rings" viewBox="0 0 74 40" aria-hidden="true"><g fill="none" stroke-width="2.2"><circle cx="13" cy="11" r="7.2"/><circle cx="13" cy="28.5" r="9"/><circle cx="61" cy="11" r="7.2"/><circle cx="61" cy="28.5" r="9"/><path d="M33 9.5 L38 4 V36"/></g></svg>
+  <div class="ct-hi"><p><?= e(gmdate('l, j F')) ?></p><h1><?= e($hello) ?><?= $first && $first !== 'Owner' ? ', ' . e($first) : '' ?></h1>
+    <p class="ct-line"><?php $nn = count($inbox); echo $nn ? e($nn . ($nn === 1 ? ' thing needs' : ' things need') . ' you today') : 'Nothing needs you right now'; ?> · <?= e($m['revenue']) ?> earned in the last 30 days</p></div>
+  <nav class="ct-quick" aria-label="Quick actions"><a href="/admin/approvals">Action center<?= $m['approvals_pending'] ? ' <b>' . (int)$m['approvals_pending'] . '</b>' : '' ?></a><a href="/admin/orders">Orders</a><a href="/admin/customers">Customers</a><a href="/admin/blog">Write an article</a><a href="/" target="_blank" rel="noopener">View website</a></nav>
 </header>
 
 <?php if (!$cronOk || $demo): ?><div class="ct-warn">
@@ -25,11 +34,19 @@ $first = trim(explode(' ', (string)($me['name'] ?? ''))[0] ?? '');
 
 <section class="ct-stats" aria-label="Last 30 days">
   <div><span>Revenue today</span><b><?= e($m['revenue_today']) ?></b></div>
-  <div><span>Revenue, 30 days</span><b><?= e($m['revenue']) ?></b></div>
+  <div class="has-spark"><span>Revenue, 30 days</span><b><?= e($m['revenue']) ?></b><?= $spark($trend['revenue'], 'sp-rev') ?><small>Last 14 days</small></div>
   <div><span>Monthly recurring</span><b><?= e($m['mrr']) ?></b></div>
   <div><span>Paid orders</span><b><?= (int)$m['orders'] ?></b></div>
-  <div><span>New leads, 7 days</span><b><?= (int)$newLeads ?></b></div>
+  <div class="has-spark"><span>New leads, 7 days</span><b><?= (int)$newLeads ?></b><?= $spark($trend['leads'], 'sp-lead') ?><small>Last 14 days</small></div>
   <div><span>Active projects</span><b><?= (int)$m['projects_active'] ?><?php if ($m['projects_overdue']): ?><em><?= (int)$m['projects_overdue'] ?> late</em><?php endif; ?></b></div>
+</section>
+
+<section class="ct-biz" aria-label="Your businesses, last 30 days">
+  <?php foreach ($P as $k => [$name, $href, $col, $sub]): $d = $pillars[$k]; ?>
+  <a class="ct-p" href="/admin/orders" style="--pc:<?= $col ?>"><span class="ct-pn"><?= e($name) ?></span><small><?= e($sub) ?></small>
+    <span class="ct-pv"><b><?= (int)$d['orders'] ?></b> order<?= $d['orders'] === 1 ? '' : 's' ?><?php if ($d['cents']): ?> · <?= money((int)$d['cents']) ?><?php endif; ?></span>
+    <span class="ct-pp"><?= (int)$d['projects'] ?> in progress</span></a>
+  <?php endforeach; ?>
 </section>
 
 <div class="ct-cols">

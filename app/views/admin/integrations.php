@@ -1,6 +1,9 @@
 <?php $badge = function ($s) { include APP_ROOT . '/views/partials/status.php'; }; ?>
 <div class="topbar"><div><h1>Integration hub</h1><p class="muted" style="margin:4px 0 0">Credentials are encrypted at rest (libsodium) and never sent to the browser. Environment variables in <span class="kbd">app/.env</span> take precedence.</p></div></div>
-<div class="grid g2"><?php foreach ($rows as $r): $row = $r['row'] ?? []; ?>
+<?php $cnt = count(array_filter($rows, fn($r) => $r['configured'])); $hdr = null; ?>
+<p class="small muted" style="margin:0 0 12px"><?= $cnt ?> of <?= count($rows) ?> connected.</p>
+<div class="grid g2"><?php foreach ($rows as $r): $row = $r['row'] ?? []; $grp = $r['configured'] ? 'Connected' : ($r['stale'] ? 'Needs re-entering' : 'Not connected yet');
+  if ($grp !== $hdr): $hdr = $grp; ?></div><h2 class="int-g"><?= e($grp) ?></h2><?php if ($grp === 'Needs re-entering'): ?><p class="small muted" style="margin:-4px 0 10px">These keys were saved under an older encryption key that this server no longer has. Paste them in again once; from now on the key is kept safely across updates.</p><?php endif; ?><div class="grid g2"><?php endif; ?>
 <div class="panel" id="<?= e($r['slug']) ?>"><div class="row spread"><div><h2 style="margin:0"><?= e($r['name']) ?></h2><span class="small muted"><?= e($r['cat']) ?> · <?= e($r['desc']) ?></span></div><?php $badge($r['configured'] ? ($row['status'] ?? 'configured') : 'not_configured'); ?></div>
   <p class="small muted" style="margin:8px 0">Last OK: <?= e($row['last_ok_at'] ?? '—') ?><?= !empty($row['last_error']) ? ' · last error: ' . e(str_limit($row['last_error'], 140)) : '' ?></p>
   <form method="post" action="/admin/integrations/<?= e($r['slug']) ?>"><?= App\Csrf::field() ?>
