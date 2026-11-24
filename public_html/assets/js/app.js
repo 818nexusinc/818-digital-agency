@@ -367,8 +367,15 @@
 
   /* Chapters and sections get .in-view once, which starts their own animations (split headings, bars, calendar). */
   $$('[data-split]').forEach(function (h) {
-    var words = h.textContent.trim().split(/\s+/); h.textContent = ''; h.setAttribute('aria-label', words.join(' '));
-    words.forEach(function (w, i) { var o = document.createElement('span'); o.className = 'w'; o.setAttribute('aria-hidden', 'true'); var n = document.createElement('span'); n.textContent = w; n.style.setProperty('--wi', i); o.appendChild(n); h.appendChild(o); h.appendChild(document.createTextNode(' ')); });
+    if (h.querySelector('.nx-t')) return; // the owner's page editor needs the original text
+    var parts = []; // words, and null where a title breaks onto a new line
+    Array.prototype.forEach.call(h.childNodes, function (c) { if (c.nodeName === 'BR') parts.push(null); else (c.textContent || '').trim().split(/\s+/).forEach(function (w) { if (w) parts.push(w); }); });
+    h.textContent = ''; h.setAttribute('aria-label', parts.filter(Boolean).join(' '));
+    var i = 0;
+    parts.forEach(function (w) {
+      if (w === null) { h.appendChild(document.createElement('br')); return; }
+      var o = document.createElement('span'); o.className = 'w'; o.setAttribute('aria-hidden', 'true'); var n = document.createElement('span'); n.textContent = w; n.style.setProperty('--wi', i++); o.appendChild(n); h.appendChild(o); h.appendChild(document.createTextNode(' '));
+    });
   });
   var viewEls = $$('.story .ch, main section');
   if (still || !('IntersectionObserver' in window)) viewEls.forEach(function (el) { el.classList.add('in-view'); });
@@ -703,4 +710,11 @@
   window.addEventListener('load', update);
   new MutationObserver(soon).observe(document.documentElement, { attributes: true, attributeFilter: ['data-tone', 'class', 'style'] });
   update();
+})();
+
+/* Character counter for social posts */
+(function () {
+  var t = document.querySelector('[data-count]'), c = document.querySelector('[data-counter]'); if (!t || !c) return;
+  var up = function () { var n = t.value.length; c.textContent = n + ' characters · X allows 280'; c.style.color = n > 280 ? '#b45309' : ''; };
+  t.addEventListener('input', up); up();
 })();

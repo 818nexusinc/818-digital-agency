@@ -169,6 +169,37 @@ $serveLogo = function (string $key) {
     echo base64_decode((string)$a['data']);
 };
 $r->get('/brand/logo', fn() => $serveLogo('logo'));
+$r->get('/brand/img/{key}', function ($p) {
+    $k = (string)$p['key'];
+    $a = preg_match('/^[0-9a-f]{40}$/', $k) ? App\SiteText::image($k) : null;
+    if (!$a) { http_response_code(404); header('Content-Type: text/plain'); echo 'Not found'; return; }
+    $etag = '"' . substr(sha1($a['updated_at']), 0, 16) . '"';
+    header('Content-Type: ' . $a['mime']); header('Cache-Control: public, max-age=604800'); header('ETag: ' . $etag); header('X-Content-Type-Options: nosniff');
+    if (($_SERVER['HTTP_IF_NONE_MATCH'] ?? '') === $etag) { http_response_code(304); return; }
+    echo base64_decode((string)$a['data']);
+});
+
+/* In-page site editor: the owner edits text and pictures on the live website. */
+$ownerOnly = function () { if (!App\SiteText::isOwner()) throw new HttpError(403, 'Only the owner can edit the website.'); };
+$r->post('/site-edit/save', function () use ($ownerOnly) {
+    $ownerOnly();
+    $in = json_decode((string)file_get_contents('php://input'), true) ?: $_POST;
+    $page = '/' . ltrim((string)($in['page'] ?? '/'), '/'); $page = rtrim((string)preg_replace('#[^a-zA-Z0-9/_\-.]#', '', $page), '/') ?: '/';
+    $changes = is_array($in['changes'] ?? null) ? $in['changes'] : [];
+    foreach ($changes as &$c) foreach (['en', 'fr'] as $l) if (isset($c[$l])) $c[$l] = trim((string)preg_replace('/\s+/u', ' ', (string)$c[$l]));
+    unset($c);
+    [$n, $bad] = App\SiteText::save($page, $changes, (string)(Auth::user()['email'] ?? 'owner'));
+    View::json(['ok' => !$bad, 'saved' => $n, 'problems' => $bad]);
+});
+$r->post('/site-edit/image', function () use ($ownerOnly) {
+    $ownerOnly();
+    try {
+        $src = Request::str('src', 500);
+        if (Request::str('action', 10) === 'reset') { App\SiteText::resetImage($src); View::json(['ok' => true, 'url' => (string)(parse_url($src, PHP_URL_PATH) ?: '')]); return; }
+        if (Request::str('action', 10) === 'alt') { App\SiteText::setImageAlt($src, Request::str('alt', 300)); View::json(['ok' => true]); return; }
+        View::json(['ok' => true] + App\SiteText::saveImage($src, $_FILES['picture'] ?? [], Request::str('alt', 300), (string)(Auth::user()['email'] ?? 'owner')));
+    } catch (UserError $e) { View::json(['ok' => false, 'error' => $e->getMessage()], 422); }
+});
 $r->get('/brand/logo-light', fn() => $serveLogo('logo_light'));
 $r->get('/robots.txt', function () { header('Content-Type: text/plain; charset=UTF-8'); header('Cache-Control: public, max-age=3600'); echo Seo::robots(); });
 $r->get('/llms-full.txt', function () { header('Content-Type: text/plain; charset=UTF-8'); header('Cache-Control: public, max-age=3600'); echo Seo::llmsFull(); });

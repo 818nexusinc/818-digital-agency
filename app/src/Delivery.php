@@ -124,7 +124,7 @@ final class Projects
             $formDetails = $it['opts']['details'] ?? null;
             $hasBrief = is_array($formDetails) && $formDetails && empty($formDetails['for']) && empty($formDetails['bundle']) && !Filings::typeFor($it['service_slug']);
             $pid = Db::insert('projects', ['number' => refno('PRJ'), 'customer_id' => $o['customer_id'], 'order_id' => $orderId, 'service_slug' => $it['service_slug'],
-                'title' => $it['name'], 'status' => $hasBrief ? 'ready' : 'awaiting_requirements', 'progress' => 0, 'requirements' => $hasBrief ? jenc(['form' => Wizard::readable($formDetails)]) : '{}', 'created_at' => now(), 'updated_at' => now()]);
+                'title' => $it['name'], 'status' => $hasBrief ? 'ready' : 'awaiting_requirements', 'progress' => 0, 'requirements' => $hasBrief ? jenc(['form' => FormSchema::text($it['service_slug'], $formDetails), 'fields' => $formDetails]) : '{}', 'created_at' => now(), 'updated_at' => now()]);
             foreach (self::TEMPLATES[$cat] ?? self::TEMPLATES['addon'] as $i => [$title, $who]) {
                 Db::insert('project_milestones', ['project_id' => $pid, 'title' => $title, 'status' => 'pending', 'sort' => $i, 'agent_slug' => $who]);
             }

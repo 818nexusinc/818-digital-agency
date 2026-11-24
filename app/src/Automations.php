@@ -19,6 +19,7 @@ final class Automations
         'owner_reports'     => ['Daily and weekly summaries', 'Emails you a daily summary after noon UTC and a weekly report on Mondays, and asks the Growth agent for three actions each week.', 3600, 'Owner', true],
         'blog_weekly'       => ['Weekly blog article', 'Writes and publishes one SEO article every 7 days and tells search engines about it.', 21600, 'Marketing', true],
         'pricing_weekly'    => ['Weekly pricing check', 'Asks the Pricing Agent to check competitor prices and government fees across Atlantic Canada every Monday and propose changes for you to approve. Needs the Anthropic connection for web research.', 604800, 'Sales', true],
+        'filing_forms'      => ['Registry form check', 'Once a month, the Filing Agent compares every registration and corporate form on the website with what each government registry asks for, and lists what to update. Needs the Anthropic connection for web research.', 2592000, 'Health', true],
         'indexnow_weekly'   => ['Notify search engines', 'Sends every page address to Bing and other IndexNow engines once a week so changes are picked up quickly.', 604800, 'Marketing', true],
         'agents_selftest'   => ['AI agent self-test', 'Runs all agents through the simulator every night and emails you if any of them fails.', 86400, 'Health', true],
         'security_daily'    => ['Daily security check', 'Runs the security check every morning and emails you if a new problem appears.', 86400, 'Health', true],
@@ -83,6 +84,9 @@ final class Automations
             case 'pricing_weekly':
                 if (!Integrations::configured('anthropic')) return 'Skipped: connect Anthropic so the Pricing Agent can search the web.';
                 return 'Queued pricing research (task #' . Pricing::research(null, '', 'schedule') . ').';
+            case 'filing_forms':
+                if (!Integrations::configured('anthropic')) return 'Skipped: connect Anthropic so the Filing Agent can check the registries.';
+                return 'Queued the registry form check (task #' . FormCheck::queue('schedule') . ').';
             case 'indexnow_weekly': $r = Seo::indexNow(Seo::allUrls()); return $r['ok'] ? "Sent {$r['count']} pages." : ($r['note'] ?? 'Search engines did not accept the list (code ' . ($r['code'] ?? 0) . ').');
             case 'agents_selftest':
                 $res = Simulator::run(); $bad = array_filter($res, fn($x) => !$x['ok']);

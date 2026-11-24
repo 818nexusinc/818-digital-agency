@@ -19,7 +19,7 @@ final class Seo
             'knowsAbout' => ['Business registration in Canada', 'Incorporation', 'NUANS name search', 'Annual returns', 'Corporate changes', 'Domain names', 'Business email', 'Website design', 'Web applications'],
             'hasOfferCatalog' => ['@type' => 'OfferCatalog', 'name' => 'Services', 'itemListElement' => array_map(fn($s) => ['@type' => 'Offer', 'itemOffered' => ['@type' => 'Service', 'name' => $s['name'], 'url' => url('/services/' . $s['slug'])],
                 'priceCurrency' => 'CAD', 'price' => Catalog::fromPrice($s) !== null ? number_format(Catalog::fromPrice($s) / 100, 2, '.', '') : null], array_slice(Catalog::all(), 0, 30))],
-            'sameAs' => array_values(array_filter(array_map('trim', explode(',', (string)Settings::get('seo.same_as')))))];
+            'sameAs' => array_values(array_unique(array_filter(array_merge(array_map('trim', explode(',', (string)Settings::get('seo.same_as'))), array_column(Social::profiles(), 'url')))))];
     }
 
     public static function website(): array

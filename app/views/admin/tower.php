@@ -93,7 +93,7 @@ $horizonLabel = [1 => 'in the next 24 hours', 3 => 'in the next 3 days', 7 => 'i
   <?php foreach ($team as $a): ?>
     <article class="ov-agent st-<?= $a['state'] ?>">
       <header><span class="ov-dot" aria-hidden="true"></span><h3><a href="/admin/agents/<?= e($a['slug']) ?>"><?= e($a['name']) ?></a></h3>
-        <span class="ov-state"><?= ['attn' => 'Needs attention', 'busy' => 'Working', 'idle' => 'Idle', 'off' => 'Off'][$a['state']] ?></span></header>
+        <span class="ov-state"><?= ['attn' => 'Needs attention', 'busy' => 'Working', 'idle' => 'Idle', 'off' => 'Off'][$a['state']] ?></span><?php $sw = ['slug' => $a['slug'], 'name' => $a['name'], 'on' => $a['on']]; $swBack = '/admin' . ($horizon !== 1 ? '?days=' . $horizon : '') . '#briefs-h'; include APP_ROOT . '/views/partials/agent-switch.php'; ?></header>
       <p class="ov-line"><?= e($a['line']) ?></p>
       <?php if ($a['recent']): ?><ul class="ov-rec"><?php foreach ($a['recent'] as $r): ?><li><?= e(str_limit((string)$r['summary'], 140)) ?> <time><?= e($ago($r['created_at'])) ?></time></li><?php endforeach; ?></ul><?php endif; ?>
       <?php if ($a['next']): ?><p class="ov-next"><span>Next</span> <a href="/admin/tasks/<?= (int)$a['next']['id'] ?>"><?= e(str_limit($a['next']['title'], 70)) ?></a><?= $a['next']['at'] && $a['next']['at'] < now() ? ' <em>overdue</em>' : '' ?></p><?php endif; ?>

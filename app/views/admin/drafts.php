@@ -15,5 +15,6 @@
     <?php elseif ($d['status'] === 'dismissed'): ?><form method="post" action="/admin/drafts/<?= (int)$d['id'] ?>"><?= App\Csrf::field() ?><input type="hidden" name="action" value="reopen"><button class="btn btn-ghost btn-sm">Reopen</button></form><?php endif; ?>
     <?php if ($d['lead_id']): ?><a class="btn btn-ghost btn-sm" href="/admin/leads">View lead</a><?php endif; ?>
   </div>
-  <?php if ($data): ?><details class="small" style="margin-top:6px"><summary>What they entered</summary><pre class="pre"><?= e(json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)) ?></pre></details><?php endif; ?></td></tr>
+  </td></tr>
+<?php if ($data): ?><tr class="fa-row"><td colspan="6"><div class="fa-head">What they entered<?= $d['steps'] ? ' · stopped at step ' . ((int)$d['step'] + 1) . ' of ' . (int)$d['steps'] : '' ?></div><?php $fa_slug = $d['form']; $fa_data = $data; $fa_path = $d['path']; $fa_compact = true; include APP_ROOT . '/views/partials/form-answers.php'; ?></td></tr><?php endif; ?>
 <?php endforeach; ?></tbody></table></div><?php endif; ?>

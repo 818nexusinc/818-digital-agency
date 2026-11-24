@@ -20,7 +20,7 @@ final class SiteText
 
     public static function pageNow(): ?string { return self::page(); }
 
-    public static function hasEdits(): bool { self::apply('', 'en'); return (bool)self::$over; }
+    public static function hasEdits(): bool { self::apply('', 'en'); return (bool)self::$over || (bool)self::images(); }
 
     /** Path of the page being rendered, or null where edits never apply (back office, customer portal, API). */
     private static function page(): ?string
@@ -135,6 +135,90 @@ final class SiteText
         $counts = [];
         foreach (Db::all('SELECT page, COUNT(DISTINCT skey) n FROM site_text GROUP BY page') as $r) $counts[$r['page']] = (int)$r['n'];
         return ['paths' => $paths, 'counts' => $counts];
+    }
+
+    /** The in-page editor is the owner's alone. */
+    public static function isOwner(): bool
+    {
+        try { $u = Auth::user(); return $u !== null && ($u['role'] ?? '') === 'owner'; } catch (\Throwable) { return false; }
+    }
+
+    /** Where an edited wording applies: 'one' (this page), 'all' (every page) or null when unedited. */
+    public static function scopeOf(string $key, string $page): ?string
+    {
+        self::apply('', 'en');
+        $o = self::$over ?? [];
+        return isset($o[$page][$key]) ? 'one' : (isset($o['*'][$key]) ? 'all' : null);
+    }
+
+    /* ── Pictures replaced in the in-page editor ── */
+
+    private static ?array $imgs = null;
+
+    public static function imgKey(string $src): string { return sha1((string)(parse_url($src, PHP_URL_PATH) ?: $src)); }
+
+    /** skey => [version, alt, src] for every replaced picture. */
+    public static function images(): array
+    {
+        if (self::$imgs !== null) return self::$imgs;
+        self::$imgs = [];
+        try { foreach (Db::all('SELECT skey, src, alt, updated_at, LENGTH(data) n FROM site_images') as $r) self::$imgs[$r['skey']] = [substr(sha1($r['updated_at'] . $r['n']), 0, 10), $r['alt'], $r['src']]; }
+        catch (\Throwable) {}
+        return self::$imgs;
+    }
+
+    public static function image(string $key): ?array
+    {
+        try { return Db::one('SELECT mime, data, updated_at FROM site_images WHERE skey = ?', [$key]) ?: null; } catch (\Throwable) { return null; }
+    }
+
+    /** Replace a website picture. Large photos are resized to 2400px wide and saved as WebP when the server can. */
+    public static function saveImage(string $src, array $file, string $alt, string $by): array
+    {
+        $path = (string)(parse_url($src, PHP_URL_PATH) ?: '');
+        if (!preg_match('#^/media/[A-Za-z0-9_\-./]+\.(webp|jpe?g|png|gif|avif|mp4|webm)$#i', $path) && !preg_match('#^/brand/img/[0-9a-f]{40}$#', $path)) throw new UserError('Only website pictures can be replaced here.');
+        if (str_starts_with($path, '/brand/img/')) { $orig = Db::val('SELECT src FROM site_images WHERE skey = ?', [basename($path)]); if (!$orig) throw new UserError('Picture not found.'); $path = (string)$orig; }
+        if (($file['error'] ?? 1) !== UPLOAD_ERR_OK || (!is_uploaded_file($file['tmp_name'] ?? '') && PHP_SAPI !== 'cli')) throw new UserError('The picture did not arrive. Choose it again.');
+        if ((int)($file['size'] ?? 0) > 8 * 1024 * 1024) throw new UserError('Use a picture under 8 MB.');
+        $raw = (string)file_get_contents($file['tmp_name']);
+        $info = @getimagesizefromstring($raw);
+        $mime = $info['mime'] ?? '';
+        if (!in_array($mime, ['image/jpeg', 'image/png', 'image/webp', 'image/gif'], true)) throw new UserError('Use a JPG, PNG, WebP or GIF picture.');
+        [$w, $h] = [$info[0], $info[1]];
+        if (function_exists('imagecreatefromstring') && function_exists('imagewebp') && $mime !== 'image/gif') {
+            $im = @imagecreatefromstring($raw);
+            if ($im) {
+                if ($w > 2400) { $nh = (int)round($h * 2400 / $w); $r2 = imagescale($im, 2400, $nh, IMG_BICUBIC); if ($r2) { imagedestroy($im); $im = $r2; [$w, $h] = [2400, $nh]; } }
+                imagepalettetotruecolor($im); imagealphablending($im, true); imagesavealpha($im, true);
+                ob_start(); imagewebp($im, null, 82); $out = (string)ob_get_clean(); imagedestroy($im);
+                if ($out !== '' && strlen($out) < strlen($raw) * 1.2) { $raw = $out; $mime = 'image/webp'; }
+            }
+        }
+        if (strlen($raw) > 6 * 1024 * 1024) throw new UserError('This picture is too large to store. Export it smaller (under 2400px wide) and try again.');
+        $key = self::imgKey($path);
+        $row = ['src' => $path, 'mime' => $mime, 'data' => base64_encode($raw), 'alt' => mb_substr(trim($alt), 0, 300) ?: null, 'width' => $w, 'height' => $h, 'updated_by' => $by, 'updated_at' => now()];
+        if (Db::val('SELECT 1 FROM site_images WHERE skey = ?', [$key])) Db::update('site_images', $row, 'skey = ?', [$key]); else Db::insert('site_images', $row + ['skey' => $key]);
+        self::$imgs = null;
+        Audit::log('site.image', 'image', $path, ['by' => $by, 'bytes' => strlen($raw)]);
+        $v = self::images()[$key][0] ?? '';
+        return ['key' => $key, 'url' => '/brand/img/' . $key . '?v=' . $v, 'src' => $path];
+    }
+
+    public static function setImageAlt(string $src, string $alt): void
+    {
+        $path = (string)(parse_url($src, PHP_URL_PATH) ?: '');
+        if (str_starts_with($path, '/brand/img/')) $path = (string)Db::val('SELECT src FROM site_images WHERE skey = ?', [basename($path)]);
+        Db::update('site_images', ['alt' => mb_substr(trim($alt), 0, 300) ?: null], 'skey = ?', [self::imgKey($path)]);
+        self::$imgs = null;
+    }
+
+    public static function resetImage(string $src): void
+    {
+        $path = (string)(parse_url($src, PHP_URL_PATH) ?: '');
+        $key = str_starts_with($path, '/brand/img/') ? basename($path) : self::imgKey($path);
+        Db::run('DELETE FROM site_images WHERE skey = ?', [$key]);
+        self::$imgs = null;
+        Audit::log('site.image_reset', 'image', $path);
     }
 
     /* ── Brand files (logo) ── */

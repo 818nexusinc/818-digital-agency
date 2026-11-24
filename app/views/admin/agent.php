@@ -1,5 +1,5 @@
 <?php $badge = function ($s) { include APP_ROOT . '/views/partials/status.php'; }; ?>
-<div class="topbar"><div><a class="small" href="/admin/agents">← Agents</a><h1><?= e($a['name']) ?></h1><span class="muted small"><?= e($a['slug']) ?> · v<?= (int)$a['version'] ?></span></div><?php $badge($a['status']); ?></div>
+<div class="topbar"><div><a class="small" href="/admin/agents">← Agents</a><h1><?= e($a['name']) ?></h1><span class="muted small"><?= e($a['slug']) ?> · v<?= (int)$a['version'] ?></span></div><div class="ag-st ag-big"><span><?= $a['status'] === 'enabled' ? 'This agent is on' : 'This agent is off' ?></span><?php $sw = ['slug' => $a['slug'], 'name' => $a['name'], 'on' => $a['status'] === 'enabled']; $swBack = '/admin/agents/' . $a['slug']; include APP_ROOT . '/views/partials/agent-switch.php'; ?></div></div>
 <div class="grid g2" style="align-items:start">
 <form class="panel" method="post" action="/admin/agents/<?= e($a['slug']) ?>"><?= App\Csrf::field() ?><input type="hidden" name="action" value="save"><h2>Configuration</h2>
   <p class="small"><b>Role:</b> <?= e($a['role']) ?></p>

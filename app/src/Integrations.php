@@ -55,6 +55,13 @@ final class Integrations
         'search_console' => ['marketing', 'Google Search Console', ['verification' => 'GSC_VERIFICATION'], 'Adds the site-verification meta tag.'],
         'turnstile' => ['security', 'Cloudflare Turnstile', ['site_key' => 'TURNSTILE_SITE_KEY', 'secret_key' => 'TURNSTILE_SECRET_KEY'], 'Optional extra spam check on contact, intake, sign-up and newsletter forms (free at dash.cloudflare.com → Turnstile).'],
         'calendly' => ['productivity', 'Booking (Calendly link)', ['url' => 'CALENDLY_URL'], 'Consultation booking link offered by the Sales agent.'],
+        'facebook' => ['social', 'Facebook Page', ['page_token' => 'FACEBOOK_PAGE_TOKEN'], 'Page link shows on the website. With a Page token and Page ID, posts can be published from Marketing → Social media.'],
+        'instagram' => ['social', 'Instagram', ['access_token' => 'INSTAGRAM_TOKEN'], 'Profile link shows on the website. With a token and Instagram business account ID, picture posts can be published.'],
+        'linkedin' => ['social', 'LinkedIn company page', ['access_token' => 'LINKEDIN_TOKEN'], 'Page link shows on the website. With a token and organization ID, posts can be published.'],
+        'x' => ['social', 'X (Twitter)', ['access_token' => 'X_ACCESS_TOKEN'], 'Profile link shows on the website. With a user access token, posts can be published.'],
+        'youtube' => ['social', 'YouTube', ['api_key' => 'YOUTUBE_API_KEY'], 'Channel link shows on the website. The API key lets us check the channel.'],
+        'tiktok' => ['social', 'TikTok', ['access_token' => 'TIKTOK_TOKEN'], 'Profile link shows on the website.'],
+        'google_business' => ['social', 'Google Business Profile', ['place_id' => 'GOOGLE_PLACE_ID'], 'Profile link shows on the website and helps local search.'],
     ];
 
     public static function seed(): void
@@ -79,7 +86,10 @@ final class Integrations
     public static function configured(string $slug): bool
     {
         $first = array_key_first(self::DEFS[$slug][2] ?? []);
-        return $first !== null && self::secret($slug, $first) !== null;
+        if ($first !== null && self::secret($slug, $first) !== null) return true;
+        // A social account counts as connected once its profile link is saved.
+        if ((self::DEFS[$slug][0] ?? '') === 'social') { try { return preg_match('#^https://#', (string)self::setting($slug, 'profile_url', '')) === 1; } catch (\Throwable) { return false; } }
+        return false;
     }
 
     public static function setting(string $slug, string $k, ?string $default = null): ?string
@@ -116,7 +126,8 @@ final class Integrations
     public static function http(string $method, string $url, array $headers = [], ?string $body = null, int $timeout = 30, ?string $basicAuth = null): array
     {
         $host = parse_url($url, PHP_URL_HOST);
-        $allow = ['api.anthropic.com', 'api.openai.com', 'api.stripe.com', 'api.resend.com', 'api.20i.com', 'api.porkbun.com', 'rdap.ca.fury.ca', 'rdap.verisign.com', 'rdap.publicinterestregistry.org'];
+        $allow = ['api.anthropic.com', 'api.openai.com', 'api.stripe.com', 'api.resend.com', 'api.20i.com', 'api.porkbun.com', 'rdap.ca.fury.ca', 'rdap.verisign.com', 'rdap.publicinterestregistry.org',
+            'graph.facebook.com', 'api.linkedin.com', 'api.x.com', 'www.googleapis.com', 'open.tiktokapis.com'];
         try { $bcHost = (string)parse_url((string)self::setting('bc_registry', 'base_url', ''), PHP_URL_HOST); } catch (\Throwable) { $bcHost = ''; }
         if ($bcHost !== '' && preg_match('/(^|\.)(gov\.bc\.ca|apigee\.net)$/', $bcHost)) $allow[] = $bcHost;
         $allow[] = 'bcregistry-prod.apigee.net'; $allow[] = 'bcregistry-test.apigee.net'; $allow[] = 'bcregistry-sandbox.apigee.net';
@@ -138,7 +149,7 @@ final class Integrations
     /** Test the connection for an integration. Never returns secrets. */
     public static function test(string $slug): array
     {
-        if (!self::configured($slug)) return ['ok' => false, 'message' => 'Not configured. Add the credentials below.'];
+        if (!self::configured($slug)) return ['ok' => false, 'message' => 'Not connected yet. Add the details below.'];
         $r = match ($slug) {
             'anthropic' => self::http('GET', 'https://api.anthropic.com/v1/models', ['x-api-key: ' . self::secret('anthropic', 'api_key'), 'anthropic-version: 2023-06-01'], null, 15),
             'openai' => self::http('GET', 'https://api.openai.com/v1/models', ['Authorization: Bearer ' . self::secret('openai', 'api_key')], null, 15),
@@ -146,10 +157,11 @@ final class Integrations
             'resend' => self::http('GET', 'https://api.resend.com/domains', ['Authorization: Bearer ' . self::secret('resend', 'api_key')], null, 15),
             'twentyi' => self::http('GET', 'https://api.20i.com/package', ['Authorization: Bearer ' . self::secret('twentyi', 'api_key')], null, 15),
             'porkbun' => self::http('POST', 'https://api.porkbun.com/api/json/v3/ping', ['Content-Type: application/json'], jenc(['apikey' => self::secret('porkbun', 'api_key'), 'secretapikey' => self::secret('porkbun', 'secret_key')]), 15),
+            'facebook', 'instagram', 'linkedin', 'x', 'youtube', 'tiktok', 'google_business' => Social::test($slug),
             default => ['status' => 200, 'body' => 'stored', 'error' => null],
         };
         $ok = $r['status'] >= 200 && $r['status'] < 300;
-        $msg = $ok ? 'Connection OK.' : ('Failed: ' . ($r['error'] ?: 'HTTP ' . $r['status']) . ' ' . mb_substr((string)($r['json']['error']['message'] ?? $r['json']['message'] ?? ''), 0, 160));
+        $msg = $ok ? (isset($r['json']['note']) ? (string)$r['json']['note'] : 'Connection OK.') : ('Failed: ' . ($r['error'] ?: 'HTTP ' . $r['status']) . ' ' . mb_substr((string)($r['json']['error']['message'] ?? $r['json']['message'] ?? ''), 0, 160));
         self::record($slug, 'test', $ok, $msg);
         return ['ok' => $ok, 'message' => $msg];
     }

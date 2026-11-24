@@ -105,7 +105,7 @@ final class Wizard
         $name = (string)($d['contact']['name'] ?? $d['name'] ?? '');
         $c = Crm::upsertCustomer(['email' => $email, 'name' => $name, 'phone' => (string)($d['contact']['phone'] ?? $d['phone'] ?? ''), 'business_name' => (string)($d['entity']['proposed_name'] ?? $d['company'] ?? '')], 'service_form');
         $label = ['cooperative' => 'Co-operative registration', 'web_app' => 'Custom web application', 'maintenance' => 'Website maintenance'][$kind];
-        $summary = $label . "\n\n" . self::readable($d);
+        $summary = $label . "\n\n" . FormSchema::text($kind, $d);
         $lead = Crm::createLead($c, ['summary' => mb_substr($summary, 0, 4000), 'services' => [$kind === 'cooperative' ? 'cooperative' : 'web_app'], 'budget' => (string)($d['budget'] ?? ''), 'timeline' => (string)($d['timeline'] ?? ''), 'intent' => 'quote'], 'service_form');
         Mailer::send('lead_confirmation', $email, ['name' => $name ?: 'there', 'summary' => str_limit($summary, 300)], 'lead-confirm:' . $lead['id'], 'lead', (int)$lead['id']);
         return ['ok' => true, 'reference' => $lead['number'] ?? ('L-' . $lead['id'])];

@@ -16,7 +16,7 @@ final class Agents
         'registration' => ['AI Business Registration Specialist', 'Helps choose between sole proprietorship, partnership, provincial or federal corporation and co-operative; validates completeness of registration information and prepares filing packages and checklists.',
             ['search_catalog', 'get_service', 'search_knowledge', 'update_project', 'draft_deliverable', 'request_approval', 'create_task'], 2, 'standard', 'You are not a lawyer or a government authority. Flag legally sensitive questions for a human. Never submit a filing — prepare it and request owner approval.'],
         'filing' => ['AI Corporate Registry Filing Agent', 'Prepares, reviews and submits corporate registry filings (incorporations, registrations, annual returns, changes) for every province and Corporations Canada from customer-authorized data, then monitors the registry until documents are delivered.',
-            ['filing_get', 'filing_flag', 'filing_submit', 'search_knowledge'], 3, 'standard', 'Review the filing like an experienced corporate law clerk: name and legal ending, addresses in the right province, director and incorporator details, share structure. If anything looks wrong or unusual, call filing_flag with a clear question for the customer instead of submitting. If the data is consistent, call filing_submit — the platform enforces payment, validation, customer authorization and policy gates. Never invent data.'],
+            ['filing_get', 'filing_flag', 'filing_submit', 'search_knowledge', 'web_search', 'our_filing_forms', 'save_form_finding'], 3, 'standard', 'Review the filing like an experienced corporate law clerk: name and legal ending, addresses in the right province, director and incorporator details, share structure. If anything looks wrong or unusual, call filing_flag with a clear question for the customer instead of submitting. If the data is consistent, call filing_submit — the platform enforces payment, validation, customer authorization and policy gates. Never invent data.'],
         'website_dev' => ['AI Website Development Agent', 'Turns briefs into site structure, sitemaps, page copy outlines, component plans and build specifications; produces preview artifacts only.',
             ['search_knowledge', 'update_project', 'draft_deliverable', 'create_task', 'request_approval'], 2, 'standard', 'Never deploy to production; deployments require owner approval. Output is a previewable specification or artifact.'],
         'web_app' => ['AI Web Application Agent', 'Produces technical specifications, data models, API designs, test plans and release notes for custom applications.',
@@ -27,8 +27,8 @@ final class Agents
             ['search_catalog', 'search_knowledge', 'create_content_draft', 'business_metrics'], 2, 'fast', 'No spam tactics. Distinguish measured data from assumptions.'],
         'content' => ['AI Content Marketing Agent', 'Editorial strategy, blog articles, service pages, newsletters and campaign plans. Publishing always goes through approval.',
             ['search_catalog', 'search_knowledge', 'create_content_draft', 'update_project', 'draft_deliverable'], 2, 'standard', 'Never invent statistics, customers or testimonials.'],
-        'social' => ['AI Social Media Agent', 'Social plans, posts and repurposed content. Drafts only unless a platform integration is authorised.',
-            ['search_knowledge', 'create_content_draft'], 2, 'fast', ''],
+        'social' => ['AI Social Media Agent', 'Social plans, posts and repurposed content. Publishes to connected accounts only after the owner approves each post.',
+            ['search_knowledge', 'create_content_draft', 'publish_social_post'], 2, 'fast', 'Only publish posts the owner asked for or approved. Keep posts factual; never invent results, reviews or statistics.'],
         'support' => ['AI Customer Support Agent', 'First response on tickets: answers from the knowledge base, troubleshoots, detects frustration and escalates complex or sensitive issues.',
             ['search_knowledge', 'reply_ticket', 'escalate_ticket', 'my_orders', 'my_projects'], 3, 'fast', 'Escalate billing disputes, refunds, legal questions and any angry customer to a human.'],
         'project_manager' => ['AI Project Manager', 'Converts orders into plans, sequences milestones, assigns specialist agents, tracks deadlines, detects delays and sends customer updates.',
@@ -75,6 +75,24 @@ TXT;
                 'output_schema' => jenc(['type' => 'object', 'properties' => ['summary' => ['type' => 'string'], 'status' => ['type' => 'string']]]),
                 'version' => 1, 'created_at' => now(), 'updated_at' => now()]);
         }
+    }
+
+    /** Tools added in later releases: given once to the agents that need them (an owner's later removal is respected). */
+    public const NEW_TOOLS = ['publish_social_post' => ['social'], 'web_search' => ['filing'], 'our_filing_forms' => ['filing'], 'save_form_finding' => ['filing']];
+
+    public static function addNewTools(): void
+    {
+        $done = jdec((string)Settings::get('agents.tools_added') ?: '[]');
+        $changed = false;
+        foreach (self::NEW_TOOLS as $tool => $slugs) {
+            if (in_array($tool . ':' . implode(',', $slugs), $done, true)) continue;
+            foreach ($slugs as $slug) {
+                $a = Db::one('SELECT id, tools FROM agents WHERE slug = ?', [$slug]); if (!$a) continue;
+                $t = jdec($a['tools']); if (!in_array($tool, $t, true)) { $t[] = $tool; Db::update('agents', ['tools' => jenc($t), 'permissions' => jenc($t), 'updated_at' => now()], 'id = ?', [$a['id']]); }
+            }
+            $done[] = $tool . ':' . implode(',', $slugs); $changed = true;
+        }
+        if ($changed) Settings::set('agents.tools_added', jenc($done));
     }
 
     public static function get(string $slug): ?array

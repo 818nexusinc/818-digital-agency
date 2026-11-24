@@ -706,5 +706,45 @@ tcase('overview briefs and work-by-service read live records', function () {
     foreach (App\WorkBoard::requests(['corp_numbered']) as $r) ok($r[4] === 'Numbered Corporation', 'only this service');
 });
 
+tcase('two-step sign-in: pause for an update and resume with the same authenticator', function () {
+    $email = 'mfa-test-' . rid(3) . '@example.com';
+    $uid = Db::insert('users', ['email' => $email, 'password_hash' => password_hash('Pass-Word-123', PASSWORD_DEFAULT), 'name' => 'MFA Test', 'role' => 'admin', 'status' => 'active', 'created_at' => now(), 'updated_at' => now()]);
+    $secret = App\Totp::secret();
+    Db::update('users', ['mfa_secret_enc' => App\Crypto::encrypt($secret), 'mfa_enabled' => 1], 'id = ?', [$uid]);
+    $u = Db::one('SELECT * FROM users WHERE id = ?', [$uid]);
+    throws(fn() => App\Mfa::pause($u, 'wrong-password'));
+    App\Mfa::pause($u, 'Pass-Word-123');
+    eq((int)Db::val('SELECT mfa_enabled FROM users WHERE id = ?', [$uid]), 0); ok(App\Mfa::paused($uid) !== null, 'paused copy kept');
+    ok(Db::val('SELECT mfa_secret_enc FROM users WHERE id = ?', [$uid]) === null, 'server-key copy removed while paused');
+    throws(fn() => App\Mfa::resume($u, 'Pass-Word-123', '000000'));                       // wrong code
+    throws(fn() => App\Mfa::resume($u, 'not-the-password', App\Totp::code($secret)));     // wrong password
+    App\Mfa::resume($u, 'Pass-Word-123', App\Totp::code($secret));
+    eq((int)Db::val('SELECT mfa_enabled FROM users WHERE id = ?', [$uid]), 1);
+    eq(App\Crypto::decrypt((string)Db::val('SELECT mfa_secret_enc FROM users WHERE id = ?', [$uid])), $secret);   // same authenticator works
+    ok(App\Mfa::paused($uid) === null, 'paused copy removed after resume');
+    Db::run('DELETE FROM users WHERE id = ?', [$uid]); Db::run("DELETE FROM rate_limits WHERE rkey LIKE 'mfa-resume:%'");
+});
+
+tcase('titles: each sentence after a full stop starts on a new line', function () {
+    eq(title_breaks_inner('Do it all. Save up to 15%.'), 'Do it all.<br class="tb">Save up to 15%.');
+    eq(title_breaks_inner('818 Nexus Inc. Moncton'), '818 Nexus Inc. Moncton');
+    eq(title_breaks_inner('Open for business.'), 'Open for business.');
+    ok(str_contains(title_breaks_inner('<span>Get found.</span> <span>Get customers.</span>'), '<br class="tb">'), 'across tags');
+    eq(title_breaks_inner('<a title="A. B">One</a>'), '<a title="A. B">One</a>');
+});
+
+tcase('order forms are read with their steps, labels and options', function () {
+    $t = App\FormSchema::text('corp_named', ['entity' => ['proposed_name' => 'Maple', 'legal_ending' => 'Inc.'], 'directors' => [['first' => 'Jane', 'role' => 'president']], 'registered_office' => ['province' => 'NB']]);
+    ok(str_contains($t, '## Company name') && str_contains($t, 'Proposed company name: Maple'), 'step and label');
+    ok(str_contains($t, '### Director 1') && str_contains($t, 'Officer role: President'), 'repeat group and option name');
+    ok(str_contains($t, 'Province: New Brunswick'), 'province name');
+});
+
+tcase('social posting refuses unknown or unconnected accounts', function () {
+    throws(fn() => App\Social::publish('myspace', 'Hi'));
+    throws(fn() => App\Social::publish('facebook', 'Hi'));   // no token in tests
+    ok(App\Integrations::DEFS['facebook'][0] === 'social');
+});
+
 echo "\n" . ($fail ? "\033[31m{$fail} failed\033[0m, " : '') . "\033[32m{$pass} passed\033[0m\n";
 exit($fail ? 1 : 0);

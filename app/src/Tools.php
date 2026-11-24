@@ -67,6 +67,12 @@ final class Tools
             ['filing_flag', 'Record a review finding on a filing. If needs_customer_changes is true the customer is asked to correct details (and re-authorize).', $obj(['filing_id' => ['type' => 'integer'], 'message_to_customer' => $str('Plain-language request'), 'internal_note' => $str('Note for the team'), 'needs_customer_changes' => ['type' => 'boolean']], ['filing_id', 'internal_note']), 'low', [self::class, 'filingFlag']],
             ['filing_submit', 'Submit an authorized filing to the government registry (automatic via API where available, otherwise queued for portal filing). Gates are enforced by the platform.', $obj(['filing_id' => ['type' => 'integer'], 'review_summary' => $str('What you checked')], ['filing_id', 'review_summary']), 'medium', [self::class, 'filingSubmit']],
             ['security_events', 'Recent security events (failed logins, denied access, upload rejections).', $obj([]), 'read', [self::class, 'securityEvents']],
+            ['publish_social_post', 'Publish a post to a connected social account (facebook, instagram, linkedin, x). Always needs the owner\'s approval.',
+                $obj(['network' => $str('facebook|instagram|linkedin|x'), 'text' => $str('Post text'), 'link' => $str('Optional https link'), 'image_url' => $str('Picture address (required for Instagram)')], ['network', 'text']), 'high', [self::class, 'publishSocialPost']],
+            ['our_filing_forms', 'Our website order forms for registry services: each service, the jurisdictions we offer it in, and every step and field we ask the customer for (with options). Optional slug.', $obj(['slug' => $str('Service slug, e.g. corp_numbered')]), 'read', [self::class, 'ourFilingForms']],
+            ['save_form_finding', 'Record where one of our forms does not collect what a government registry requires, or asks for it differently. Cite the official page. The owner reviews every finding.',
+                $obj(['slug' => $str('Our service slug'), 'jurisdiction' => $str('FED, NB, NS, PE, NL, ON, … or ALL'), 'field' => $str('Field or step concerned'), 'issue' => $str('missing_field|outdated|wrong_format|fee_change|document_needed|other'),
+                    'detail' => $str('What the registry requires, in plain words'), 'suggestion' => $str('What to change in our form'), 'source_url' => $str('Official government page'), 'severity' => $str('high|medium|low')], ['slug', 'issue', 'detail', 'suggestion', 'source_url']), 'low', [self::class, 'saveFormFinding']],
             ['web_search', 'Search the web (runs on the AI provider; Anthropic only). Use it to find official fees and competitor prices.', $obj(['query' => $str('Search terms')], ['query']), 'read', [self::class, 'webSearchLocal']],
             ['pricing_overview', 'Our price points (per Atlantic province or domain ending), known government and third-party costs, markup, competitor prices on file and open proposals. Optional slug or category.', $obj(['slug' => $str('Service slug'), 'category' => $str(implode('|', array_keys(Catalog::CATEGORIES)))]), 'read', [self::class, 'pricingOverview']],
             ['save_cost_finding', 'Record an official government filing fee and/or third-party cost for a service price point, with the official source page. Saved as unconfirmed for the owner to check.',
@@ -104,10 +110,13 @@ final class Tools
             return ['status' => 'needs_approval', 'approval_id' => $apId, 'note' => 'Queued for owner approval.', '_blocked' => ['approval_id' => $apId, 'tool' => $name]];
         }
         try {
+            $t0 = microtime(true);
             $res = ($def['handler'])($input, $ctx, $agent);
+            if (Ai::$mock) Simulator::$trace[] = ['tool' => $name, 'input' => $input, 'result' => $res, 'ms' => (int)((microtime(true) - $t0) * 1000)];
             Audit::log('agent.tool', 'tool', $name, ['agent' => $agent['slug'], 'risk' => $def['risk'], 'task' => $ctx['task_id'] ?? null], 'agent', $agent['slug']);
             return $res;
         } catch (UserError $e) {
+            if (Ai::$mock) Simulator::$trace[] = ['tool' => $name, 'input' => $input, 'result' => ['error' => $e->getMessage()], 'ms' => 0];
             return ['error' => $e->getMessage()];
         } catch (\Throwable $e) {
             if (Ai::$mock) Simulator::$lastResults[$name] = ['exception' => get_class($e) . ': ' . $e->getMessage()];
@@ -441,7 +450,7 @@ final class Tools
     }
 
     /** Server-side tool: the provider runs the search. Reaching this handler means the provider cannot search. */
-    public static function webSearchLocal(array $in): array { return ['error' => 'Web search needs the Anthropic connection. Use the competitor prices already on file, or ask the owner to add them.']; }
+    public static function webSearchLocal(array $in): array { return ['error' => 'Web search needs the Anthropic connection. Work from the information already on file, or ask the owner.']; }
 
     public static function pricingOverview(array $in): array
     {
@@ -469,6 +478,45 @@ final class Tools
         $c = (int)round((float)str_replace([',', '$'], '', (string)$in['price']) * 100);
         $id = Pricing::propose((string)$in['slug'], Pricing::normVariant((string)$in['slug'], (string)($in['variant'] ?? '')), $c, (string)($in['strategy'] ?? 'match'), (string)$in['rationale'], $agent['slug']);
         return ['proposal_id' => $id, 'status' => 'waiting for the owner'];
+    }
+
+    public static function publishSocialPost(array $in, array $ctx, array $agent): array
+    {
+        $id = Social::publish((string)$in['network'], (string)$in['text'], (string)($in['link'] ?? ''), (string)($in['image_url'] ?? ''), $agent['slug']);
+        return ['published' => true, 'post_id' => $id];
+    }
+
+    public static function ourFilingForms(array $in): array
+    {
+        $out = [];
+        foreach (Filings::TYPES as $slug => $type) {
+            if (!empty($in['slug']) && $in['slug'] !== $slug) continue;
+            $svc = Catalog::find($slug); if (!$svc) continue;
+            $form = FormSchema::formFor($slug);
+            $fields = [];
+            foreach ($form['fields'] ?? [] as $path => [$label, $step, $opts]) $fields[] = ['step' => $form['steps'][$step] ?? null, 'field' => $path, 'label' => $label] + ($opts ? ['options' => array_values(array_slice($opts, 0, 20))] : []);
+            $out[] = ['slug' => $slug, 'service' => $svc['name'], 'filing_type' => Filings::TYPE_LABELS[$type] ?? $type,
+                'jurisdictions' => array_keys(is_array($svc['province_prices']) ? $svc['province_prices'] : []) ?: ['as chosen on the form'],
+                'registries' => array_map(fn($j) => Filings::JURISDICTIONS[$j][0] ?? $j, array_keys(is_array($svc['province_prices']) ? $svc['province_prices'] : [])),
+                'steps' => array_values($form['steps'] ?? []), 'fields' => $fields];
+        }
+        return ['forms' => $out, 'open_findings' => Db::all("SELECT service_slug, jurisdiction, field, issue FROM form_findings WHERE status = 'open'")];
+    }
+
+    public static function saveFormFinding(array $in, array $ctx, array $agent): array
+    {
+        $slug = (string)$in['slug'];
+        if (!isset(Filings::TYPES[$slug])) return ['error' => 'Not a registry service: ' . $slug];
+        $url = trim((string)$in['source_url']);
+        if (!preg_match('#^https://[^\s<>"]+$#', $url)) return ['error' => 'Give the official page address (https://…).'];
+        $jur = strtoupper(mb_substr(trim((string)($in['jurisdiction'] ?? '')), 0, 10));
+        $field = mb_substr(trim((string)($in['field'] ?? '')), 0, 190) ?: null;
+        if (Db::val("SELECT 1 FROM form_findings WHERE service_slug = ? AND jurisdiction = ? AND COALESCE(field,'') = ? AND status = 'open'", [$slug, $jur, (string)$field])) return ['saved' => false, 'note' => 'Already recorded and waiting for the owner.'];
+        $id = Db::insert('form_findings', ['service_slug' => $slug, 'jurisdiction' => $jur, 'field' => $field,
+            'issue' => in_array($in['issue'] ?? '', ['missing_field', 'outdated', 'wrong_format', 'fee_change', 'document_needed', 'other'], true) ? $in['issue'] : 'other',
+            'detail' => mb_substr((string)$in['detail'], 0, 4000), 'suggestion' => mb_substr((string)$in['suggestion'], 0, 4000), 'source_url' => mb_substr($url, 0, 500),
+            'severity' => in_array($in['severity'] ?? '', ['high', 'medium', 'low'], true) ? $in['severity'] : 'medium', 'status' => 'open', 'found_by' => $agent['slug'], 'created_at' => now()]);
+        return ['saved' => true, 'id' => $id];
     }
 
     public static function securityEvents(): array

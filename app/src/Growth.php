@@ -372,7 +372,8 @@ final class Simulator
         $pdo = Db::pdo();
         $pdo->beginTransaction();
         Mailer::$dryRun = true;
-        $toolRes = []; $err = null; $text = '';
+        $toolRes = []; $err = null; $text = ''; self::$trace = []; Mailer::$outbox = []; $report = null;
+        $before = self::counts();
         try {
             $agent = Agents::get($slug);
             if (!$agent) throw new \RuntimeException('Agent not found in the registry.');
@@ -399,16 +400,154 @@ final class Simulator
         } catch (\Throwable $e) {
             $err = get_class($e) . ': ' . $e->getMessage();
         } finally {
+            try { $after = self::counts(); $created = []; foreach ($after as $t => $n) $created[$t] = $n - ($before[$t] ?? 0); } catch (\Throwable) { $created = []; }
+            // Fixture records made for the run are not the agent's work.
+            foreach (['customers', 'leads', 'tickets', 'agent_tasks', 'deliverables'] as $fxT) if (isset($created[$fxT])) $created[$fxT] = max(0, $created[$fxT] - 1);
+            $report = self::report($slug, self::$trace, $created, Mailer::$outbox, (string)$text, $err ?? null);
+            self::$trace = []; Mailer::$outbox = [];
             Ai::$mock = null; Mailer::$dryRun = false; self::$lastResults = [];
             if ($pdo->inTransaction()) $pdo->rollBack();
         }
         $bad = array_filter($toolRes, fn($v) => str_starts_with((string)$v, 'error'));
-        return ['agent' => $slug, 'name' => Agents::DEFS[$slug][0], 'ok' => !$err && !$bad, 'tools' => $toolRes, 'error' => $err ?? ($bad ? 'One or more tools failed.' : null),
-            'ms' => (int)((microtime(true) - $t0) * 1000)];
+        $notes = $report ? count(array_filter($report['steps'], fn($x) => !$x['ok'])) : 0;
+        $res = ['agent' => $slug, 'name' => Agents::DEFS[$slug][0], 'ok' => !$err && !$bad, 'notes' => $notes, 'tools' => $toolRes, 'error' => $err ?? ($bad ? 'One or more tools failed.' : null),
+            'ms' => (int)((microtime(true) - $t0) * 1000), 'report' => $report];
+        // Keep the latest report (outside the rolled-back transaction).
+        try { $v = jenc($res + ['at' => now()]); if (Db::val('SELECT 1 FROM settings WHERE skey = ?', ['sim.report.' . $slug])) Db::update('settings', ['value' => $v, 'updated_at' => now()], 'skey = ?', ['sim.report.' . $slug]); else Db::insert('settings', ['skey' => 'sim.report.' . $slug, 'value' => $v, 'updated_at' => now()]); Settings::flush(); } catch (\Throwable) {}
+        return $res;
     }
 
     /** Tool exceptions seen during a simulation (filled by Tools::execute when Ai::$mock is active). */
     public static array $lastResults = [];
+    /** Every tool call made during a simulation, with its input and result (filled by Tools::execute). */
+    public static array $trace = [];
+
+    /** What each agent is asked to do in its simulation — a realistic request from a customer or the owner. */
+    public const SCENARIOS = [
+        'chief_ops' => ['the owner', 'A new paid order for a website came in. Make sure the right specialists pick it up and nothing is duplicated.'],
+        'sales' => ['a website visitor', 'I want to register a company in New Brunswick. What are my options and what does it cost?'],
+        'concierge' => ['a signed-in customer', 'Where is my order, and can you add a .ca domain to it?'],
+        'registration' => ['a customer', 'Should I be a sole proprietor or incorporate? I am opening a bakery in Moncton.'],
+        'filing' => ['the owner', 'Review the authorized incorporation filing and submit it to the registry, and check our registry forms are up to date.'],
+        'website_dev' => ['a customer who bought a website', 'Here is my brief. Plan the pages and write the build specification.'],
+        'web_app' => ['a customer', 'We need a booking portal for our clinic. What would you build?'],
+        'brand' => ['a customer', 'I need a logo and colours for my new consulting business.'],
+        'seo' => ['the owner', 'Help our services pages rank and show up in AI answers.'],
+        'content' => ['the owner', 'Write a blog article about registering a business in New Brunswick.'],
+        'social' => ['the owner', 'Turn this week\'s article into social posts and publish them.'],
+        'support' => ['a customer', 'I opened a support request because my email is not working.'],
+        'project_manager' => ['the owner', 'A website project just started. Plan it, assign the work and update the customer.'],
+        'qa' => ['the owner', 'Check the draft deliverable before the customer sees it.'],
+        'finance' => ['the owner', 'How is revenue this month, and are there unpaid invoices?'],
+        'growth' => ['the owner', 'What should we do this week to get more customers?'],
+        'retention' => ['the owner', 'Which customers might leave, and what should we send them?'],
+        'research' => ['the owner', 'Find a new service small businesses in Atlantic Canada need.'],
+        'security' => ['the owner', 'Anything suspicious in the last day?'],
+        'owner_assistant' => ['the owner', 'What happened in the business today, and what needs me?'],
+        'pricing' => ['the owner', 'Are our prices competitive in Atlantic Canada, and are we making money on each service?'],
+    ];
+
+    /** Plain-language description of one tool call. */
+    private static function step(string $tool, array $in, mixed $res): string
+    {
+        $r = is_array($res) ? $res : [];
+        $q = fn(string $k) => isset($in[$k]) && $in[$k] !== '' ? '“' . str_limit(is_scalar($in[$k]) ? (string)$in[$k] : jenc($in[$k]), 80) . '”' : '';
+        $n = fn(string $k) => isset($r[$k]) && is_array($r[$k]) ? count($r[$k]) : 0;
+        $names = fn(string $k, string $f = 'name') => isset($r[$k]) && is_array($r[$k]) ? implode(', ', array_slice(array_filter(array_map(fn($x) => is_array($x) ? ($x[$f] ?? $x['title'] ?? null) : null, $r[$k])), 0, 3)) : '';
+        if (isset($r['error'])) return (self::sandboxOnly((string)$r['error']) ? 'Skipped in the simulator (works in real use): ' : 'Tried to use “' . $tool . '” and got: ') . $r['error'];
+        return match ($tool) {
+            'search_catalog' => 'Searched the service catalogue for ' . $q('query') . ' and found ' . $n('services') . ' matching services' . (($x = $names('services')) ? ': ' . $x : '') . '.',
+            'get_service' => 'Read the full details of ' . ($r['name'] ?? $q('slug')) . ' (price, what is included, requirements).',
+            'quote_items' => 'Priced the request with the official pricing engine' . (($x = $names('lines')) ? ' (' . $x . ')' : '') . (isset($r['due_today']) ? ': ' . $r['due_today'] . ' due today' : '') . '.',
+            'build_cart' => 'Added the chosen services to the customer\'s cart' . (isset($r['count']) ? ' (' . $r['count'] . ' items)' : '') . '.',
+            'capture_lead' => 'Saved the person as a lead so the team can follow up' . (isset($r['lead_id']) ? ' (lead #' . $r['lead_id'] . ')' : '') . '.',
+            'create_proposal' => 'Prepared a written proposal ' . $q('title') . (isset($r['url']) ? ' with a link the customer can open and accept' : '') . '.',
+            'my_orders' => 'Looked up the signed-in customer\'s orders (' . $n('orders') . ' found).',
+            'my_projects' => 'Looked up the signed-in customer\'s projects (' . $n('projects') . ' found).',
+            'create_ticket' => 'Opened a support request ' . $q('subject') . '.',
+            'search_knowledge' => 'Checked the company knowledge base for ' . $q('query') . ' (' . $n('articles') . ' article' . ($n('articles') === 1 ? '' : 's') . ').',
+            'domain_check' => 'Checked whether ' . $q('domain') . ' is available' . (isset($r['available']) && $r['available'] !== null ? ': ' . ($r['available'] ? 'it is free' : 'it is taken') : (isset($r['status']) ? ': ' . label((string)$r['status']) : '')) . '.',
+            'remember' => 'Remembered a customer preference for next time.',
+            'request_human' => 'Handed the conversation to a person on the team.',
+            'create_task' => 'Assigned ' . $q('title') . ' to the ' . ($in['agent'] ?? 'specialist') . ' agent.',
+            'list_open_tasks' => 'Checked the open task list (' . $n('tasks') . ' open) to avoid duplicate work.',
+            'update_project' => 'Posted a progress note on the project' . (!empty($in['milestone']) ? ' and completed the milestone ' . $q('milestone') : '') . '.',
+            'draft_deliverable' => 'Wrote the draft ' . $q('title') . ' and scheduled an independent quality check.',
+            'record_qa' => 'Reviewed the deliverable and recorded a ' . (!empty($in['pass']) ? 'pass' : 'fail with specific fixes') . '.',
+            'send_customer_update' => 'Emailed the customer a short progress update.',
+            'reply_ticket' => 'Replied to the customer\'s support request.',
+            'escalate_ticket' => 'Escalated the support request to a person: ' . $q('reason') . '.',
+            'request_approval' => 'Asked the owner to approve ' . $q('title') . ' before going ahead.',
+            'business_metrics' => 'Read live business numbers (revenue, orders, leads, projects).',
+            'list_leads' => 'Reviewed the lead list (' . $n('leads') . ' leads).',
+            'create_content_draft' => 'Wrote the ' . ($in['kind'] ?? 'content') . ' draft ' . $q('title') . ' for the owner to review.',
+            'save_opportunity' => 'Saved a researched opportunity ' . $q('name') . ' with sources and a confidence level.',
+            'filing_get' => 'Read the registry filing: details, validation results and the customer\'s authorization.',
+            'filing_flag' => 'Recorded a review finding on the filing' . (!empty($in['needs_customer_changes']) ? ' and asked the customer to correct it' : '') . '.',
+            'filing_submit' => ($r['ok'] ?? true) === false
+                ? 'Tried to submit the filing; the safety checks held it back (' . str_limit((string)($r['reason'] ?? label((string)($r['status'] ?? 'not ready'))), 120) . '). Nothing goes to the registry until the filing is complete and authorized.'
+                : 'Sent the authorized filing on to the registry step' . (isset($r['status']) ? ' (now: ' . label((string)$r['status']) . ')' : '') . '.',
+            'security_events' => 'Reviewed recent security events.',
+            'pricing_overview' => 'Read our prices, costs, markup and competitor prices (' . $n('price_points') . ' price points).',
+            'web_search' => 'Searched the web for ' . $q('query') . '.',
+            'save_cost_finding' => 'Recorded an official fee with its source page, for the owner to confirm.',
+            'save_competitor_price' => 'Recorded a competitor\'s price ' . $q('competitor') . ' with the page it came from.',
+            'propose_price' => 'Proposed a new price with its reasons, waiting for the owner\'s approval.',
+            'publish_social_post' => 'Published the post to ' . ($in['network'] ?? 'social media') . ' (in real use this waits for the owner\'s approval).',
+            'our_filing_forms' => 'Read our registry order forms (' . $n('forms') . ' forms with every step and field).',
+            'save_form_finding' => 'Recorded a gap between our form and the registry\'s requirements, with the official source.',
+            default => 'Used “' . $tool . '”.',
+        };
+    }
+
+    /** Tool answers that only happen because the simulator is not a real chat or has no AI connection. */
+    private static function sandboxOnly(string $err): bool { return (bool)preg_match('/only available in website chat|needs the Anthropic connection|signed-in customer|in Integrations|is not connected|not authori[sz]ed|authoriz|missing|gate/i', $err); }
+
+    /** What a step means for the customer (null when it is internal). */
+    private const OUTCOME = [
+        'search_catalog' => 'got matching services explained', 'quote_items' => 'got a clear price', 'build_cart' => 'has the services ready in their cart', 'capture_lead' => 'will hear back from the team',
+        'create_proposal' => 'has a written proposal to review and accept', 'my_orders' => 'got the status of their order', 'my_projects' => 'got the status of their project', 'create_ticket' => 'has a support request open',
+        'domain_check' => 'knows whether their domain is free', 'request_human' => 'is talking to a person', 'send_customer_update' => 'received a progress update', 'reply_ticket' => 'got an answer to their request',
+        'escalate_ticket' => 'has a person looking at their issue', 'filing_submit' => 'has their filing submitted to the registry', 'filing_flag' => 'was told exactly what to correct',
+        'draft_deliverable' => 'will receive work that has been quality-checked', 'record_qa' => 'gets work that passed an independent check', 'publish_social_post' => 'sees the business active on social media',
+    ];
+
+    /** Row counts used to show what the simulated run created (inside the rolled-back transaction). */
+    private const WATCH = ['leads' => 'lead', 'customers' => 'customer record', 'proposals' => 'proposal', 'tickets' => 'support request', 'ticket_messages' => 'support reply', 'deliverables' => 'deliverable',
+        'project_activity' => 'project timeline entry', 'agent_tasks' => 'task for another agent', 'approvals' => 'approval request', 'content_items' => 'content draft', 'opportunities' => 'opportunity report',
+        'memories' => 'customer memory', 'filing_events' => 'filing history entry', 'competitor_prices' => 'competitor price', 'price_costs' => 'fee record', 'price_proposals' => 'price proposal',
+        'form_findings' => 'form finding', 'social_posts' => 'social post'];
+
+    private static function counts(): array
+    {
+        $c = [];
+        foreach (self::WATCH as $t => $_) { try { $c[$t] = (int)Db::val('SELECT COUNT(*) FROM ' . $t); } catch (\Throwable) {} }
+        return $c;
+    }
+
+    /** The readable end-to-end report for one simulated run. */
+    private static function report(string $slug, array $trace, array $created, array $emails, string $final, ?string $err): array
+    {
+        [$who, $ask] = self::SCENARIOS[$slug] ?? ['the owner', 'Routine task'];
+        $steps = []; $outcomes = [];
+        foreach ($trace as $i => $t) {
+            $ok = !isset($t['result']['error']) || self::sandboxOnly((string)$t['result']['error']);
+            $steps[] = ['n' => $i + 1, 'tool' => $t['tool'], 'ok' => $ok, 'skipped' => isset($t['result']['error']) && $ok, 'text' => self::step($t['tool'], (array)$t['input'], $t['result']), 'ms' => (int)$t['ms']];
+            if ($ok && !isset($t['result']['error']) && (($t['result']['ok'] ?? true) !== false) && isset(self::OUTCOME[$t['tool']])) $outcomes[self::OUTCOME[$t['tool']]] = true;
+        }
+        $made = [];
+        foreach ($created as $t => $n) if ($n > 0) $made[] = $n . ' ' . self::WATCH[$t] . ($n === 1 ? '' : 's');
+        $failed = array_filter($steps, fn($x) => !$x['ok']);
+        $summary = $err ? 'The run did not finish: ' . $err
+            : ('Handled the request in ' . count($steps) . ' step' . (count($steps) === 1 ? '' : 's') . ($failed ? ', ' . count($failed) . ' of them reported a problem' : ' with no errors') . '.'
+                . ($outcomes ? ' The customer ' . implode(', ', array_slice(array_keys($outcomes), 0, 4)) . '.' : ''));
+        return ['who' => $who, 'ask' => $ask, 'steps' => $steps, 'created' => $made, 'emails' => array_map(fn($e) => ['to' => $e['to'], 'subject' => $e['subject']], array_slice($emails, 0, 10)),
+            'outcome' => array_keys($outcomes), 'final' => mb_substr($final, 0, 600), 'summary' => $summary,
+            'checks' => [['Every tool the agent is allowed to use ran', !array_filter($steps, fn($x) => !$x['ok'])], ['The agent finished the conversation', !$err], ['No real email was sent and every change was undone afterwards', true]]];
+    }
+
+    /** Latest saved report for an agent (kept after the page is closed). */
+    public static function lastReport(string $slug): ?array { $v = Settings::get('sim.report.' . $slug); return $v ? jdec($v, null) : null; }
 
     /** Sandbox records so tools that need IDs have something real to act on. */
     private static function fixtures(): array
@@ -425,7 +564,10 @@ final class Simulator
         $task = Orchestrator::enqueue('qa', 'simulation', 'Simulation task', [], ['project_id' => $proj]);
         $deliv = Db::insert('deliverables', ['project_id' => $proj, 'title' => 'Simulation draft', 'body' => 'Sample body', 'status' => 'draft', 'produced_by' => 'website_dev', 'created_at' => $now, 'updated_at' => $now]);
         $lead = Crm::createLead($cust, ['summary' => 'Simulation lead', 'services' => []], 'simulator');
-        $filing = Db::val('SELECT id FROM filings ORDER BY id DESC LIMIT 1');
+        // A sandbox incorporation filing for the sandbox project, so the Filing Agent's tools act on its own case.
+        $filing = Db::insert('filings', ['number' => 'SIM-F' . rid(3), 'project_id' => $proj, 'customer_id' => $cust['id'], 'jurisdiction' => 'NB', 'filing_type' => 'incorporation', 'status' => 'awaiting_details',
+            'data' => jenc(['entity' => ['proposed_name' => 'Simulation Holdings', 'legal_ending' => 'Inc.'], 'directors' => [['first' => 'Sam', 'last' => 'Simulation', 'address' => ['street' => '1 Main St', 'city' => 'Moncton', 'province' => 'NB', 'postal' => 'E1C 1A1']]]]),
+            'created_at' => $now, 'updated_at' => $now]);
         return ['customer_id' => (int)$cust['id'], 'user_id' => $uid, 'conversation_id' => $conv, 'project_id' => $proj, 'ticket_id' => $ticket, 'task_id' => $task,
             'deliverable_id' => $deliv, 'lead_id' => (int)$lead['id'], 'filing_id' => $filing ? (int)$filing : 0, 'milestone_id' => (int)(Db::val('SELECT id FROM project_milestones WHERE project_id = ? LIMIT 1', [$proj]) ?: 0)];
     }
@@ -434,6 +576,11 @@ final class Simulator
     private static function sample(string $tool, array $schema, array $fx): array
     {
         $special = [
+            'our_filing_forms' => ['slug' => 'corp_numbered'],
+            'save_form_finding' => ['slug' => 'corp_numbered', 'jurisdiction' => 'NB', 'field' => 'Directors & officers', 'issue' => 'missing_field', 'detail' => 'Sample: the registry asks whether each director is a resident Canadian.',
+                'suggestion' => 'Sample: add a yes/no question for each director.', 'source_url' => 'https://www2.snb.ca/content/snb/en/services/services_renderer.html', 'severity' => 'low'],
+            'web_search' => ['query' => 'New Brunswick incorporation filing fee'],
+            'publish_social_post' => ['network' => 'facebook', 'text' => 'We just published a new guide to registering a business in New Brunswick.', 'link' => 'https://818digitalagency.com/blog'],
             'search_catalog' => ['query' => 'incorporate a company in New Brunswick'], 'get_service' => ['slug' => 'corp_numbered'], 'domain_check' => ['domain' => 'example-simulation.ca'],
             'quote_items' => ['items' => [['slug' => 'sole_prop', 'opts' => ['province' => 'NB']]]], 'build_cart' => ['items' => [['slug' => 'domain_register', 'opts' => ['tld' => 'ca', 'domain' => 'simtest.ca']]]],
             'capture_lead' => ['email' => 'simulator@example.com', 'name' => 'Simulation Customer', 'summary' => 'Simulation lead capture'],

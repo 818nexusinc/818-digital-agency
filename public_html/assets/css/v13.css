@@ -79,3 +79,5 @@
 /* Inter is a little wider than the previous face: keep the desktop menu clear of the buttons on laptop screens. */
 @media(min-width:1360px) and (max-width:1760px){.site .site-header .mn-item>a,.site .site-header .mn-item>button{padding-left:13px!important;padding-right:13px!important;font-size:15px!important}}
 @media(min-width:1360px) and (max-width:1520px){.site .site-header .mn-item>a,.site .site-header .mn-item>button{padding-left:10px!important;padding-right:10px!important}}
+[data-tone=dark] .nm-end input:checked+span{background:#fff;color:#111827;border-color:#fff}
+.site .foot-social{list-style:none;margin:14px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:8px}.site .foot-social a{display:inline-block;padding:5px 12px;border:1px solid rgba(255,255,255,.22);border-radius:999px;font-size:13px;color:#dbe3f5;text-decoration:none}.site .foot-social a:hover{border-color:#fff;color:#fff}

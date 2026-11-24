@@ -7,6 +7,9 @@
   <?php if ($recovery): ?>
     <div class="alert alert-success" role="status"><b>Two-step verification is on.</b> Save these recovery codes somewhere safe (a password manager or printed). Each one signs you in once if you lose your phone. They won't be shown again.</div>
     <ul class="mfa-codes"><?php foreach ($recovery as $c): ?><li><code><?= e($c) ?></code></li><?php endforeach; ?></ul>
+  <?php elseif ($mp = App\Mfa::paused((int)$me['id'])): ?>
+    <p class="small"><b>Paused for an update</b> on <?= e(substr($mp['at'], 0, 16)) ?> UTC. Turn it back on with your password and a code from the same authenticator app.</p>
+    <form method="post" action="/admin/mfa/resume" class="up-inline" id="mfa"><?= App\Csrf::field() ?><input type="hidden" name="back" value="settings"><input type="password" name="password" autocomplete="current-password" required placeholder="Your password" aria-label="Your password"><input type="text" name="code" inputmode="numeric" autocomplete="one-time-code" required placeholder="6-digit code" aria-label="Code from your app" maxlength="8"><button class="btn btn-primary btn-sm">Turn back on</button></form>
   <?php elseif ($me['mfa_enabled']): ?>
     <p class="small">On for your account. You'll be asked for a 6-digit code from your authenticator app at each sign-in.</p>
     <details class="small"><summary>Turn off or replace</summary>

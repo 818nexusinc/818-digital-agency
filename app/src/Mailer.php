@@ -52,10 +52,12 @@ final class Mailer
      */
     /** When true (agent simulator), nothing is delivered. */
     public static bool $dryRun = false;
+    /** Emails that would have been sent while $dryRun was on (the simulator reports them). */
+    public static array $outbox = [];
 
     public static function send(string $template, string $to, array $vars = [], ?string $dedupeKey = null, ?string $relatedType = null, ?int $relatedId = null): array
     {
-        if (self::$dryRun) return ['ok' => true, 'status' => 'simulated'];
+        if (self::$dryRun) { self::$outbox[] = ['template' => $template, 'to' => $to, 'subject' => preg_replace_callback('/\{(\w+)\}/', fn($m) => is_scalar($vars[$m[1]] ?? null) ? (string)$vars[$m[1]] : $m[0], (string)(self::TEMPLATES[$template]['subject'] ?? $template))]; return ['ok' => true, 'status' => 'simulated']; }
         $def = self::TEMPLATES[$template] ?? throw new \InvalidArgumentException('Unknown template ' . $template);
         $to = strtolower(trim($to));
         if (!filter_var($to, FILTER_VALIDATE_EMAIL)) return ['ok' => false, 'status' => 'invalid'];

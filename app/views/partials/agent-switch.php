@@ -1,0 +1,3 @@
+<?php /* On/off switch for one agent. Needs $sw = ['slug' => …, 'name' => …, 'on' => bool], optional $swBack. */ ?>
+<form method="post" action="/admin/agents/<?= e($sw['slug']) ?>/power" class="ag-sw"><?= App\Csrf::field() ?><input type="hidden" name="back" value="<?= e($swBack ?? ($path ?? '/admin/agents')) ?>">
+  <button class="sw<?= $sw['on'] ? ' on' : '' ?>" role="switch" aria-checked="<?= $sw['on'] ? 'true' : 'false' ?>" aria-label="<?= e(($sw['on'] ? 'Turn off ' : 'Turn on ') . $sw['name']) ?>" title="<?= $sw['on'] ? 'On — click to turn off' : 'Off — click to turn on' ?>"><i></i></button></form>

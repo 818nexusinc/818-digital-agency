@@ -120,6 +120,15 @@ $r->get('/admin/agents/{slug}', function ($p) {
     View::page('admin/agent', ['title' => $a['name'], 'a' => $a, 'tools' => App\Tools::defs(), 'versions' => Db::all('SELECT version, changed_by, created_at FROM agent_versions WHERE agent_id = ? ORDER BY version DESC LIMIT 20', [$a['id']]),
         'runs' => Db::all('SELECT * FROM agent_runs WHERE agent_slug = ? ORDER BY id DESC LIMIT 20', [$a['slug']]), 'tasks' => Db::all('SELECT * FROM agent_tasks WHERE agent_slug = ? ORDER BY id DESC LIMIT 20', [$a['slug']])]);
 }, $P('agents.read'));
+$r->post('/admin/agents/{slug}/power', function ($p) use ($me) {
+    $a = Agents::get($p['slug']) ?? throw new HttpError(404, 'Agent not found.');
+    $on = $a['status'] !== 'enabled';
+    Agents::update($a['slug'], ['status' => $on ? 'enabled' : 'disabled'] + ($on && (int)$a['autonomy_level'] === 0 ? ['autonomy_level' => 2] : []), $me()['email']);
+    if (!$on) Db::run("UPDATE agent_tasks SET locked_until = NULL WHERE agent_slug = ? AND status = 'running'", [$a['slug']]);
+    Session::flash('success', preg_replace('/^AI /', '', $a['name']) . ($on ? ' is on. Queued tasks will run again.' : ' is off. Its queued tasks wait until you turn it back on.'));
+    $back = Request::str('back', 120);
+    View::redirect(preg_match('#^/admin(/[a-z0-9/_\-]*)?(\?[a-z0-9=&]*)?(\#[a-z0-9\-]*)?$#', $back) ? $back : '/admin/agents');
+}, $P('agents.write'));
 $r->post('/admin/agents/{slug}', function ($p) use ($me) {
     $act = Request::str('action', 20);
     if ($act === 'rollback') Agents::rollback($p['slug'], (int)Request::input('version'), $me()['email']);
@@ -335,6 +344,40 @@ $workPage = function (string $cat, ?string $slug) {
 $r->get('/admin/work/{cat}', fn($p) => $workPage((string)$p['cat'], null), $P('projects.read'));
 $r->get('/admin/work/{cat}/{slug}', fn($p) => $workPage((string)$p['cat'], (string)$p['slug']), $P('projects.read'));
 
+/* Registry form check: the Filing Agent's suggestions for our forms */
+$r->get('/admin/form-check', function () {
+    $st = (string)($_GET['status'] ?? 'open'); if (!in_array($st, ['open', 'done', 'dismissed', 'all'], true)) $st = 'open';
+    View::page('admin/form-check', ['title' => 'Registry form check', 'st' => $st, 'aiOn' => Integrations::configured('anthropic'),
+        'rows' => Db::all('SELECT f.*, s.name FROM form_findings f LEFT JOIN services s ON s.slug = f.service_slug' . ($st === 'all' ? '' : ' WHERE f.status = ?') . " ORDER BY CASE f.severity WHEN 'high' THEN 0 WHEN 'medium' THEN 1 ELSE 2 END, f.id DESC LIMIT 300", $st === 'all' ? [] : [$st]),
+        'counts' => array_column(Db::all('SELECT status, COUNT(*) n FROM form_findings GROUP BY status'), 'n', 'status'),
+        'tasks' => Db::all("SELECT id, title, status, created_at, finished_at, progress_note FROM agent_tasks WHERE agent_slug = 'filing' AND kind = 'form_check' ORDER BY id DESC LIMIT 3"),
+        'services' => array_filter(array_map(fn($k) => Catalog::find($k), array_keys(App\Filings::TYPES)))]);
+}, $P('projects.read'));
+$r->post('/admin/form-check', function () use ($me) {
+    $act = Request::str('action', 20);
+    if ($act === 'run') { $id = App\FormCheck::queue('owner', Request::str('slug', 60) ?: null, Request::str('note', 500)); Session::flash('success', 'The Filing Agent is checking the registries (task #' . $id . ').' . (Integrations::configured('anthropic') ? '' : ' Web research needs the Anthropic connection.')); }
+    elseif (in_array($act, ['done', 'dismissed', 'open'], true)) { Db::update('form_findings', ['status' => $act, 'decided_by' => $me()['email'], 'decided_at' => now()], 'id = ?', [(int)Request::input('id')]); Session::flash('success', $act === 'done' ? 'Marked as done.' : ($act === 'dismissed' ? 'Dismissed.' : 'Reopened.')); }
+    View::redirect('/admin/form-check' . (Request::str('st', 10) ? '?status=' . Request::str('st', 10) : ''));
+}, $P('projects.write'));
+
+/* Social media: connected accounts, publish now, post history */
+$r->get('/admin/social', function () {
+    try { Integrations::seed(); } catch (\Throwable) {}
+    $acc = [];
+    foreach (App\Social::NETWORKS as $slug => [$label, $canPost]) { [$ok, $why] = App\Social::postable($slug); $acc[$slug] = ['label' => $label, 'url' => (string)Integrations::setting($slug, 'profile_url', ''), 'post' => $ok, 'why' => $why, 'canPost' => $canPost]; }
+    View::page('admin/social', ['title' => 'Social media', 'acc' => $acc, 'posts' => Db::all('SELECT * FROM social_posts ORDER BY id DESC LIMIT 30'),
+        'drafts' => Db::all("SELECT id, title, body, updated_at FROM content_items WHERE kind = 'social' AND status IN ('draft','review','approved') ORDER BY updated_at DESC LIMIT 8")]);
+}, $P('content.read'));
+$r->post('/admin/social', function () use ($me) {
+    $nets = array_values(array_intersect((array)Request::input('networks', []), array_keys(App\Social::NETWORKS)));
+    if (!$nets) { Session::flash('error', 'Choose at least one account to post to.'); View::redirect('/admin/social'); }
+    $ok = []; $bad = [];
+    foreach ($nets as $n) { try { App\Social::publish($n, Request::str('text', 3000), Request::str('link', 500), Request::str('image_url', 500), (string)$me()['email']); $ok[] = App\Social::NETWORKS[$n][0]; } catch (UserError $e) { $bad[] = $e->getMessage(); } }
+    if ($ok) Session::flash('success', 'Posted to ' . implode(', ', $ok) . '.');
+    if ($bad) Session::flash('error', implode(' ', $bad));
+    View::redirect('/admin/social');
+}, $P('content.write'));
+
 /* Pricing strategy: costs, markup, competitor prices and the Pricing Agent */
 $r->get('/admin/pricing', function () {
     App\Pricing::ensureAgent();
@@ -390,26 +433,24 @@ $r->post('/admin/pricing/action', function () use ($me) {
 }, $P('catalog.write'));
 
 /* Site editor: change the wording on any public page, and the logo */
-$sitePage = function (): string { $p = '/' . ltrim((string)($_GET['page'] ?? $_POST['page'] ?? '/'), '/'); $p = rtrim(preg_replace('#[^a-zA-Z0-9/_\-.]#', '', $p), '/') ?: '/'; return mb_substr($p, 0, 190); };
-$r->get('/admin/site', function () use ($sitePage) {
-    $pg = $sitePage();
-    View::page('admin/site', ['title' => 'Site editor', 'tab' => ($_GET['tab'] ?? '') === 'brand' ? 'brand' : 'pages', 'pg' => $pg, 'pages' => App\SiteText::pages(), 'fields' => App\SiteText::fields($pg),
+$ownerGate = function () use ($me) { if (($me()['role'] ?? '') !== 'owner') throw new HttpError(403, 'Only the owner can edit the website.'); };
+$r->get('/admin/site', function () use ($ownerGate) {
+    $ownerGate();
+    $pages = Db::all('SELECT page, COUNT(DISTINCT skey) n, MAX(updated_at) at FROM site_text GROUP BY page ORDER BY MAX(updated_at) DESC');
+    $texts = Db::all('SELECT page, src, lang, value, updated_at FROM site_text ORDER BY updated_at DESC LIMIT 40');
+    View::page('admin/site', ['title' => 'Site editor', 'tab' => ($_GET['tab'] ?? '') === 'brand' ? 'brand' : 'pages', 'pages' => $pages, 'texts' => $texts,
+        'images' => Db::all('SELECT skey, src, alt, updated_by, updated_at FROM site_images ORDER BY updated_at DESC'),
         'logos' => ['dark' => App\SiteText::asset('logo')['mime'] ?? null, 'light' => App\SiteText::asset('logo_light')['mime'] ?? null], 'wordmark' => Settings::get('site.logo_wordmark', '1') === '1', 'company' => Settings::get('company.name')]);
 }, $P('content.write'));
-$r->get('/admin/site/fields', function () use ($sitePage) {
-    header('Cache-Control: no-store');
-    echo View::render('admin/site-fields', ['fields' => App\SiteText::fields($sitePage())]);
+$r->post('/admin/site', function () use ($ownerGate) {
+    $ownerGate();
+    $act = Request::str('action', 20);
+    if ($act === 'reset_page') { $pg = Request::str('page', 190); Db::run('DELETE FROM site_text WHERE page = ?', [$pg]); App\Audit::log('site.reset_page', 'page', $pg); Session::flash('success', $pg === '*' ? 'Changes that applied on every page were undone.' : 'All changes on ' . $pg . ' were undone.'); }
+    if ($act === 'reset_image') { App\SiteText::resetImage(Request::str('src', 500)); Session::flash('success', 'Original picture restored.'); }
+    View::redirect('/admin/site');
 }, $P('content.write'));
-$r->post('/admin/site', function () use ($sitePage, $me) {
-    $pg = $sitePage();
-    $changes = jdec(Request::str('changes', 2_000_000), []);
-    [$n, $bad] = App\SiteText::save($pg, is_array($changes) ? $changes : [], (string)($me()['email'] ?? 'staff'));
-    if ($bad) Session::flash('error', 'Not saved: ' . implode('; ', array_slice($bad, 0, 4)) . (count($bad) > 4 ? ' and ' . (count($bad) - 4) . ' more' : '') . '.');
-    if ($n) Session::flash('success', $n === 1 ? 'Saved. The change is live.' : "Saved {$n} changes. They are live.");
-    elseif (!$bad) Session::flash('success', 'Nothing changed.');
-    View::redirect('/admin/site?page=' . rawurlencode($pg));
-}, $P('content.write'));
-$r->post('/admin/site/brand', function () {
+$r->post('/admin/site/brand', function () use ($ownerGate) {
+    $ownerGate();
     $act = Request::str('action', 20);
     $slot = Request::str('slot', 10) === 'light' ? 'light' : 'dark';
     $names = ['dark' => 'dark logo', 'light' => 'white logo'];
@@ -488,6 +529,7 @@ $r->post('/admin/growth/research', function () {
 
 /* Integrations */
 $r->get('/admin/integrations', function () {
+    try { Integrations::seed(); } catch (\Throwable) {}
     $rows = [];
     foreach (Integrations::DEFS as $slug => [$cat, $name, $fields, $desc]) {
         $row = Db::one('SELECT * FROM integrations WHERE slug = ?', [$slug]);
@@ -499,7 +541,9 @@ $r->get('/admin/integrations', function () {
     // Connected first (with errors at the top of that group), then ones needing attention, then the rest.
     usort($rows, fn($a, $b) => [$a['configured'] ? 0 : ($a['stale'] ? 1 : 2), $a['configured'] && !empty($a['row']['last_error']) ? 0 : 1, $a['name']]
         <=> [$b['configured'] ? 0 : ($b['stale'] ? 1 : 2), $b['configured'] && !empty($b['row']['last_error']) ? 0 : 1, $b['name']]);
-    View::page('admin/integrations', ['title' => 'Integrations', 'rows' => $rows]);
+    $nOn = count(array_filter($rows, fn($r) => $r['configured']));
+    $tab = (string)($_GET['tab'] ?? ''); if (!in_array($tab, ['connected', 'available'], true)) $tab = $nOn ? 'connected' : 'available';
+    View::page('admin/integrations', ['title' => 'Integrations', 'rows' => $rows, 'tab' => $tab, 'nOn' => $nOn]);
 }, $P('integrations.read'));
 $r->post('/admin/integrations/{slug}', function ($p) {
     if (Request::input('test')) { $res = Integrations::test($p['slug']); Session::flash($res['ok'] ? 'success' : 'error', $res['message']); }
@@ -507,7 +551,7 @@ $r->post('/admin/integrations/{slug}', function ($p) {
         Integrations::save($p['slug'], (array)Request::input('secret', []), (array)Request::input('setting', []));
         Session::flash('success', 'Saved (encrypted). Use "Test connection" to verify.');
     }
-    View::redirect('/admin/integrations#' . $p['slug']);
+    View::redirect('/admin/integrations?tab=' . (Integrations::configured($p['slug']) ? 'connected' : 'available') . '#' . $p['slug']);
 }, $P('integrations.write'));
 
 /* Settings, users, security */
@@ -657,16 +701,18 @@ $r->post('/admin/blog', function () use ($me) {
 }, $P('content.write'));
 
 $r->get('/admin/simulator', function () {
-    View::page('admin/simulator', ['title' => 'Agent simulator', 'results' => $_SESSION['sim_results'] ?? null, 'ran_at' => $_SESSION['sim_at'] ?? null, 'agents' => App\Agents::DEFS]);
+    $last = []; foreach (App\Agents::DEFS as $slug => $_) if ($x = App\Simulator::lastReport($slug)) $last[$slug] = $x;
+    View::page('admin/simulator', ['title' => 'Agent simulator', 'results' => $_SESSION['sim_results'] ?? null, 'ran_at' => $_SESSION['sim_at'] ?? null, 'agents' => App\Agents::DEFS, 'last' => $last, 'focus' => $_SESSION['sim_focus'] ?? null]);
 }, $P('agents.read'));
 $r->post('/admin/simulator', function () use ($me) {
     $only = Request::str('agent', 60) ?: null;
     if ($only && !isset(App\Agents::DEFS[$only])) $only = null;
     @set_time_limit(120);
-    $_SESSION['sim_results'] = App\Simulator::run($only);
-    $_SESSION['sim_at'] = now();
+    // Reports are large: keep only pass/fail in the session; the full report is saved per agent.
+    $_SESSION['sim_results'] = array_map(fn($x) => array_diff_key($x, ['report' => 1]), App\Simulator::run($only));
+    $_SESSION['sim_at'] = now(); $_SESSION['sim_focus'] = $only;
     Audit::log('agents.simulated', 'agent', $only ?? 'all', ['by' => $me()['email'], 'passed' => count(array_filter($_SESSION['sim_results'], fn($x) => $x['ok']))]);
-    View::redirect('/admin/simulator');
+    View::redirect('/admin/simulator' . ($only ? '#sim-' . $only : ''));
 }, $P('agents.write'));
 
 $r->get('/admin/demo', function () {
@@ -757,7 +803,19 @@ $r->post('/admin/automations/toggle', function () use ($me) {
     View::redirect('/admin/automations');
 }, $P('settings.write'));
 
-$r->get('/admin/update', fn() => View::page('admin/update', ['title' => 'Install an update', 'why' => App\Updater::supported(), 'backups' => App\Updater::backups()]), $P('settings.write'));
+$r->get('/admin/update', fn() => View::page('admin/update', ['title' => 'Install an update', 'why' => App\Updater::supported(), 'backups' => App\Updater::backups(),
+    'mfaOn' => (int)(Db::val('SELECT mfa_enabled FROM users WHERE id = ?', [Auth::user()['id']]) ?? 0) === 1, 'paused' => App\Mfa::paused((int)Auth::user()['id']), 'team' => App\Mfa::team()]), $P('settings.write'));
+/* Two-step sign-in around updates: pause (sealed with your password) and resume with the same authenticator app. */
+$r->post('/admin/mfa/pause', function () use ($me) {
+    try { App\Mfa::pause($me(), (string)Request::input('password', '')); Session::flash('success', 'Two-step sign-in is paused. Install the update, then turn it back on with your password and a code from the same app.'); }
+    catch (UserError $e) { Session::flash('error', $e->getMessage()); }
+    View::redirect(Request::str('back', 60) === 'settings' ? '/admin/settings#mfa' : '/admin/update');
+}, $P('dashboard.view'));
+$r->post('/admin/mfa/resume', function () use ($me) {
+    try { App\Mfa::resume($me(), (string)Request::input('password', ''), Request::str('code', 12)); Session::flash('success', 'Two-step sign-in is back on. Your authenticator app works as before.'); }
+    catch (UserError $e) { Session::flash('error', $e->getMessage()); }
+    View::redirect(Request::str('back', 60) === 'settings' ? '/admin/settings#mfa' : '/admin/update');
+}, $P('dashboard.view'));
 $r->post('/admin/update', function () use ($me) {
     if (($me()['role'] ?? '') !== 'owner') throw new UserError('Only the owner can install updates.');
     @set_time_limit(180);
@@ -765,11 +823,14 @@ $r->post('/admin/update', function () use ($me) {
         $r = App\Updater::rollback(Request::str('backup', 120), $me()['email']);
         Session::flash('success', "Restored version {$r['version']} ({$r['files']} files).");
     } else {
+        if ((int)(Db::val('SELECT mfa_enabled FROM users WHERE id = ?', [$me()['id']]) ?? 0) === 1) throw new UserError('Pause two-step sign-in first (step 1 on this page). It keeps your authenticator app working after the update.');
         $f = $_FILES['package'] ?? null;
         if (!$f || ($f['error'] ?? 1) !== UPLOAD_ERR_OK || !is_uploaded_file($f['tmp_name'])) throw new UserError('The upload did not arrive. Check the file is under the size limit and try again.');
         if (empty($_POST['confirm'])) throw new UserError('Tick the box to confirm.');
         $r = App\Updater::apply($f['tmp_name'], $me()['email']);
-        Session::flash('success', "Updated from {$r['from']} to {$r['to']} ({$r['files']} files). The previous version is saved for rollback.");
+        $bad = array_filter(App\Mfa::team(), fn($u) => $u['on'] && !$u['readable']);
+        Session::flash('success', "Updated from {$r['from']} to {$r['to']} ({$r['files']} files). The previous version is saved for rollback. Now turn two-step sign-in back on below."
+            . ($bad ? ' Warning: two-step keys for ' . implode(', ', array_column($bad, 'email')) . ' can no longer be read; they should sign in with a recovery code.' : ''));
     }
     View::redirect('/admin/update');
 }, $P('settings.write'));

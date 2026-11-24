@@ -35,7 +35,7 @@ final class Db
         try {
             $files = count(glob(APP_ROOT . '/migrations/*.sql') ?: []);
             $done = (int)self::$pdo->query('SELECT COUNT(*) FROM migrations')->fetchColumn();
-            if ($done > 0 && $done < $files) { $applied = self::migrate(); if ($applied) { Log::write('info', 'db.upgraded', ['migrations' => $applied]); try { Agents::seed(); } catch (\Throwable) {} } }
+            if ($done > 0 && $done < $files) { $applied = self::migrate(); if ($applied) { Log::write('info', 'db.upgraded', ['migrations' => $applied]); try { Agents::seed(); Integrations::seed(); Agents::addNewTools(); } catch (\Throwable) {} } }
         } catch (\Throwable $e) {
             // Not installed yet (no migrations table) or a parallel request already upgraded: carry on.
         }
