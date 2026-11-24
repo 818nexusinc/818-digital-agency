@@ -148,15 +148,19 @@ final class SiteText
         return $c[$k];
     }
 
-    /** Short version tag for cache-busting the logo URL, or null when the built-in mark is used. */
-    public static function logoVersion(): ?string
+    /** Logo slots: 'logo' is the dark logo for light backgrounds, 'logo_light' the white logo for dark backgrounds. */
+    public const LOGO_SLOTS = ['dark' => 'logo', 'light' => 'logo_light'];
+
+    /** Short version tag for cache-busting a logo URL, or null when that logo was not uploaded. */
+    public static function logoVersion(string $slot = 'any'): ?string
     {
-        $a = self::asset('logo');
+        if ($slot === 'any') return self::logoVersion('dark') ?? self::logoVersion('light');
+        $a = self::asset(self::LOGO_SLOTS[$slot] ?? 'logo');
         return $a ? substr(sha1($a['updated_at'] . strlen((string)$a['data'])), 0, 10) : null;
     }
 
     /** Validate and store an uploaded logo. Throws UserError with a plain reason when the file is not usable. */
-    public static function saveLogo(array $file): void
+    public static function saveLogo(array $file, string $slot = 'dark'): void
     {
         if (($file['error'] ?? 1) !== UPLOAD_ERR_OK || !is_uploaded_file($file['tmp_name'] ?? '') && PHP_SAPI !== 'cli') throw new UserError('The file did not arrive. Choose it again and save.');
         $size = (int)($file['size'] ?? 0);
@@ -168,7 +172,7 @@ final class SiteText
         if ($mime === 'image/svg+xml') {
             if (preg_match('/<script|<foreignObject|\bon[a-z]+\s*=|javascript:|<!ENTITY|xlink:href\s*=\s*["\'](?!#)|href\s*=\s*["\']\s*(?!#)[a-z]+:/i', $raw)) throw new UserError('This SVG contains scripts or outside links. Export it again as a plain SVG, or use a PNG.');
         } elseif (!@getimagesizefromstring($raw)) throw new UserError('This image could not be read. Export it again and retry.');
-        self::putAsset('logo', $mime, base64_encode($raw));
+        self::putAsset(self::LOGO_SLOTS[$slot] ?? 'logo', $mime, base64_encode($raw));
     }
 
     public static function putAsset(string $k, string $mime, string $b64): void

@@ -14,34 +14,35 @@ $label = fn(string $p) => $p === '/' ? 'Home' : ucfirst(str_replace(['-', '/'], 
 
 <?php if ($tab === 'brand'): ?>
   <div class="se-brand">
-    <section class="db-card se-logo">
-      <h2>Website logo</h2>
-      <p class="se-sub">Shown at the top of every page of the website and in this Control Tower.</p>
-      <div class="se-prev">
-        <figure><div class="se-prev-light"><span class="se-mark"><?php include APP_ROOT . '/views/partials/logo.php'; ?></span><?php if (!$logo || $wordmark): ?><span class="se-wm"><b><?= e($company) ?></b><small>by 818 Nexus Inc.</small></span><?php endif; ?></div><figcaption>On the website header</figcaption></figure>
-        <figure><div class="se-prev-dark"><span class="se-mark"><?php include APP_ROOT . '/views/partials/logo.php'; ?></span></div><figcaption>On a dark background</figcaption></figure>
+    <div class="se-logos">
+      <p class="se-sub se-lead">Upload a dark logo and a white logo. The website shows the one that stands out against the colour behind it: dark on white pages and light sections, white on dark sections, photos and video. It switches by itself as visitors scroll.</p>
+      <?php foreach (['dark' => ['Dark logo', 'For white and light backgrounds', 'se-prev-light'], 'light' => ['White logo', 'For dark backgrounds, photos and video', 'se-prev-dark']] as $slot => [$ttl, $use, $cls]): $has = $logos[$slot]; ?>
+      <section class="db-card se-logo">
+        <div class="se-lh"><div><h2><?= $ttl ?></h2><p class="se-sub"><?= $use ?></p></div><span class="se-st<?= $has ? ' on' : '' ?>"><?= $has ? 'Uploaded · ' . e(strtoupper(App\SiteText::LOGO_TYPES[$has] ?? 'image')) : 'Not uploaded' ?></span></div>
+        <div class="<?= $cls ?> se-box"><span class="se-mark"><?php $logoBg = $slot === 'dark' ? 'light' : 'dark'; include APP_ROOT . '/views/partials/logo.php'; ?></span><?php if (!$logos['dark'] && !$logos['light'] || $wordmark): ?><span class="se-wm"><b><?= e($company) ?></b></span><?php endif; ?></div>
+        <?php if (!$has && ($logos['dark'] || $logos['light'])): ?><p class="se-fallback">Until you upload this one, the site shows a one-colour version of your <?= $slot === 'dark' ? 'white' : 'dark' ?> logo here, as above.</p><?php endif; ?>
+        <form method="post" action="/admin/site/brand" enctype="multipart/form-data" class="se-up">
+          <?= App\Csrf::field() ?><input type="hidden" name="action" value="upload"><input type="hidden" name="slot" value="<?= $slot ?>">
+          <label class="se-drop"><input type="file" name="logo" accept="image/png,image/jpeg,image/webp,image/svg+xml,.svg" required data-logo-file><b><?= $has ? 'Replace the ' . strtolower($ttl) : 'Choose the ' . strtolower($ttl) ?></b><span data-logo-name>PNG, SVG, JPG or WebP, up to 600 KB, transparent background</span></label>
+          <div class="se-acts"><button class="btn btn-primary">Upload</button></div>
+        </form>
+        <?php if ($has): ?><form method="post" action="/admin/site/brand" class="se-rm" data-confirm="Remove the <?= strtolower($ttl) ?>?"><?= App\Csrf::field() ?><input type="hidden" name="action" value="remove"><input type="hidden" name="slot" value="<?= $slot ?>"><button class="sf-reset">Remove</button></form><?php endif; ?>
+      </section>
+      <?php endforeach; ?>
+      <div class="se-row2 db-card">
+        <form method="post" action="/admin/site/brand"><?= App\Csrf::field() ?><input type="hidden" name="action" value="wordmark"><label class="se-check"><input type="checkbox" name="wordmark" value="1"<?= $wordmark ? ' checked' : '' ?> data-autosubmit> Show “<?= e($company) ?>” next to the logo <small>Turn this off if the name is already part of your logo.</small></label><noscript><button class="btn">Save</button></noscript></form>
+        <?php if ($logos['dark'] || $logos['light']): ?><form method="post" action="/admin/site/brand" data-confirm="Remove both logos and go back to the original 818 logo?"><?= App\Csrf::field() ?><input type="hidden" name="action" value="reset"><button class="btn">Use the original 818 logo</button></form><?php endif; ?>
       </div>
-      <p class="se-now"><?= $logo ? 'Using your uploaded logo (' . e(strtoupper(App\SiteText::LOGO_TYPES[$logoMime] ?? 'image')) . ').' : 'Using the original 818 logo.' ?></p>
-      <form method="post" action="/admin/site/brand" enctype="multipart/form-data" class="se-up">
-        <?= App\Csrf::field() ?><input type="hidden" name="action" value="upload">
-        <label class="se-drop"><input type="file" name="logo" accept="image/png,image/jpeg,image/webp,image/svg+xml,.svg" required data-logo-file><b>Choose a logo file</b><span data-logo-name>PNG, SVG, JPG or WebP, up to 600 KB. A transparent background looks best.</span></label>
-        <label class="se-check"><input type="checkbox" name="wordmark" value="1"<?= $wordmark ? ' checked' : '' ?>> Show “<?= e($company) ?>” next to the logo <small>Turn this off if the name is already part of your logo.</small></label>
-        <div class="se-acts"><button class="btn btn-primary">Upload and use this logo</button></div>
-      </form>
-      <?php if ($logo): ?>
-      <div class="se-row2">
-        <form method="post" action="/admin/site/brand"><?= App\Csrf::field() ?><input type="hidden" name="action" value="wordmark"><label class="se-check"><input type="checkbox" name="wordmark" value="1"<?= $wordmark ? ' checked' : '' ?> data-autosubmit> Show the company name next to the logo</label><noscript><button class="btn">Save</button></noscript></form>
-        <form method="post" action="/admin/site/brand" data-confirm="Go back to the original 818 logo?"><?= App\Csrf::field() ?><input type="hidden" name="action" value="remove"><button class="btn">Use the original 818 logo</button></form>
-      </div>
-      <?php endif; ?>
-    </section>
+    </div>
     <aside class="db-card se-help">
       <h2>Good to know</h2>
       <ul>
-        <li>The logo is stored in your database, so installing updates never removes it.</li>
+        <li>The website checks the colour right behind the logo on every page, including the header bar after scrolling and the dark homepage video.</li>
+        <li>The footer and the Control Tower menu are dark, so they use the white logo.</li>
+        <li>If you upload only one logo, the other background gets a plain one-colour version of it. Uploading both looks best.</li>
+        <li>Logos are stored in your database, so installing updates never removes them.</li>
         <li>Wide logos work best, about 3 to 5 times wider than tall. The header shows them 40 pixels high.</li>
-        <li>For SVG files, use a plain export. Files with scripts or outside links are refused for safety.</li>
-        <li>To change the company name used in emails and search results, go to <a href="/admin/settings">Settings &amp; team</a>.</li>
+        <li>SVG files with scripts or outside links are refused for safety.</li>
       </ul>
     </aside>
   </div>

@@ -323,7 +323,7 @@ $sitePage = function (): string { $p = '/' . ltrim((string)($_GET['page'] ?? $_P
 $r->get('/admin/site', function () use ($sitePage) {
     $pg = $sitePage();
     View::page('admin/site', ['title' => 'Site editor', 'tab' => ($_GET['tab'] ?? '') === 'brand' ? 'brand' : 'pages', 'pg' => $pg, 'pages' => App\SiteText::pages(), 'fields' => App\SiteText::fields($pg),
-        'logo' => App\SiteText::logoVersion(), 'logoMime' => App\SiteText::asset('logo')['mime'] ?? null, 'wordmark' => Settings::get('site.logo_wordmark', '1') === '1', 'company' => Settings::get('company.name')]);
+        'logos' => ['dark' => App\SiteText::asset('logo')['mime'] ?? null, 'light' => App\SiteText::asset('logo_light')['mime'] ?? null], 'wordmark' => Settings::get('site.logo_wordmark', '1') === '1', 'company' => Settings::get('company.name')]);
 }, $P('content.write'));
 $r->get('/admin/site/fields', function () use ($sitePage) {
     header('Cache-Control: no-store');
@@ -340,9 +340,12 @@ $r->post('/admin/site', function () use ($sitePage, $me) {
 }, $P('content.write'));
 $r->post('/admin/site/brand', function () {
     $act = Request::str('action', 20);
+    $slot = Request::str('slot', 10) === 'light' ? 'light' : 'dark';
+    $names = ['dark' => 'dark logo', 'light' => 'white logo'];
     try {
-        if ($act === 'remove') { App\SiteText::removeAsset('logo'); Session::flash('success', 'The original 818 logo is back.'); }
-        elseif ($act === 'upload') { App\SiteText::saveLogo($_FILES['logo'] ?? []); Settings::set('site.logo_wordmark', Request::input('wordmark') ? '1' : '0'); Session::flash('success', 'New logo saved. It now shows on the website and here.'); }
+        if ($act === 'remove') { App\SiteText::removeAsset(App\SiteText::LOGO_SLOTS[$slot]); Session::flash('success', 'Removed the ' . $names[$slot] . '.'); }
+        elseif ($act === 'reset') { foreach (App\SiteText::LOGO_SLOTS as $k) App\SiteText::removeAsset($k); Session::flash('success', 'The original 818 logo is back.'); }
+        elseif ($act === 'upload') { App\SiteText::saveLogo($_FILES['logo'] ?? [], $slot); Session::flash('success', 'New ' . $names[$slot] . ' saved. The website now uses it.'); }
         else { Settings::set('site.logo_wordmark', Request::input('wordmark') ? '1' : '0'); Session::flash('success', 'Saved.'); }
     } catch (UserError $e) { Session::flash('error', $e->getMessage()); }
     View::redirect('/admin/site?tab=brand');

@@ -154,3 +154,14 @@ pre{background:var(--navy);color:#e2e8f0;padding:14px;border-radius:var(--r-sm);
 .sheet{background:#0b1530;color:#dbe4ff;font-size:.8rem;line-height:1.6}
 .steps-bar{display:flex;list-style:none;padding:0;margin:0 0 18px;gap:6px;counter-reset:s;flex-wrap:wrap}.steps-bar li{flex:1;min-width:120px;font-size:.8rem;font-weight:650;color:var(--muted);padding:10px 12px;border-radius:10px;background:#fff;border:1px solid var(--line);counter-increment:s}
 .steps-bar li:before{content:counter(s) ". "}.steps-bar li.done{color:var(--green);border-color:#b7ead9;background:var(--green-soft)}.steps-bar li.now{color:var(--blue-2);border-color:#c7d2fe;background:var(--sky-soft)}
+
+/* Uploaded logos: dark logo on light backgrounds, white logo on dark ones (data-bg is set from the real background by app.js). */
+.nx-logo{display:inline-flex;align-items:center;flex:none;line-height:0}
+.nx-logo img{display:block;transition:filter .35s,opacity .35s}
+.nx-logo.has-both .lg-l{display:none!important}
+.nx-logo.has-both[data-bg=dark] .lg-d,html[data-tone=dark] .nx-logo.has-both[data-logo-auto]:not([data-bg]) .lg-d{display:none!important}
+.nx-logo.has-both[data-bg=dark] .lg-l,html[data-tone=dark] .nx-logo.has-both[data-logo-auto]:not([data-bg]) .lg-l{display:block!important}
+/* Only one uploaded: a one-colour version of it stands in on the other background. */
+.nx-logo.only-dark[data-bg=dark] .lg-d,html[data-tone=dark] .nx-logo.only-dark[data-logo-auto]:not([data-bg]) .lg-d{filter:brightness(0) invert(1)}
+.nx-logo.only-light:not([data-bg=dark]) .lg-l{filter:brightness(0)}
+html[data-tone=dark] .nx-logo.only-light[data-logo-auto]:not([data-bg]) .lg-l{filter:none}

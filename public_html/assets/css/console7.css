@@ -684,3 +684,16 @@ body.con.nav-mini .c-logo.has-img{max-width:52px;padding:4px}
 .sf-reset[hidden]{display:none}
 .con .se-top h1{font-size:24px!important;font-weight:650!important;letter-spacing:-.01em}
 .con .c-logo.has-img{max-width:104px}.con .c-logo.has-img img{max-width:90px}
+.con .c-logo.has-img.on-dark{background:transparent;padding:0}
+.con .c-logo.has-img .nx-logo img{height:30px;width:auto;max-width:90px;object-fit:contain}
+.se-logos{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-content:start}
+.se-lead{grid-column:1/-1;margin:0}
+.se-logos .se-row2{grid-column:1/-1;margin:0;padding:18px 24px;border-top:1px solid var(--line-2)}
+.se-lh{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:14px}
+.se-st{font-size:12px;font-weight:600;color:var(--mut);background:#eef1f5;border-radius:999px;padding:3px 10px;white-space:nowrap}.se-st.on{background:#e3f6f1;color:#0f7a68}
+.se-box{display:flex;align-items:center;gap:12px;height:110px;padding:0 22px;border-radius:8px;border:1px solid var(--line-2);margin-bottom:14px}
+.se-box .se-wm b{font-size:16px}.se-prev-dark .se-wm b{color:#fff}
+.se-fallback{margin:-6px 0 12px;font-size:12.5px;color:var(--mut)}
+.se-rm{margin-top:10px}
+.se-logo .se-drop{padding:16px}
+@media(max-width:1180px){.se-logos{grid-template-columns:1fr}}

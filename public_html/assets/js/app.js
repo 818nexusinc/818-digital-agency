@@ -663,3 +663,44 @@
     fetch('/admin/site/fields?page=' + encodeURIComponent(page), { credentials: 'same-origin' }).then(function (r) { return r.ok ? r.text() : null; }).then(function (h) { if (h && !dirty) { box.innerHTML = h; filter(); } });
   });
 })();
+
+/* Logo colour: show the dark or white logo depending on what is actually behind it (section, header bar, photo or video). */
+(function () {
+  var logos = Array.prototype.slice.call(document.querySelectorAll('[data-logo-auto]'));
+  if (!logos.length || !document.elementsFromPoint) return;
+  function rgba(s) { var m = /rgba?\(([^)]+)\)/.exec(s || ''); if (!m) return null; var p = m[1].split(/[\s,\/]+/).filter(Boolean).map(parseFloat); return { r: p[0], g: p[1], b: p[2], a: p.length > 3 ? p[3] : 1 }; }
+  function dark(c) {
+    var f = function (v) { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+    return 0.2126 * f(c.r) + 0.7152 * f(c.g) + 0.0722 * f(c.b) < 0.3;
+  }
+  function toneAt(logo) {
+    var r = logo.getBoundingClientRect(); if (!r.width) return null;
+    var list = document.elementsFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+    for (var i = 0; i < list.length; i++) {
+      var el = list[i];
+      if (logo.contains(el) || el.closest('.nx-logo') === logo) continue;
+      var t = el.getAttribute && el.getAttribute('data-tone');
+      if (t === 'dark' || t === 'light') return t;
+      if (/^(VIDEO|IMG|CANVAS|PICTURE)$/.test(el.tagName)) { var sec = el.closest('[data-tone]'); return sec ? sec.getAttribute('data-tone') : 'dark'; }
+      var cs = getComputedStyle(el), c = rgba(cs.backgroundColor);
+      if (c && c.a >= 0.5) return dark(c) ? 'dark' : 'light';
+      if (cs.backgroundImage && cs.backgroundImage !== 'none') {
+        var g = rgba(cs.backgroundImage); if (g && g.a >= 0.5) return dark(g) ? 'dark' : 'light';
+        if (/url\(/.test(cs.backgroundImage)) return 'dark';
+      }
+    }
+    return 'light';
+  }
+  var queued = false;
+  function update() {
+    queued = false;
+    logos.forEach(function (l) { var t = toneAt(l); if (t && l.getAttribute('data-bg') !== t) l.setAttribute('data-bg', t); });
+  }
+  function soon() { if (!queued) { queued = true; requestAnimationFrame(update); } }
+  var settle; function later() { clearTimeout(settle); settle = setTimeout(update, 650); } // after header colour transitions finish
+  window.addEventListener('scroll', function () { soon(); later(); }, { passive: true });
+  window.addEventListener('resize', soon);
+  window.addEventListener('load', update);
+  new MutationObserver(soon).observe(document.documentElement, { attributes: true, attributeFilter: ['data-tone', 'class', 'style'] });
+  update();
+})();

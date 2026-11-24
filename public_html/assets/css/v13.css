@@ -70,3 +70,9 @@
 /* Uploaded logo (Control Tower → Site editor → Logo) */
 .site .brand img.site-logo{display:block;height:40px;width:auto;max-width:220px;object-fit:contain;flex:none}
 .site .brand .wm.wm-off{display:none}
+.site .site-footer .brand{display:flex;align-items:center;gap:12px}
+.site .site-footer .brand img.site-logo{height:36px}
+/* Keep wide uploaded logos from pushing the desktop menu into the buttons. */
+.site .site-header .brand img.site-logo{max-width:180px}
+@media(min-width:1241px) and (max-width:1599px){.site .site-header .brand img.site-logo{height:auto;max-height:40px;max-width:72px}}
+@media(min-width:1241px){.site .site-header .brand:has(.wm:not(.wm-off)) img.site-logo{height:auto;max-height:40px;max-width:72px}}

@@ -54,7 +54,7 @@ $cartCount = count(Cart::lines());
 </main>
 <footer class="site-footer"><div class="wrap">
   <div class="foot-grid">
-    <div><a class="brand" href="/" style="color:#fff"><span class="wm"><b style="color:#fff">818 Digital Agency</b><span style="color:#97a6c4">by 818 Nexus Inc.</span></span></a>
+    <div><a class="brand" href="/" style="color:#fff"><?php if (App\SiteText::logoVersion()) { $logoBg = 'dark'; include APP_ROOT . '/views/partials/logo.php'; } ?><span class="wm<?= App\SiteText::logoVersion() && App\Settings::get('site.logo_wordmark', '1') !== '1' ? ' wm-off' : '' ?>"><b style="color:#fff">818 Digital Agency</b><span style="color:#97a6c4">by 818 Nexus Inc.</span></span></a>
       <p style="margin-top:14px;max-width:34ch">Business registration, domains, email, websites and custom software for Canadian entrepreneurs — guided by AI, accountable to people.</p>
       <p><?= e(Settings::get('company.legal')) ?> · <?= e(Settings::get('company.city')) ?><br><a href="mailto:<?= e(Settings::get('company.email')) ?>"><?= e(Settings::get('company.email')) ?></a></p></div>
     <div><h4>Services</h4><ul><?php foreach (App\Catalog::CATEGORIES as $k => $n): if ($k === 'addon') continue; ?><li><a href="/services/category/<?= $k ?>"><?= e($n) ?></a></li><?php endforeach; ?></ul></div>
