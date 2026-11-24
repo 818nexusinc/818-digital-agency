@@ -53,6 +53,7 @@ final class Integrations
         'bc_registry' => ['government', 'BC Registries Business API', ['api_key' => 'BC_REGISTRY_API_KEY', 'account_id' => 'BC_REGISTRY_ACCOUNT_ID'], 'Automatic BC incorporation filings. Premium BC Registries account with pre-authorized debit required. Setting base_url: sandbox or production gateway from the BC developer portal.'],
         'google_analytics' => ['marketing', 'Google Analytics 4', ['measurement_id' => 'GA_MEASUREMENT_ID'], 'Loads only after cookie consent.'],
         'search_console' => ['marketing', 'Google Search Console', ['verification' => 'GSC_VERIFICATION'], 'Adds the site-verification meta tag.'],
+        'turnstile' => ['security', 'Cloudflare Turnstile', ['site_key' => 'TURNSTILE_SITE_KEY', 'secret_key' => 'TURNSTILE_SECRET_KEY'], 'Optional extra spam check on contact, intake, sign-up and newsletter forms (free at dash.cloudflare.com → Turnstile).'],
         'calendly' => ['productivity', 'Booking (Calendly link)', ['url' => 'CALENDLY_URL'], 'Consultation booking link offered by the Sales agent.'],
     ];
 

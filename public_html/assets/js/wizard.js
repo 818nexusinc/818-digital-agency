@@ -154,7 +154,7 @@
     var draftTimer = null;
     form.addEventListener('focusout', function () { clearTimeout(draftTimer); draftTimer = setTimeout(function () { if (show.ready) saveDraft(); }, 1500); });
     function payload() {
-      var out = { details: {}, addons: [] }, CTRL = { slug: 1, province: 1, tld: 1, domain: 1, agree: 1, kind: 1, website: 1, addon_tld: 1, addon_domain: 1 };
+      var out = { details: {}, addons: [] }, CTRL = { slug: 1, province: 1, tld: 1, domain: 1, agree: 1, kind: 1, website: 1, addon_tld: 1, addon_domain: 1, _ft: 1, _hj: 1 };
       $$('input,select,textarea', form).forEach(function (f) {
         if (f.disabled || !f.name) return;
         if ((f.type === 'radio' || f.type === 'checkbox') && !f.checked) return;

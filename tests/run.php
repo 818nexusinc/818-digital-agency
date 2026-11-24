@@ -608,5 +608,39 @@ tcase('robots welcomes AI crawlers and llms files list services', function () {
     ok(preg_match('/^[a-f0-9]{32}$/', App\Seo::indexNowKey()) === 1);
 });
 
+echo "\nSpam shield\n";
+tcase('spam shield blocks bots and lets people through', function () {
+    $_SERVER['REMOTE_ADDR'] = '10.7.7.' . random_int(2, 250); $_POST = [];
+    $old = App\Spam::token();
+    // Simulate a token issued 10 seconds ago.
+    [$t, $n] = explode('.', $old); $t = (string)(time() - 10);
+    $key = (string)(App\Env::get('APP_KEY') ?: 'nx818-dev-key') . '|spam';
+    $tok = $t . '.' . $n . '.' . substr(hash_hmac('sha256', $t . '.' . $n, $key), 0, 20);
+    $human = ['_ft' => $tok, '_hj' => App\Spam::proof($tok), 'email' => 'real.person@example.org', 'name' => 'Real Person', 'message' => 'I need to register a corporation in New Brunswick.'];
+    eq(App\Spam::check('contact', $human), null, 'person passes');
+    ok(App\Spam::check('contact', ['website' => 'http://x'] + $human)['silent'], 'honeypot is silent');
+    ok(App\Spam::check('contact', array_diff_key($human, ['_ft' => 1])) !== null, 'no token blocked');
+    ok(App\Spam::check('contact', ['_hj' => 'nope'] + $human) !== null, 'no human proof blocked');
+    $fresh = App\Spam::token(); ok(App\Spam::check('contact', ['_ft' => $fresh, '_hj' => App\Spam::proof($fresh)] + $human) !== null, 'too fast blocked');
+    ok(App\Spam::check('contact', ['message' => 'Buy now http://a.com http://b.com http://c.com'] + $human) !== null, 'link stuffing blocked');
+    ok(App\Spam::check('contact', ['message' => 'Dear Sir/Madam, we are a leading outsourcing company'] + $human) !== null, 'vendor spam blocked');
+    ok(App\Spam::check('contact', ['email' => 'x@mailinator.com'] + $human) !== null, 'disposable email blocked');
+    ok(App\Spam::check('contact', ['name' => 'Visit www.spam.xyz'] + $human) !== null, 'link in name blocked');
+    $_SERVER['REMOTE_ADDR'] = '10.8.8.' . random_int(2, 250);
+    ok(App\Spam::check('contact', ['message' => 'Bonjour, je veux enregistrer une société numérotée au Nouveau-Brunswick.'] + $human) === null, 'French passes');
+    ok((int)Db::val("SELECT COUNT(*) FROM security_events WHERE kind = 'spam.blocked'") >= 7, 'blocks logged');
+    ok(App\Spam::stats()['total'] >= 7);
+});
+
+tcase('automation center runs due jobs and respects switches', function () {
+    Settings::set('auto.indexnow_weekly.on', '0'); Settings::set('auto.agents_selftest.last', '');
+    $r = App\Automations::runDue(microtime(true) + 60);
+    ok(isset($r['workflows']) && $r['workflows']['ok'], 'core job ran');
+    ok(!isset($r['indexnow_weekly']), 'switched-off job skipped');
+    ok(isset($r['agents_selftest']) && str_contains($r['agents_selftest']['note'], 'agents passed'), 'self-test ran');
+    $again = App\Automations::runDue(microtime(true) + 60); ok(!isset($again['agents_selftest']), 'daily job not repeated');
+    Settings::set('auto.indexnow_weekly.on', '1');
+});
+
 echo "\n" . ($fail ? "\033[31m{$fail} failed\033[0m, " : '') . "\033[32m{$pass} passed\033[0m\n";
 exit($fail ? 1 : 0);

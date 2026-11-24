@@ -1,6 +1,10 @@
 <?php
 /* French (Canada) UI strings. English is the key. Generated from the rendered site; edit freely. */
 return [
+    'We could not verify this submission. Please refresh the page, make sure JavaScript is on, and try again.' => 'Nous n’avons pas pu vérifier cet envoi. Actualisez la page, vérifiez que JavaScript est activé, puis réessayez.',
+    'Too many submissions from your network. Please try again later or email us.' => 'Trop d’envois depuis votre réseau. Réessayez plus tard ou écrivez-nous.',
+    'Thanks — a member of our team will follow up.' => 'Merci — un membre de notre équipe fera le suivi.',
+    'If that email has an account, a reset link is on its way.' => 'Si ce courriel correspond à un compte, un lien de réinitialisation est en route.',
     'New guides, services and launch offers for Canadian entrepreneurs. One short email a month at most.' => 'Nouveaux guides, services et offres de lancement pour les entrepreneurs canadiens. Au plus un court courriel par mois.',
     'Subscribe' => 'M’abonner',
     'By subscribing you agree to receive occasional emails from 818 Nexus Inc. Unsubscribe anytime.' => 'En vous abonnant, vous acceptez de recevoir des courriels occasionnels de 818 Nexus Inc. Désabonnement en tout temps.',

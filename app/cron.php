@@ -9,5 +9,4 @@ if (PHP_SAPI !== 'cli') { http_response_code(403); exit('CLI only'); }
 require __DIR__ . '/bootstrap.php';
 $stats = App\Cron::run(50);
 if (in_array('-v', $argv, true)) echo json_encode($stats, JSON_PRETTY_PRINT), "\n";
-// Nightly backup at ~06:30 UTC.
-if (gmdate('H:i') === '06:30') App\Backup::run();
+// The nightly backup is one of the automations (Control Tower → Automations).

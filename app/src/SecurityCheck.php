@@ -110,6 +110,8 @@ final class SecurityCheck
         $other = array_diff_key($ev, ['login.failed' => 1, 'mfa.failed' => 1, 'login.rate_limited' => 1]);
         $add('Activity (24 hours)', 'Other security events', array_sum($other) > 50 ? 'warn' : ($other ? 'info' : 'pass'),
             $other ? implode(', ', array_map(fn($k, $n) => "{$k} ×{$n}", array_keys($other), $other)) . '.' : 'None.', 'Review in the audit log.', 'low');
+        $sp = Spam::stats(1);
+        $add('Activity (24 hours)', 'Spam shield', Settings::get('spam.enabled', '1') === '1' ? 'pass' : 'fail', Settings::get('spam.enabled', '1') === '1' ? 'On. ' . $sp['total'] . ' bot submission(s) blocked in the last 24 hours.' : 'Turned off: forms accept bot submissions.', 'Turn it back on in System → Spam shield.', 'high');
         $demo = Demo::count();
         $add('Activity (24 hours)', 'Demo data', $demo ? 'warn' : 'pass', $demo ? $demo . ' demo records are loaded and visible.' : 'No demo data.', 'Delete it in System → Demo data before launch.', 'low');
 

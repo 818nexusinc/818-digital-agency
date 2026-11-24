@@ -15,16 +15,7 @@ final class Cron
         $start = microtime(true);
         $stats = [];
         try {
-            $stats['events'] = Workflows::dispatchEvents();
-            $stats['workflow_steps'] = Workflows::runDue(30, 15);
-            $left = (int)max(5, $budgetSeconds - (microtime(true) - $start) - 5);
-            $stats['agent_tasks'] = Orchestrator::work(8, $left);
-            $stats['events_2'] = Workflows::dispatchEvents();
-            $stats['filings'] = Filings::autoAdvance();
-            $stats['followups'] = self::followUps();
-            $stats['housekeeping'] = self::housekeeping();
-            $stats['reports'] = self::reports();
-            $b = BlogEngine::weekly(); if ($b) $stats['blog'] = $b['slug'];
+            $stats = Automations::runDue($start + $budgetSeconds - 8);
         } catch (\Throwable $e) {
             Log::error('cron.failed', ['error' => $e->getMessage()]);
             $stats['error'] = $e->getMessage();

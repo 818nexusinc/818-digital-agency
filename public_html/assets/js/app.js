@@ -1,3 +1,35 @@
+/* Spam shield: stamp every public form with the page token, and answer the human check only after a real keypress, tap or click. */
+(function () {
+  var m = document.querySelector('meta[name="nx-ft"]'); if (!m) return;
+  var ft = m.content, hj = '';
+  function hex(buf) { return Array.prototype.map.call(new Uint8Array(buf), function (b) { return ('0' + b.toString(16)).slice(-2); }).join(''); }
+  function fill() { document.querySelectorAll('input[name="_hj"]').forEach(function (i) { i.value = hj; }); }
+  function stamp(f) {
+    if (f.dataset.ftDone || (f.method || '').toLowerCase() !== 'post') return; f.dataset.ftDone = '1';
+    var a = document.createElement('input'); a.type = 'hidden'; a.name = '_ft'; a.value = ft; f.appendChild(a);
+    var b = document.createElement('input'); b.type = 'hidden'; b.name = '_hj'; b.value = hj; f.appendChild(b);
+    var ts = document.querySelector('meta[name="nx-ts"]'), act = f.getAttribute('action') || location.pathname;
+    if (ts && /^\/(contact|start|signup|register|subscribe)$/.test(act)) { var w = document.createElement('div'); w.className = 'cf-turnstile'; w.dataset.sitekey = ts.content; var btn = f.querySelector('button:not([type=button]),[type=submit]'); f.insertBefore(w, btn || null); }
+  }
+  function human() {
+    if (hj || !window.crypto || !crypto.subtle) return;
+    crypto.subtle.digest('SHA-256', new TextEncoder().encode(ft.split('').reverse().join('') + '|818')).then(function (d) { hj = hex(d).slice(0, 16); fill(); });
+    ['pointerdown', 'keydown', 'touchstart'].forEach(function (e) { removeEventListener(e, human, true); });
+  }
+  ['pointerdown', 'keydown', 'touchstart'].forEach(function (e) { addEventListener(e, human, true); });
+  function stampAll() { document.querySelectorAll('form').forEach(stamp); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', stampAll); else stampAll();
+  new MutationObserver(stampAll).observe(document.documentElement, { childList: true, subtree: true });
+  var of = window.fetch;
+  window.fetch = function (url, o) {
+    o = o || {};
+    var same = typeof url === 'string' && (url.charAt(0) === '/' || url.indexOf(location.origin) === 0);
+    if (same && (o.method || 'GET').toUpperCase() === 'POST') {
+      var h = new Headers(o.headers || {}); h.set('X-Ft', ft); h.set('X-Hj', hj); o.headers = h;
+    }
+    return of.call(this, url, o);
+  };
+})();
 /* 818 Digital Agency — progressive enhancement. All text is inserted with textContent (no HTML injection). */
 (function () {
   'use strict';

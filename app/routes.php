@@ -75,7 +75,8 @@ $r->get('/contact', fn() => View::page('public/contact', ['title' => 'Contact us
 $r->get('/start', fn() => View::page('public/start', ['title' => 'Tell us what you need', 'services' => Catalog::all()]));
 
 $intake = function () {
-    if (Request::str('website') !== '') throw new UserError('Submission rejected.'); // honeypot
+    App\Spam::guard(Request::path() === '/start' ? 'start' : 'contact', ['email' => Request::str('email', 190), 'name' => Request::str('name', 190), 'business_name' => Request::str('business_name', 190), 'message' => Request::str('message', 4000)],
+        function () { Session::flash('success', "Thanks! We've received your request and emailed a confirmation. Expect a reply within one business day."); View::redirect(Request::path() . '?sent=1'); });
     if (!RateLimit::hit('intake:' . client_ip(), 6, 3600)) throw new UserError('Too many submissions — please email us instead.');
     $c = Crm::upsertCustomer(['email' => Request::str('email', 190), 'name' => Request::str('name', 190), 'phone' => Request::str('phone', 40),
         'business_name' => Request::str('business_name', 190), 'location' => Request::str('location', 190), 'industry' => Request::str('industry', 120)], 'website_form');
@@ -136,7 +137,7 @@ $r->get('/opportunities', fn() => View::page('public/funding', ['title' => 'Smal
 $r->get('/signup', fn() => View::page('public/register', ['title' => 'Create your account', 'noindex' => true]));
 
 $r->post('/subscribe', function () {
-    if (Request::str('website') !== '') throw new UserError('Submission rejected.');
+    App\Spam::guard('subscribe', ['email' => Request::str('email', 190)], fn() => View::redirect('/?subscribed=1#news'));
     if (!RateLimit::hit('subscribe:' . client_ip(), 5, 3600)) throw new UserError('Too many sign-ups from this network. Try again later.');
     $email = strtolower(Request::str('email', 190));
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) throw new UserError('Enter a valid email address.');
@@ -150,10 +151,10 @@ $r->post('/subscribe', function () {
 });
 
 /* Form endpoints (JSON, CSRF-checked like every POST) */
-$r->post('/order/add', function () { $in = Request::json(); $r = App\Wizard::add($in); App\FormDrafts::complete($in['draft'] ?? null); View::json($r); });
-$r->post('/order/bundle', function () { $in = Request::json(); $r = App\Wizard::bundle($in); App\FormDrafts::complete($in['draft'] ?? null); View::json($r); });
-$r->post('/order/quote', function () { $in = Request::json(); $r = App\Wizard::quote($in); App\FormDrafts::complete($in['draft'] ?? null); View::json($r); });
-$r->post('/order/draft', fn() => View::json(App\FormDrafts::save(Request::json())));
+$r->post('/order/add', function () { $in = Request::json(); App\Spam::guard('order', $in + ['_ft' => $in['_ft'] ?? null], fn() => View::json(['ok' => true, 'reference' => 'R' . strtoupper(bin2hex(random_bytes(3)))])); $r = App\Wizard::add($in); App\FormDrafts::complete($in['draft'] ?? null); View::json($r); });
+$r->post('/order/bundle', function () { $in = Request::json(); App\Spam::guard('order', $in + ['_ft' => $in['_ft'] ?? null], fn() => View::json(['ok' => true, 'reference' => 'R' . strtoupper(bin2hex(random_bytes(3)))])); $r = App\Wizard::bundle($in); App\FormDrafts::complete($in['draft'] ?? null); View::json($r); });
+$r->post('/order/quote', function () { $in = Request::json(); App\Spam::guard('order', $in + ['_ft' => $in['_ft'] ?? null], fn() => View::json(['ok' => true, 'reference' => 'R' . strtoupper(bin2hex(random_bytes(3)))])); $r = App\Wizard::quote($in); App\FormDrafts::complete($in['draft'] ?? null); View::json($r); });
+$r->post('/order/draft', function () { $in = Request::json(); App\Spam::guard('draft', [], fn() => View::json(['ok' => true, 'token' => bin2hex(random_bytes(16))])); View::json(App\FormDrafts::save($in)); });
 
 /* SEO / machine-readable */
 $r->get('/sitemap.xml', function () { header('Content-Type: application/xml; charset=UTF-8'); echo Seo::sitemap(); });
@@ -248,6 +249,7 @@ $r->post('/proposal/{token}/accept', function ($p) {
 
 $r->get('/login', fn() => View::page('public/login', ['title' => 'Sign in', 'noindex' => true]));
 $r->post('/login', function () {
+    App\Spam::guard('login', []);
     $res = Auth::attempt(Request::str('email', 190), (string)Request::input('password', ''));
     if ($res === 'mfa') View::redirect('/login/mfa');
     Session::start();
@@ -261,6 +263,7 @@ $r->post('/login/mfa', function () {
     View::redirect('/admin');
 });
 $signup = function () {
+    App\Spam::guard('signup', ['email' => Request::str('email', 190), 'name' => Request::str('name', 190), 'business_name' => Request::str('business_name', 190)]);
     if (!RateLimit::hit('register:' . client_ip(), 5, 3600)) throw new UserError('Too many sign-ups from this network. Try again later.');
     $u = Auth::register(Request::str('name', 190), Request::str('email', 190), (string)Request::input('password', ''), ['phone' => Request::str('phone', 40), 'business_name' => Request::str('business_name', 190), 'consent_marketing' => (bool)Request::input('consent_marketing')]);
     Auth::loginAs((int)$u['id']);
@@ -272,6 +275,7 @@ $r->post('/register', $signup);
 $r->post('/logout', function () { Auth::logout(); View::redirect('/'); });
 $r->get('/forgot', fn() => View::page('public/forgot', ['title' => 'Reset password', 'noindex' => true]));
 $r->post('/forgot', function () {
+    App\Spam::guard('forgot', ['email' => Request::str('email', 190)], function () { Session::flash('success', 'If that email has an account, a reset link is on its way.'); View::redirect('/login'); });
     if (RateLimit::hit('forgot:' . client_ip(), 5, 3600) && ($t = Auth::createResetToken(Request::str('email', 190)))) {
         Mailer::send('password_reset', Request::str('email', 190), ['link' => url('/reset/' . $t)]);
     }
@@ -288,6 +292,7 @@ $r->post('/reset/{token}', function ($p) {
 /* ─────────────────────────── JSON API ─────────────────────────── */
 
 $r->post('/api/v1/chat', function () {
+    App\Spam::guard('chat', ['message' => Request::str('message', 2000)], fn() => View::json(['ok' => true, 'reply' => 'Thanks — a member of our team will follow up.', 'actions' => [], 'suggestions' => []]));
     $res = ChatService::handle(Request::str('conversation', 64) ?: null, Request::str('message', 2000), ['path' => Request::str('path', 190), 'service' => Request::str('service', 60)]);
     View::json(['ok' => true] + $res);
 });

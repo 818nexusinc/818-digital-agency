@@ -17,7 +17,7 @@ $cartCount = count(Cart::lines());
 <?php if ($v = Settings::get('seo.bing_verification')): ?><meta name="msvalidate.01" content="<?= e($v) ?>"><?php endif; ?>
 <link rel="alternate" hreflang="en-CA" href="<?= e($canon) ?>"><link rel="alternate" hreflang="fr-CA" href="<?= e($canon . (str_contains($canon, '?') ? '&' : '?') . 'lang=fr') ?>"><link rel="alternate" hreflang="x-default" href="<?= e($canon) ?>">
 <meta name="robots" content="<?= !empty($noindex) ? 'noindex,nofollow' : 'index,follow,max-snippet:-1,max-image-preview:large' ?>">
-<meta name="csrf" content="<?= e($csrf ?? '') ?>">
+<meta name="csrf" content="<?= e($csrf ?? '') ?>"><meta name="nx-ft" content="<?= e(App\Spam::token()) ?>"><?php if ($tsk = App\Integrations::secret('turnstile', 'site_key')): ?><meta name="nx-ts" content="<?= e($tsk) ?>"><script src="https://challenges.cloudflare.com/turnstile/v0/api.js" nonce="<?= e($nonce ?? '') ?>" async defer></script><?php endif; ?>
 <link rel="alternate" type="text/plain" href="/llms.txt" title="LLM guide"><link rel="alternate" type="application/rss+xml" href="/blog/feed.xml" title="818 Digital Agency guides"><link rel="alternate" type="application/json" href="/services.json" title="Service catalog">
 <link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
 

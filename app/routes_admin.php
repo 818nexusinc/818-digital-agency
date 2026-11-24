@@ -19,6 +19,32 @@ $r->get('/admin', function () use ($me) {
         'blog' => ['last' => Settings::get('blog.last_generated'), 'count' => (int)Db::val("SELECT COUNT(*) FROM content_items WHERE kind = 'blog' AND status = 'published'"),
             'review' => (int)Db::val("SELECT COUNT(*) FROM content_items WHERE kind = 'blog' AND status = 'review'"), 'enabled' => Settings::get('blog.enabled', '1') === '1'],
         'demo' => App\Demo::count(), 'sim' => $_SESSION['sim_results'] ?? null, 'simAt' => $_SESSION['sim_at'] ?? null,
+        'inbox' => (function () {
+            $i = [];
+            foreach (Db::all("SELECT id, title, kind, risk, requested_by, created_at FROM approvals WHERE status = 'pending' ORDER BY id DESC LIMIT 6") as $a)
+                $i[] = ['Approval', $a['title'], label($a['kind']) . ' · from ' . $a['requested_by'], $a['created_at'], '/admin/approvals', 'Review', $a['risk'] === 'high' ? 0 : 1];
+            foreach (Db::all("SELECT id, title, agent_slug, error, updated_at FROM agent_tasks WHERE status = 'failed' ORDER BY updated_at DESC LIMIT 3") as $t)
+                $i[] = ['Failed task', $t['title'], $t['agent_slug'] . ' · ' . str_limit((string)$t['error'], 60), $t['updated_at'], '/admin/tasks/' . $t['id'], 'Open', 2];
+            foreach (Db::all("SELECT t.id, t.number, t.subject, t.created_at, c.name, c.email FROM tickets t LEFT JOIN customers c ON c.id = t.customer_id WHERE t.status = 'open' ORDER BY t.id DESC LIMIT 4") as $t)
+                $i[] = ['Support', $t['subject'], ($t['name'] ?: $t['email'] ?: 'Customer') . ' · ' . $t['number'], $t['created_at'], '/admin/tickets/' . $t['number'], 'Reply', 2];
+            foreach (Db::all("SELECT l.id, l.customer_id, l.summary, l.source, l.score, l.created_at, c.name, c.email, c.business_name FROM leads l JOIN customers c ON c.id = l.customer_id WHERE l.status = 'lead' AND l.follow_up_count = 0 AND l.created_at >= ? ORDER BY l.score DESC LIMIT 5", [gmdate('Y-m-d H:i:s', time() - 14 * 86400)]) as $l)
+                $i[] = ['New lead', ($l['name'] ?: $l['email']) . ($l['business_name'] ? ' — ' . $l['business_name'] : ''), str_limit((string)$l['summary'], 80) . ' · ' . label((string)$l['source']), $l['created_at'], '/admin/customers/' . $l['customer_id'], 'Contact', 3];
+            foreach (Db::all("SELECT id, form, email, name, step, steps, updated_at FROM form_drafts WHERE status = 'open' AND email IS NOT NULL ORDER BY updated_at DESC LIMIT 3") as $d)
+                $i[] = ['Unfinished form', ($d['name'] ?: $d['email']), label($d['form']) . ' · stopped at step ' . ($d['step'] + 1) . ' of ' . max(1, $d['steps']), $d['updated_at'], '/admin/drafts', 'Follow up', 4];
+            usort($i, fn($a, $b) => [$a[6], $b[3]] <=> [$b[6], $a[3]]);
+            return array_slice($i, 0, 12);
+        })(),
+        'activity' => (function () {
+            $a = [];
+            foreach (Db::all("SELECT o.number, o.total_cents, o.paid_at, c.name, c.email FROM orders o JOIN customers c ON c.id = o.customer_id WHERE o.paid_at IS NOT NULL ORDER BY o.paid_at DESC LIMIT 5") as $o) $a[] = [$o['paid_at'], 'Order ' . $o['number'] . ' paid', ($o['name'] ?: $o['email']) . ' · ' . money((int)$o['total_cents'])];
+            foreach (Db::all("SELECT l.created_at, l.source, c.name, c.email FROM leads l JOIN customers c ON c.id = l.customer_id ORDER BY l.id DESC LIMIT 5") as $l) $a[] = [$l['created_at'], 'New lead', ($l['name'] ?: $l['email']) . ' · ' . label((string)$l['source'])];
+            foreach (Db::all("SELECT title, publish_at FROM content_items WHERE kind = 'blog' AND status = 'published' AND publish_at IS NOT NULL ORDER BY publish_at DESC LIMIT 2") as $p) $a[] = [$p['publish_at'], 'Article published', $p['title']];
+            foreach (Db::all("SELECT number, subject, created_at FROM tickets ORDER BY id DESC LIMIT 3") as $t) $a[] = [$t['created_at'], 'Support request', $t['subject']];
+            usort($a, fn($x, $y) => strcmp((string)$y[0], (string)$x[0]));
+            return array_slice($a, 0, 8);
+        })(),
+        'autos' => array_map(fn($k) => ['name' => App\Automations::JOBS[$k][0], 'last' => App\Automations::last($k), 'on' => App\Automations::enabled($k)], ['lead_followups', 'draft_followups', 'blog_weekly', 'agents_selftest', 'security_daily', 'backup_nightly']),
+        'spamToday' => App\Spam::stats(1)['total'],
         'approvals' => Db::all("SELECT * FROM approvals WHERE status = 'pending' ORDER BY CASE risk WHEN 'high' THEN 0 WHEN 'medium' THEN 1 ELSE 2 END, id DESC LIMIT 8"),
         'failed' => Db::all("SELECT * FROM agent_tasks WHERE status = 'failed' ORDER BY updated_at DESC LIMIT 5"),
         'leads' => Db::all("SELECT l.*, c.name, c.email, c.business_name FROM leads l JOIN customers c ON c.id = l.customer_id WHERE l.status NOT IN ('converted','closed') ORDER BY l.score DESC, l.id DESC LIMIT 6"),
@@ -537,3 +563,58 @@ $r->post('/admin/search', function () use ($me) {
     }
     View::redirect('/admin/search');
 }, $P('content.write'));
+
+$r->get('/admin/spam', function () {
+    View::page('admin/spam', ['title' => 'Spam shield', 's' => App\Spam::stats(7), 'enabled' => Settings::get('spam.enabled', '1') === '1', 'maxLinks' => (int)Settings::get('spam.max_links', '2'), 'blocked' => (string)Settings::get('spam.blocked_ips')]);
+}, $P('settings.read'));
+$r->post('/admin/spam', function () use ($me) {
+    if ($ip = Request::str('block', 45)) {
+        if (filter_var($ip, FILTER_VALIDATE_IP)) Settings::set('spam.blocked_ips', implode(',', array_unique(array_merge(App\Spam::blocked(), [$ip]))));
+        Session::flash('success', 'Network blocked.');
+    } else {
+        Settings::set('spam.enabled', !empty($_POST['enabled']) ? '1' : '0');
+        Settings::set('spam.max_links', (string)max(0, min(10, (int)Request::input('max_links', 2))));
+        Settings::set('spam.blocked_ips', implode(',', array_filter(array_map('trim', explode(',', Request::str('blocked_ips', 4000))), fn($i) => filter_var($i, FILTER_VALIDATE_IP))));
+        Session::flash('success', 'Spam shield saved.');
+    }
+    Audit::log('spam.settings', 'system', null, ['by' => $me()['email']]);
+    View::redirect('/admin/spam');
+}, $P('settings.write'));
+
+$r->get('/admin/automations', function () {
+    $php = (PHP_BINARY && !str_contains(PHP_BINARY, 'fpm')) ? PHP_BINARY : '/usr/bin/php';
+    View::page('admin/automations', ['title' => 'Automations', 'cron' => Settings::get('system.cron_last_run'), 'cmd' => $php . ' ' . APP_ROOT . '/cron.php',
+        'ai' => Integrations::configured('anthropic') || Integrations::configured('openai')]);
+}, $P('dashboard.view'));
+$r->post('/admin/automations/run', function () use ($me) {
+    @set_time_limit(120);
+    $k = Request::str('key', 40);
+    if ($k === 'all') { App\Cron::run(40); Session::flash('success', 'Ran everything that was due.'); }
+    elseif (isset(App\Automations::JOBS[$k])) { $r = App\Automations::runOne($k, $me()['email']); Session::flash($r['ok'] ? 'success' : 'error', App\Automations::JOBS[$k][0] . ': ' . $r['note']); }
+    View::redirect('/admin/automations');
+}, $P('settings.write'));
+$r->post('/admin/automations/toggle', function () use ($me) {
+    $k = Request::str('key', 40);
+    if (isset(App\Automations::JOBS[$k]) && App\Automations::JOBS[$k][4]) {
+        $on = !App\Automations::enabled($k); Settings::set("auto.{$k}.on", $on ? '1' : '0');
+        Audit::log('automation.' . ($on ? 'on' : 'off'), 'system', $k, ['by' => $me()['email']]);
+    }
+    View::redirect('/admin/automations');
+}, $P('settings.write'));
+
+$r->get('/admin/update', fn() => View::page('admin/update', ['title' => 'Install an update', 'why' => App\Updater::supported(), 'backups' => App\Updater::backups()]), $P('settings.write'));
+$r->post('/admin/update', function () use ($me) {
+    if (($me()['role'] ?? '') !== 'owner') throw new UserError('Only the owner can install updates.');
+    @set_time_limit(180);
+    if (Request::str('action', 10) === 'rollback') {
+        $r = App\Updater::rollback(Request::str('backup', 120), $me()['email']);
+        Session::flash('success', "Restored version {$r['version']} ({$r['files']} files).");
+    } else {
+        $f = $_FILES['package'] ?? null;
+        if (!$f || ($f['error'] ?? 1) !== UPLOAD_ERR_OK || !is_uploaded_file($f['tmp_name'])) throw new UserError('The upload did not arrive. Check the file is under the size limit and try again.');
+        if (empty($_POST['confirm'])) throw new UserError('Tick the box to confirm.');
+        $r = App\Updater::apply($f['tmp_name'], $me()['email']);
+        Session::flash('success', "Updated from {$r['from']} to {$r['to']} ({$r['files']} files). The previous version is saved for rollback.");
+    }
+    View::redirect('/admin/update');
+}, $P('settings.write'));
