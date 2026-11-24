@@ -18,6 +18,7 @@ final class Automations
         'approval_reminders'=> ['Remind me about approvals', 'Emails you once a day if anything has waited in the Action center for more than 24 hours.', 86400, 'Owner', true],
         'owner_reports'     => ['Daily and weekly summaries', 'Emails you a daily summary after noon UTC and a weekly report on Mondays, and asks the Growth agent for three actions each week.', 3600, 'Owner', true],
         'blog_weekly'       => ['Weekly blog article', 'Writes and publishes one SEO article every 7 days and tells search engines about it.', 21600, 'Marketing', true],
+        'pricing_weekly'    => ['Weekly pricing check', 'Asks the Pricing Agent to check competitor prices and government fees across Atlantic Canada every Monday and propose changes for you to approve. Needs the Anthropic connection for web research.', 604800, 'Sales', true],
         'indexnow_weekly'   => ['Notify search engines', 'Sends every page address to Bing and other IndexNow engines once a week so changes are picked up quickly.', 604800, 'Marketing', true],
         'agents_selftest'   => ['AI agent self-test', 'Runs all agents through the simulator every night and emails you if any of them fails.', 86400, 'Health', true],
         'security_daily'    => ['Daily security check', 'Runs the security check every morning and emails you if a new problem appears.', 86400, 'Health', true],
@@ -79,6 +80,9 @@ final class Automations
             case 'approval_reminders': return self::approvalReminder();
             case 'owner_reports': $r = Cron::reports(); return $r ? implode(', ', $r) . ' sent.' : 'Nothing due.';
             case 'blog_weekly': $b = BlogEngine::weekly(); return $b ? 'Wrote "' . $b['title'] . '".' : 'Not due yet (one article every 7 days).';
+            case 'pricing_weekly':
+                if (!Integrations::configured('anthropic')) return 'Skipped: connect Anthropic so the Pricing Agent can search the web.';
+                return 'Queued pricing research (task #' . Pricing::research(null, '', 'schedule') . ').';
             case 'indexnow_weekly': $r = Seo::indexNow(Seo::allUrls()); return $r['ok'] ? "Sent {$r['count']} pages." : ($r['note'] ?? 'Search engines did not accept the list (code ' . ($r['code'] ?? 0) . ').');
             case 'agents_selftest':
                 $res = Simulator::run(); $bad = array_filter($res, fn($x) => !$x['ok']);

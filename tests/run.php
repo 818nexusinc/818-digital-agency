@@ -673,5 +673,38 @@ tcase('site editor: edits apply per page or everywhere, keep placeholders, strip
     $rp->setValue(null, null); $ro->setValue(null, null); Db::run('DELETE FROM site_text'); Db::run('DELETE FROM site_pages');
 });
 
+tcase('pricing: markup maths, sources required, confirmed fees protected, approval changes the live price', function () {
+    $P = App\Pricing::class;
+    Db::run('DELETE FROM price_costs'); Db::run('DELETE FROM competitor_prices'); Db::run('DELETE FROM price_proposals');
+    $before = Db::val("SELECT province_prices FROM services WHERE slug = 'corp_numbered'");
+    eq($P::normVariant('corp_numbered', ' nb'), 'NB'); eq($P::normVariant('domain_register', '.CA'), 'ca');
+    throws(fn() => $P::saveCost('corp_numbered', 'NB', ['gov_fee' => '100'], 'pricing', false));   // agent must cite a source
+    $P::saveCost('corp_numbered', 'NB', ['gov_fee' => '100', 'third_party' => '20', 'confirmed' => 1], 'owner', true);
+    throws(fn() => $P::saveCost('corp_numbered', 'NB', ['gov_fee' => '1', 'source_url' => 'https://x.test'], 'pricing', false)); // cannot overwrite a confirmed fee
+    throws(fn() => $P::addCompetitor('corp_numbered', 'NB', ['competitor' => 'X', 'price' => '300'], 'pricing'));                // agent must give the page
+    $P::addCompetitor('corp_numbered', 'NB', ['competitor' => 'A', 'price' => '300', 'url' => 'https://a.test'], 'pricing');
+    $P::addCompetitor('corp_numbered', 'NB', ['competitor' => 'B', 'price' => '500'], 'owner');
+    $r = array_values(array_filter($P::rows(null, 'corp_numbered'), fn($x) => $x['variant'] === 'NB'))[0];
+    $price = json_decode($before, true)['NB'];
+    eq($r['markup'], $price - 12000); eq($r['low'], 30000); eq($r['high'], 50000); eq($r['median'], 40000);
+    throws(fn() => $P::propose('corp_numbered', 'NB', 45000, 'match', '', 'pricing'));                                         // needs a reason
+    $id = $P::propose('corp_numbered', 'NB', 45000, 'match', 'Closer to the market', 'pricing');
+    eq((int)json_decode(Db::val("SELECT province_prices FROM services WHERE slug = 'corp_numbered'"), true)['NB'], $price);    // nothing changes before approval
+    $P::decide($id, true, 'owner');
+    eq((int)json_decode(Db::val("SELECT province_prices FROM services WHERE slug = 'corp_numbered'"), true)['NB'], 45000);
+    throws(fn() => $P::decide($id, true, 'owner'));
+    Db::run("UPDATE services SET province_prices = ? WHERE slug = 'corp_numbered'", [$before]);
+    Db::run('DELETE FROM price_costs'); Db::run('DELETE FROM competitor_prices'); Db::run('DELETE FROM price_proposals');
+});
+
+tcase('overview briefs and work-by-service read live records', function () {
+    $team = App\Briefs::team(); ok(count($team) >= 21, 'every agent, including the Pricing Agent, has a brief');
+    ok(in_array('pricing', array_column($team, 'slug'), true));
+    foreach ([1, 3, 7] as $d) foreach (App\Briefs::due($d) as $it) ok($it[6] || $it[0] <= gmdate('Y-m-d H:i:s', time() + $d * 86400), 'due item inside the window');
+    ok(count(App\Briefs::due(7)) >= count(App\Briefs::due(1)));
+    $slugs = array_column(App\WorkBoard::services('registration'), 'slug'); ok(in_array('corp_numbered', $slugs, true));
+    foreach (App\WorkBoard::requests(['corp_numbered']) as $r) ok($r[4] === 'Numbered Corporation', 'only this service');
+});
+
 echo "\n" . ($fail ? "\033[31m{$fail} failed\033[0m, " : '') . "\033[32m{$pass} passed\033[0m\n";
 exit($fail ? 1 : 0);

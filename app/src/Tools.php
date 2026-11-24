@@ -15,9 +15,9 @@ final class Tools
 
     /** Which agents each orchestrating agent may assign work to. */
     private const DELEGATION = [
-        'chief_ops' => ['sales', 'concierge', 'registration', 'website_dev', 'web_app', 'brand', 'seo', 'content', 'social', 'support', 'project_manager', 'qa', 'finance', 'growth', 'retention', 'research', 'security'],
+        'chief_ops' => ['sales', 'concierge', 'registration', 'website_dev', 'web_app', 'brand', 'seo', 'content', 'social', 'support', 'project_manager', 'qa', 'finance', 'growth', 'retention', 'research', 'security', 'pricing'],
         'project_manager' => ['registration', 'website_dev', 'web_app', 'brand', 'content', 'seo', 'qa', 'support'],
-        'owner_assistant' => ['chief_ops', 'research', 'growth', 'content', 'seo', 'finance', 'retention', 'security'],
+        'owner_assistant' => ['chief_ops', 'research', 'growth', 'content', 'seo', 'finance', 'retention', 'security', 'pricing'],
         'registration' => ['qa'], 'website_dev' => ['qa', 'content'], 'web_app' => ['qa'],
     ];
 
@@ -67,6 +67,18 @@ final class Tools
             ['filing_flag', 'Record a review finding on a filing. If needs_customer_changes is true the customer is asked to correct details (and re-authorize).', $obj(['filing_id' => ['type' => 'integer'], 'message_to_customer' => $str('Plain-language request'), 'internal_note' => $str('Note for the team'), 'needs_customer_changes' => ['type' => 'boolean']], ['filing_id', 'internal_note']), 'low', [self::class, 'filingFlag']],
             ['filing_submit', 'Submit an authorized filing to the government registry (automatic via API where available, otherwise queued for portal filing). Gates are enforced by the platform.', $obj(['filing_id' => ['type' => 'integer'], 'review_summary' => $str('What you checked')], ['filing_id', 'review_summary']), 'medium', [self::class, 'filingSubmit']],
             ['security_events', 'Recent security events (failed logins, denied access, upload rejections).', $obj([]), 'read', [self::class, 'securityEvents']],
+            ['web_search', 'Search the web (runs on the AI provider; Anthropic only). Use it to find official fees and competitor prices.', $obj(['query' => $str('Search terms')], ['query']), 'read', [self::class, 'webSearchLocal']],
+            ['pricing_overview', 'Our price points (per Atlantic province or domain ending), known government and third-party costs, markup, competitor prices on file and open proposals. Optional slug or category.', $obj(['slug' => $str('Service slug'), 'category' => $str(implode('|', array_keys(Catalog::CATEGORIES)))]), 'read', [self::class, 'pricingOverview']],
+            ['save_cost_finding', 'Record an official government filing fee and/or third-party cost for a service price point, with the official source page. Saved as unconfirmed for the owner to check.',
+                $obj(['slug' => $str('Service slug'), 'variant' => $str('Province code (NB, NS, PE, NL, FED, ...), domain ending (ca, com), or empty'), 'gov_fee' => $str('Government fee in CAD, e.g. 112.00'),
+                    'third_party' => $str('Other cost in CAD, e.g. wholesale domain cost'), 'source_url' => $str('Official page address'), 'notes' => $str('What the fee covers')], ['slug', 'source_url']), 'low', [self::class, 'saveCostFinding']],
+            ['save_competitor_price', 'Record a competitor\'s price for one of our services, with the page where it is published.',
+                $obj(['slug' => $str('Our service slug'), 'variant' => $str('Province code or domain ending it compares to, or empty'), 'competitor' => $str('Business name'), 'region' => $str('Where they operate, e.g. Halifax, NS'),
+                    'price' => $str('Their price in CAD'), 'includes_gov_fee' => ['type' => 'boolean', 'description' => 'Whether their price includes the government fee'], 'billing' => $str('one-time|month|year'),
+                    'url' => $str('Page address'), 'notes' => $str('What is included')], ['slug', 'competitor', 'price', 'url']), 'low', [self::class, 'saveCompetitorPrice']],
+            ['propose_price', 'Propose a new price for one price point. The owner approves or rejects it; nothing changes on the website until then.',
+                $obj(['slug' => $str('Service slug'), 'variant' => $str('Province code or domain ending, or empty'), 'price' => $str('Proposed price in CAD'), 'strategy' => $str(implode('|', array_keys(Pricing::STRATEGIES))),
+                    'rationale' => $str('Why, citing the competitor prices and costs on file')], ['slug', 'price', 'rationale']), 'low', [self::class, 'proposePrice']],
         ];
         $out = [];
         foreach ($list as [$n, $d, $s, $risk, $h]) $out[$n] = ['name' => $n, 'description' => $d, 'schema' => $s, 'risk' => $risk, 'handler' => $h];
@@ -426,6 +438,37 @@ final class Tools
         Filings::event((int)$f['id'], 'agent_review', 'Reviewed: ' . str_limit((string)$in['review_summary'], 1500), $agent['slug']);
         try { return Filings::submit((int)$f['id'], $agent['slug']); }
         catch (\RuntimeException $e) { return ['ok' => false, 'error' => $e->getMessage(), 'note' => 'Will retry automatically.']; }
+    }
+
+    /** Server-side tool: the provider runs the search. Reaching this handler means the provider cannot search. */
+    public static function webSearchLocal(array $in): array { return ['error' => 'Web search needs the Anthropic connection. Use the competitor prices already on file, or ask the owner to add them.']; }
+
+    public static function pricingOverview(array $in): array
+    {
+        $rows = Pricing::rows(($in['category'] ?? '') ?: null, ($in['slug'] ?? '') ?: null);
+        $money = fn(?int $c) => $c === null ? null : number_format($c / 100, 2, '.', '');
+        return ['currency' => 'CAD', 'price_points' => array_map(fn($r) => ['slug' => $r['slug'], 'service' => $r['name'], 'variant' => $r['variant'], 'variant_name' => $r['vlabel'], 'our_price' => $money($r['price']),
+            'billing' => $r['billing'], 'gov_fee' => $money($r['gov']), 'third_party' => $money($r['third']), 'fee_confirmed_by_owner' => $r['confirmed'], 'markup' => $money($r['markup']),
+            'competitors' => array_map(fn($c) => ['name' => $c['competitor'], 'price' => $money((int)$c['price_cents']), 'includes_gov_fee' => $c['includes_gov_fee'] === null ? null : (bool)$c['includes_gov_fee'], 'url' => $c['url']], $r['comp']),
+            'open_proposal' => $r['proposals'] ? $money((int)$r['proposals'][0]['proposed_cents']) : null], array_slice($rows, 0, 80))];
+    }
+
+    public static function saveCostFinding(array $in, array $ctx, array $agent): array
+    {
+        Pricing::saveCost((string)$in['slug'], Pricing::normVariant((string)$in['slug'], (string)($in['variant'] ?? '')), $in, $agent['slug'], false);
+        return ['saved' => true, 'status' => 'unconfirmed — the owner will check it'];
+    }
+
+    public static function saveCompetitorPrice(array $in, array $ctx, array $agent): array
+    {
+        return ['saved' => true, 'id' => Pricing::addCompetitor((string)$in['slug'], Pricing::normVariant((string)$in['slug'], (string)($in['variant'] ?? '')), $in, $agent['slug'])];
+    }
+
+    public static function proposePrice(array $in, array $ctx, array $agent): array
+    {
+        $c = (int)round((float)str_replace([',', '$'], '', (string)$in['price']) * 100);
+        $id = Pricing::propose((string)$in['slug'], Pricing::normVariant((string)$in['slug'], (string)($in['variant'] ?? '')), $c, (string)($in['strategy'] ?? 'match'), (string)$in['rationale'], $agent['slug']);
+        return ['proposal_id' => $id, 'status' => 'waiting for the owner'];
     }
 
     public static function securityEvents(): array

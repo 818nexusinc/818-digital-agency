@@ -82,7 +82,10 @@ final class Ai
             }
         }
         $body = ['model' => $model, 'max_tokens' => $maxTokens, 'temperature' => $temp, 'system' => $system, 'messages' => $msgs];
-        if ($tools) $body['tools'] = array_map(fn($t) => ['name' => $t['name'], 'description' => $t['description'], 'input_schema' => $t['schema']], $tools);
+        // web_search runs on Anthropic's side (server tool); results come back as text with citations.
+        if ($tools) $body['tools'] = array_map(fn($t) => $t['name'] === 'web_search'
+            ? ['type' => 'web_search_20250305', 'name' => 'web_search', 'max_uses' => 8, 'user_location' => ['type' => 'approximate', 'country' => 'CA', 'region' => 'New Brunswick', 'city' => 'Moncton', 'timezone' => 'America/Moncton']]
+            : ['name' => $t['name'], 'description' => $t['description'], 'input_schema' => $t['schema']], $tools);
         $headers = ['x-api-key: ' . Integrations::secret('anthropic', 'api_key'), 'anthropic-version: 2023-06-01', 'content-type: application/json'];
         if ($ws = Env::get('ANTHROPIC_WORKSPACE_ID')) $headers[] = 'anthropic-workspace-id: ' . $ws;
         $r = Integrations::http('POST', 'https://api.anthropic.com/v1/messages', $headers, jenc($body), $timeout);
@@ -112,6 +115,7 @@ final class Ai
             } else $msgs[] = ['role' => $m['role'], 'content' => (string)$m['content']];
         }
         $body = ['model' => $model, 'max_tokens' => $maxTokens, 'temperature' => $temp, 'messages' => $msgs];
+        $tools = array_values(array_filter($tools, fn($t) => $t['name'] !== 'web_search'));
         if ($tools) $body['tools'] = array_map(fn($t) => ['type' => 'function', 'function' => ['name' => $t['name'], 'description' => $t['description'], 'parameters' => $t['schema']]], $tools);
         $r = Integrations::http('POST', 'https://api.openai.com/v1/chat/completions', ['Authorization: Bearer ' . Integrations::secret('openai', 'api_key'), 'Content-Type: application/json'], jenc($body), $timeout);
         if ($r['status'] !== 200) throw new \RuntimeException('HTTP ' . $r['status']);

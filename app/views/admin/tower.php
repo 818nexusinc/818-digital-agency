@@ -1,126 +1,117 @@
 <?php
-$d = $dash;
+/* Overview: the AI team's daily brief — what each agent did, what is coming due, and what needs the owner. */
+$tz = new DateTimeZone(App\Settings::get('company.tz', 'America/Moncton') ?: 'America/Moncton');
+$loc = fn(string $at) => (new DateTime($at . ' UTC'))->setTimezone($tz);
+$todayKey = (new DateTime('now', $tz))->format('Y-m-d');
+$tomorrowKey = (new DateTime('tomorrow', $tz))->format('Y-m-d');
 $ago = function (?string $at): string {
     if (!$at) return '';
     $s = max(0, time() - strtotime($at . ' UTC'));
-    return $s < 3600 ? max(1, (int)round($s / 60)) . 'm' : ($s < 86400 ? (int)round($s / 3600) . 'h' : ($s < 86400 * 30 ? (int)round($s / 86400) . 'd' : substr($at, 0, 10)));
+    return $s < 3600 ? max(1, (int)round($s / 60)) . ' min ago' : ($s < 86400 ? (int)round($s / 3600) . ' h ago' : (int)round($s / 86400) . ' d ago');
 };
 $cronOk = $cron && strtotime($cron . ' UTC') >= time() - 900;
 $aiOn = $providers['anthropic'] || $providers['openai'];
-$pct = fn(int $a, int $b) => $b > 0 ? (int)round($a / $b * 100) : 0;
-$cad = fn(int $c) => '$' . number_format($c / 100, 0);
-
-/* Grouped bar chart as SVG: one axis, rounded data ends, 2px gap inside each pair, native tooltip per bar. */
-$chart = function (array $rows, string $id) use ($cad): string {
-    $W = 920; $H = 300; $L = 64; $R = 12; $T = 14; $B = 34;
-    $max = 0; foreach ($rows as $r) $max = max($max, $r['inv'], $r['paid']);
-    $step = $max <= 0 ? 1000 : (function ($m) { $raw = $m / 4; $p = 10 ** floor(log10($raw)); foreach ([1, 2, 2.5, 5, 10] as $f) if ($f * $p >= $raw) return $f * $p; return 10 * $p; })($max);
-    $top = $step * 4; $pw = $W - $L - $R; $ph = $H - $T - $B; $n = count($rows); $slot = $pw / max(1, $n);
-    $bw = min(22, ($slot - 14) / 2);
-    $y = fn($v) => $T + $ph - ($v / $top) * $ph;
-    $o = '<svg class="ybars" id="' . $id . '" viewBox="0 0 ' . $W . ' ' . $H . '" role="img" aria-label="Invoiced and paid revenue by period">';
-    for ($i = 0; $i <= 4; $i++) { $v = $step * $i; $yy = round($y($v), 1);
-        $o .= '<line x1="' . $L . '" x2="' . ($W - $R) . '" y1="' . $yy . '" y2="' . $yy . '" class="' . ($i ? 'grid' : 'base') . '"/><text x="' . ($L - 8) . '" y="' . ($yy + 4) . '" class="ax" text-anchor="end">' . e($cad((int)$v)) . '</text>'; }
-    foreach ($rows as $i => $r) {
-        $cx = $L + $slot * $i + $slot / 2;
-        foreach ([['inv', $cx - $bw - 1, 'b-inv', 'Invoiced'], ['paid', $cx + 1, 'b-paid', 'Paid']] as [$k, $x, $cls, $lbl]) {
-            $v = $r[$k]; $h = max(0, $T + $ph - $y($v)); $yy = $T + $ph - $h; $rad = min(4, $h / 2, $bw / 2);
-            $path = $h <= 0 ? '' : 'M' . round($x, 1) . ',' . round($T + $ph, 1) . ' V' . round($yy + $rad, 1) . ' Q' . round($x, 1) . ',' . round($yy, 1) . ' ' . round($x + $rad, 1) . ',' . round($yy, 1)
-                . ' H' . round($x + $bw - $rad, 1) . ' Q' . round($x + $bw, 1) . ',' . round($yy, 1) . ' ' . round($x + $bw, 1) . ',' . round($yy + $rad, 1) . ' V' . round($T + $ph, 1) . ' Z';
-            $o .= '<g class="bar ' . $cls . '"><rect x="' . round($x - 3, 1) . '" y="' . $T . '" width="' . round($bw + 6, 1) . '" height="' . $ph . '" class="hit"/>' . ($path ? '<path d="' . $path . '"/>' : '') . '<title>' . e($r['label'] . ' · ' . $lbl . ': $' . number_format($v / 100, 2)) . '</title></g>';
-        }
-        $o .= '<text x="' . round($cx, 1) . '" y="' . ($H - 10) . '" class="ax" text-anchor="middle">' . e($r['label']) . '</text>';
-    }
-    return $o . '</svg>';
-};
-$quarters = []; foreach (array_chunk($d['months'], 3) as $q) $quarters[] = ['label' => $q[0]['label'] . '–' . end($q)['label'], 'inv' => array_sum(array_column($q, 'inv')), 'paid' => array_sum(array_column($q, 'paid'))];
-$yInv = array_sum(array_column($d['months'], 'inv')); $yPaid = array_sum(array_column($d['months'], 'paid'));
-$today = count($d['week']) - 1;
+$names = []; foreach ($team as $a) $names[$a['slug']] = $a['name'];
+$p = $pulse;
+// Group due items: overdue, today, tomorrow, then each later day.
+$groups = [];
+foreach ($due as $it) {
+    $d = $loc($it[0]); $k = $it[6] ? 'overdue' : $d->format('Y-m-d');
+    $groups[$k][] = $it + [7 => $d];
+}
+uksort($groups, fn($a, $b) => $a === 'overdue' ? -1 : ($b === 'overdue' ? 1 : strcmp($a, $b)));
+$dayName = fn(string $k) => $k === 'overdue' ? 'Overdue' : ($k === $todayKey ? 'Today' : ($k === $tomorrowKey ? 'Tomorrow' : (new DateTime($k, $tz))->format('l j F')));
+$active = count(array_filter($team, fn($a) => $a['state'] === 'busy' || $a['state'] === 'attn'));
+$horizonLabel = [1 => 'in the next 24 hours', 3 => 'in the next 3 days', 7 => 'in the next 7 days'][$horizon];
 ?>
-<div class="db">
+<div class="db ov">
 <div class="db-head">
-  <div><h1>Dashboard</h1><p class="db-bc"><a href="/admin">Home</a> / <span>Dashboard</span> · <?= e(gmdate('l, j F')) ?></p></div>
-  <div class="db-acts"><a class="btn btn-ghost btn-sm" href="/admin/orders">Orders</a><a class="btn btn-ghost btn-sm" href="/admin/customers">Customers</a><a class="btn btn-primary btn-sm" href="/admin/approvals">Action center<?= $m['approvals_pending'] ? ' · ' . (int)$m['approvals_pending'] : '' ?></a></div>
+  <div><h1>Overview</h1><p class="db-bc">Daily brief from your AI team · <?= e((new DateTime('now', $tz))->format('l j F')) ?></p></div>
+  <div class="db-acts"><a class="btn btn-ghost btn-sm" href="/admin/tasks">All tasks</a><a class="btn btn-ghost btn-sm" href="/admin/agents">Agents</a><a class="btn btn-primary btn-sm" href="/admin/approvals">Action center<?= $p['waiting'] ? ' · ' . $p['waiting'] : '' ?></a></div>
 </div>
 
-<?php if (!$cronOk || $demo): ?><div class="ct-warn">
-  <?php if (!$cronOk): ?><p><b>The background job isn't running.</b> Follow-ups, agents, the weekly article and backups are paused. <a href="/admin/automations">Set it up</a></p><?php endif; ?>
+<?php if (!$cronOk || $demo || !$aiOn): ?><div class="ct-warn">
+  <?php if (!$cronOk): ?><p><b>The background job isn't running,</b> so agents only work when you open a page. <a href="/admin/automations">Set it up</a></p><?php endif; ?>
+  <?php if (!$aiOn): ?><p><b>No AI provider is connected.</b> Agents run in basic mode with templates. <a href="/admin/integrations">Connect Anthropic</a></p><?php endif; ?>
   <?php if ($demo): ?><p><b><?= (int)$demo ?> demo records are loaded.</b> <a href="/admin/demo">Delete them before taking real orders</a></p><?php endif; ?>
 </div><?php endif; ?>
 
-<div class="db-row">
-  <h2 class="db-sec">Order progress</h2>
-  <div class="seg" role="group" aria-label="Period"><?php foreach ([7, 30, 90] as $rg): ?><a href="?range=<?= $rg ?>"<?= $d['range'] === $rg ? ' aria-current="true"' : '' ?>><?= $rg ?>d</a><?php endforeach; ?></div>
-</div>
-<section class="db-prog">
-  <?php foreach ([['Paid orders', $d['paid'], $d['orders'], 'paid', 'pg-1', '/admin/orders'], ['Awaiting payment', $d['await'], $d['orders'], 'of orders', 'pg-2', '/admin/orders'], ['Leads converted', $d['conv'], $d['leads'], 'converted', 'pg-3', '/admin/leads']] as [$lbl, $a, $b, $word, $cls, $href]): $p = $pct($a, $b); ?>
-  <a class="db-card pg <?= $cls ?>" href="<?= $href ?>"><span class="db-k"><?= e($lbl) ?></span><span class="db-v"><b><?= $a ?></b> / <?= $b ?></span>
-    <span class="pbar" role="progressbar" aria-valuenow="<?= $p ?>" aria-valuemin="0" aria-valuemax="100" aria-label="<?= e($lbl) ?>"><i style="width:<?= $p ?>%"></i></span><span class="db-s"><?= $p ?>% <?= e($word) ?> · last <?= $d['range'] ?> days</span></a>
-  <?php endforeach; ?>
+<section class="ov-sum db-card" aria-label="Team summary">
+  <p class="ov-lead">In the last 24 hours your AI team finished <b><?= $p['done'] ?> task<?= $p['done'] === 1 ? '' : 's' ?></b><?= $p['failed'] ? ', <b class="bad">' . $p['failed'] . ' failed</b>' : '' ?>
+    and handled <b><?= $p['runs'] ?> request<?= $p['runs'] === 1 ? '' : 's' ?></b>. <?= $p['open'] ?> task<?= $p['open'] === 1 ? ' is' : 's are' ?> open<?= $p['waiting'] ? ' and <b>' . $p['waiting'] . ' need' . ($p['waiting'] === 1 ? 's' : '') . ' your approval</b>' : '' ?>.</p>
+  <dl class="ov-k">
+    <div><dt>Agents working</dt><dd><?= $active ?><small> of <?= $p['agents_on'] ?> on</small></dd></div>
+    <div><dt>Finished, 24 h</dt><dd><?= $p['done'] ?></dd></div>
+    <div><dt>Open tasks</dt><dd><?= $p['open'] ?></dd></div>
+    <div><dt>Waiting for you</dt><dd class="<?= $p['waiting'] ? 'warn' : '' ?>"><?= $p['waiting'] ?></dd></div>
+    <div><dt>AI spend today</dt><dd>US$<?= number_format($p['spend_cents'] / 100, 2) ?></dd></div>
+  </dl>
 </section>
 
-<div class="db-grid">
-  <section class="db-card db-year">
-    <div class="db-ch"><div><h2>Yearly summary</h2><p class="db-tot"><span>Invoiced <b><?= money($yInv) ?></b></span><span>Paid <b><?= money($yPaid) ?></b></span><span>AI costs <b>US$<?= number_format($d['expenses'] / 100, 2) ?></b></span></p></div>
-      <div class="seg" role="tablist" aria-label="Chart period"><button type="button" role="tab" aria-selected="true" data-show="yb-m">Monthly</button><button type="button" role="tab" aria-selected="false" data-show="yb-q">Quarterly</button></div></div>
-    <div class="db-legend"><span><i class="lg-sw sw-inv"></i>Invoiced</span><span><i class="lg-sw sw-paid"></i>Paid</span></div>
-    <div class="db-chart"><div data-chart="yb-m"><?= $chart($d['months'], 'yb-m') ?></div><div data-chart="yb-q" hidden><?= $chart($quarters, 'yb-q') ?></div></div>
-    <details class="db-table"><summary>Show as table</summary><table><thead><tr><th>Month</th><th>Invoiced</th><th>Paid</th></tr></thead><tbody><?php foreach ($d['months'] as $r): ?><tr><td><?= e($r['label']) ?></td><td><?= money($r['inv']) ?></td><td><?= money($r['paid']) ?></td></tr><?php endforeach; ?></tbody></table></details>
-  </section>
-
-  <section class="db-earn" aria-labelledby="earn-h">
-    <h2 id="earn-h">Earnings</h2>
-    <div class="days" role="tablist" aria-label="Day"><?php foreach ($d['week'] as $i => $w): ?><button type="button" role="tab" aria-selected="<?= $i === $today ? 'true' : 'false' ?>" data-day="<?= $i ?>"><?= e($w['label']) ?></button><?php endforeach; ?></div>
-    <?php foreach ($d['week'] as $i => $w): ?><div class="earn-v" data-day-panel="<?= $i ?>"<?= $i === $today ? '' : ' hidden' ?>><b><?= money($w['cents']) ?></b><span><?= e($w['label']) ?> earnings · <?= (int)$w['orders'] ?> paid order<?= $w['orders'] === 1 ? '' : 's' ?></span></div><?php endforeach; ?>
-    <div class="earn-foot"><span>Last 7 days</span><b><?= money(array_sum(array_column($d['week'], 'cents'))) ?></b></div>
-    <a class="earn-link" href="/admin/finance">Open finance</a>
-  </section>
-</div>
-
-<div class="db-grid2">
-  <section class="db-pipe">
-    <h2>Sales pipeline</h2>
-    <b class="pv"><?= e($m['pipeline_value']) ?></b><span>open opportunity value</span>
-    <dl><div><dt>New leads, 7 days</dt><dd><?= (int)$newLeads ?></dd></div><div><dt>Lead conversion, 30 days</dt><dd><?= e($m['conversion_rate']) ?></dd></div><div><dt>Follow-ups overdue</dt><dd><?= (int)$m['leads_overdue'] ?></dd></div><div><dt>Unfinished forms</dt><dd><?= (int)$draftsOpen ?></dd></div></dl>
-    <a href="/admin/leads">Open leads</a>
-  </section>
-  <section class="db-card db-orders">
-    <div class="db-ch"><h2>Recent orders</h2><a href="/admin/orders">All orders</a></div>
-    <?php if (!$d['recent']): ?><div class="empty">No orders yet.</div><?php else: ?>
-    <table><thead><tr><th>Order</th><th>Customer</th><th>Date</th><th>Status</th><th style="text-align:right">Total</th></tr></thead><tbody>
-    <?php foreach ($d['recent'] as $o): ?>
-      <tr><td><a href="/admin/orders/<?= e($o['number']) ?>"><?= e($o['number']) ?></a></td><td><?= e($o['name'] ?: $o['email']) ?><small><?= e((string)$o['business_name']) ?></small></td><td class="small"><?= e(substr($o['created_at'], 0, 10)) ?></td>
-        <td><?php $s = $o['status']; include APP_ROOT . '/views/partials/status.php'; ?></td><td style="text-align:right"><?= money((int)$o['total_cents']) ?></td></tr>
-    <?php endforeach; ?></tbody></table><?php endif; ?>
-  </section>
-</div>
-
-<div class="ct-cols">
-  <section class="ct-box ct-inbox" aria-labelledby="inbox-h">
-    <div class="ct-bh"><h2 id="inbox-h">Needs you</h2><span><?= count($inbox) ? count($inbox) . ' item' . (count($inbox) === 1 ? '' : 's') : '' ?></span></div>
-    <?php if (!$inbox): ?><div class="ct-empty"><b>You're all caught up.</b><p>New approvals, leads, support requests and unfinished orders will show up here.</p></div><?php endif; ?>
-    <ul>
-    <?php foreach ($inbox as [$type, $title, $sub, $at, $href, $act]): ?>
-      <li><a href="<?= e($href) ?>"><span class="ct-type t-<?= e(strtolower(str_replace(' ', '-', $type))) ?>"><?= e($type) ?></span>
-        <span class="ct-what"><b><?= e($title) ?></b><small><?= e($sub) ?></small></span>
-        <time datetime="<?= e(str_replace(' ', 'T', (string)$at)) ?>Z"><?= e($ago($at)) ?></time><span class="ct-act"><?= e($act) ?></span></a></li>
+<div class="ov-grid">
+  <section class="db-card ov-due" aria-labelledby="due-h">
+    <div class="db-ch">
+      <div><h2 id="due-h">Coming due</h2><p class="db-sub">Tasks, milestones, follow-ups, registry checks and posts due <?= e($horizonLabel) ?>, plus anything overdue.</p></div>
+      <nav class="seg" aria-label="How far ahead"><?php foreach ([1 => '1 day', 3 => '3 days', 7 => '7 days'] as $n => $l): ?><a href="/admin?days=<?= $n ?>"<?= $horizon === $n ? ' aria-current="true"' : '' ?>><?= $l ?></a><?php endforeach; ?></nav>
+    </div>
+    <?php if (!$due): ?><div class="ct-empty"><b>Nothing due <?= e($horizonLabel) ?>.</b><p>New tasks, deadlines and follow-ups appear here as soon as they are scheduled.</p></div><?php endif; ?>
+    <?php foreach ($groups as $k => $items): ?>
+      <h3 class="ov-day<?= $k === 'overdue' ? ' late' : '' ?>"><?= e($dayName($k)) ?> <span><?= count($items) ?></span></h3>
+      <ul class="ov-list">
+      <?php foreach ($items as $n => [$at, $agent, $kind, $title, $detail, $href, $late, $d]): ?>
+        <?php if ($n === 6 && count($items) > 8): ?></ul><details class="ov-more"><summary>Show <?= count($items) - 6 ?> more</summary><ul class="ov-list"><?php endif; ?>
+        <li><a href="<?= e($href) ?>">
+          <time datetime="<?= e(str_replace(' ', 'T', $at)) ?>Z"><?= e($late ? $d->format('M j') : $d->format('H:i')) ?></time>
+          <span class="ov-kind"><?= e($kind) ?></span>
+          <span class="ov-what"><b><?= e($title) ?></b><small><?= e($detail) ?></small></span>
+          <span class="ov-who"><?= e($names[$agent] ?? label($agent)) ?></span>
+        </a></li>
+      <?php endforeach; ?>
+      </ul><?php if (count($items) > 8): ?></details><?php endif; ?>
     <?php endforeach; ?>
-    </ul>
   </section>
-  <aside class="ct-side">
-    <section class="ct-box"><div class="ct-bh"><h2>Ask about the business</h2></div>
+
+  <aside class="ov-side">
+    <section class="ct-box"><div class="ct-bh"><h2>Ask the AI team</h2></div>
       <div id="owner-log" class="chat-log ct-log"></div>
-      <div class="chips" id="owner-chips"><button class="chip" type="button">What happened today?</button><button class="chip" type="button">Which leads should I contact?</button></div>
-      <form id="owner-form" class="ct-ask"><label class="sr" for="owner-q">Question</label><input id="owner-q" type="text" placeholder="How much did we make this month?"><button class="btn btn-primary btn-sm">Ask</button></form>
+      <div class="chips" id="owner-chips"><button class="chip" type="button">What did the agents do today?</button><button class="chip" type="button">What is overdue?</button></div>
+      <form id="owner-form" class="ct-ask"><label class="sr" for="owner-q">Question</label><input id="owner-q" type="text" placeholder="Ask about tasks, customers or revenue"><button class="btn btn-primary btn-sm">Ask</button></form>
     </section>
     <section class="ct-box"><div class="ct-bh"><h2>Running on its own</h2><a href="/admin/automations">All automations</a></div>
       <dl class="ct-sys">
-        <dt>Background job</dt><dd class="<?= $cronOk ? 'ok' : 'bad' ?>"><?= $cron ? ($cronOk ? 'Ran ' . e($ago($cron)) . ' ago' : 'Stopped, last ' . e($ago($cron)) . ' ago') : 'Not set up' ?></dd>
-        <?php foreach ($autos as $au): ?><dt><?= e($au['name']) ?></dt><dd class="<?= !$au['on'] ? 'mut' : ($au['last'] && !$au['last']['ok'] ? 'bad' : '') ?>"><?= !$au['on'] ? 'Off' : ($au['last'] ? ($au['last']['ok'] ? e($ago($au['last']['at'])) . ' ago' : 'Failed') : 'Waiting') ?></dd><?php endforeach; ?>
-        <dt>AI agents</dt><dd class="<?= $aiOn ? '' : 'mut' ?>"><?= count(array_filter($agents, fn($a) => $a['status'] === 'enabled')) ?> on · <?= $aiOn ? 'AI connected' : 'basic mode' ?></dd>
+        <dt>Background job</dt><dd class="<?= $cronOk ? 'ok' : 'bad' ?>"><?= $cron ? ($cronOk ? 'Ran ' . e($ago($cron)) : 'Stopped, last ' . e($ago($cron))) : 'Not set up' ?></dd>
+        <?php foreach ($autos as $au): ?><dt><?= e($au['name']) ?></dt><dd class="<?= !$au['on'] ? 'mut' : ($au['last'] && !$au['last']['ok'] ? 'bad' : '') ?>"><?= !$au['on'] ? 'Off' : ($au['last'] ? ($au['last']['ok'] ? e($ago($au['last']['at'])) : 'Failed') : 'Waiting') ?></dd><?php endforeach; ?>
         <dt>Spam blocked today</dt><dd><?= (int)$spamToday ?></dd>
       </dl>
     </section>
   </aside>
 </div>
+
+<section aria-labelledby="briefs-h">
+  <div class="db-row"><h2 class="db-sec" id="briefs-h">Daily briefs</h2><a class="db-more" href="/admin/agents">Manage agents</a></div>
+  <div class="ov-briefs">
+  <?php foreach ($team as $a): ?>
+    <article class="ov-agent st-<?= $a['state'] ?>">
+      <header><span class="ov-dot" aria-hidden="true"></span><h3><a href="/admin/agents/<?= e($a['slug']) ?>"><?= e($a['name']) ?></a></h3>
+        <span class="ov-state"><?= ['attn' => 'Needs attention', 'busy' => 'Working', 'idle' => 'Idle', 'off' => 'Off'][$a['state']] ?></span></header>
+      <p class="ov-line"><?= e($a['line']) ?></p>
+      <?php if ($a['recent']): ?><ul class="ov-rec"><?php foreach ($a['recent'] as $r): ?><li><?= e(str_limit((string)$r['summary'], 140)) ?> <time><?= e($ago($r['created_at'])) ?></time></li><?php endforeach; ?></ul><?php endif; ?>
+      <?php if ($a['next']): ?><p class="ov-next"><span>Next</span> <a href="/admin/tasks/<?= (int)$a['next']['id'] ?>"><?= e(str_limit($a['next']['title'], 70)) ?></a><?= $a['next']['at'] && $a['next']['at'] < now() ? ' <em>overdue</em>' : '' ?></p><?php endif; ?>
+      <footer><span><b><?= $a['done'] ?></b> done</span><span><b><?= $a['open'] ?></b> open</span><?php if ($a['failed']): ?><span class="bad"><b><?= $a['failed'] ?></b> failed</span><?php endif; ?><span>US$<?= number_format($a['cents'] / 100, 2) ?></span></footer>
+    </article>
+  <?php endforeach; ?>
+  </div>
+</section>
+
+<section class="ct-box ct-inbox" aria-labelledby="inbox-h">
+  <div class="ct-bh"><h2 id="inbox-h">Needs you</h2><span><?= count($inbox) ? count($inbox) . ' item' . (count($inbox) === 1 ? '' : 's') : '' ?></span></div>
+  <?php if (!$inbox): ?><div class="ct-empty"><b>You're all caught up.</b><p>New approvals, leads, support requests and unfinished orders will show up here.</p></div><?php endif; ?>
+  <ul>
+  <?php foreach ($inbox as [$type, $title, $sub, $at, $href, $act]): ?>
+    <li><a href="<?= e($href) ?>"><span class="ct-type t-<?= e(strtolower(str_replace(' ', '-', $type))) ?>"><?= e($type) ?></span>
+      <span class="ct-what"><b><?= e($title) ?></b><small><?= e($sub) ?></small></span>
+      <time datetime="<?= e(str_replace(' ', 'T', (string)$at)) ?>Z"><?= e($ago($at)) ?></time><span class="ct-act"><?= e($act) ?></span></a></li>
+  <?php endforeach; ?>
+  </ul>
+</section>
 </div>

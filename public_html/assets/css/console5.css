@@ -1,5 +1,5 @@
 /* Console v5: Control Tower + client portal. Light, calm, quick to scan. */
-body.con{--cbg:#f5f6fa;--cside:#fff;--cline:#e7eaf1;--cink:#0e1628;--cmut:#667085;--cacc:#1e44c8;--cacc-s:#eef2fd;background:var(--cbg);font-family:"Sentient",var(--font);color:var(--cink);-webkit-font-smoothing:antialiased}
+body.con{--cbg:#f5f6fa;--cside:#fff;--cline:#e7eaf1;--cink:#0e1628;--cmut:#667085;--cacc:#1e44c8;--cacc-s:#eef2fd;background:var(--cbg);font-family:var(--font);color:var(--cink);-webkit-font-smoothing:antialiased}
 .con .skip{position:absolute;left:-999px}.con .skip:focus{left:12px;top:12px;z-index:99;background:#fff;padding:8px 12px;border-radius:8px}
 .con .shell{grid-template-columns:272px minmax(0,1fr);background:var(--cbg)}
 .con .side{background:var(--cside);border-right:1px solid var(--cline);padding:20px 16px 16px;display:flex;flex-direction:column;gap:14px}

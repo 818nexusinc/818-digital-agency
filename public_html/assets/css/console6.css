@@ -6,7 +6,7 @@ body.con{
   --cbg:#f4f5f8;--cside:#0e1730;--cline:#e3e6ee;--cline-2:#eef0f5;--cink:#0f1729;--cmut:#5f6b85;--cfaint:#8a94aa;
   --cacc:#4f46e5;--cacc-s:#eef0ff;--cok:#047857;--cwarn:#b45309;--cbad:#b42318;
   --r-lg:14px;--r-md:10px;--sh:0 1px 2px rgba(15,23,41,.04),0 1px 1px rgba(15,23,41,.02);
-  font-family:"Hanken",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif!important;
+  font-family:var(--font)!important;
   font-size:15px;line-height:1.5;color:var(--cink);background:var(--cbg);
   font-feature-settings:"ss01","cv11";-webkit-font-smoothing:antialiased
 }

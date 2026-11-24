@@ -24,14 +24,14 @@ if (!empty($nav)) {
 }
 ?><!doctype html>
 <html lang="<?= lang() === 'fr' ? 'fr-CA' : 'en-CA' ?>"<?= lang() === 'fr' ? " data-i18n='" . e(js_dict()) . "'" : '' ?>><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title><?= e(t($title ?? $areaName)) ?> · <?= e(t($areaName)) ?></title><meta name="robots" content="noindex">
-<meta name="csrf" content="<?= e($csrf ?? '') ?>"><link rel="icon" href="/assets/img/favicon.svg"><link rel="preload" href="/fonts/hanken-grotesk-latin-500-normal.woff2" as="font" type="font/woff2" crossorigin>
+<meta name="csrf" content="<?= e($csrf ?? '') ?>"><link rel="icon" href="/assets/img/favicon.svg"><link rel="preload" href="/assets/fonts/inter-var.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/assets/css/app.css?v=<?= APP_VERSION ?>"><link rel="stylesheet" href="/assets/css/console5.css?v=<?= APP_VERSION ?>"><link rel="stylesheet" href="/assets/css/console7.css?v=<?= APP_VERSION ?>"></head>
 <body class="con con-<?= e($area) ?>"<?= ($path ?? '') === '/portal/assistant' ? ' data-chat-inline' : '' ?>>
 <script nonce="<?= e($nonce ?? '') ?>">try{if(localStorage.getItem("nx818_nav_mini")==="1")document.body.classList.add("nav-mini")}catch(e){}</script>
 <a class="skip" href="#main"><?= e(t('Skip to content')) ?></a>
 <div class="shell">
 <aside class="side" id="side">
-  <a class="c-brand" href="<?= e($home) ?>"><span class="c-logo<?= App\SiteText::logoVersion() ? ' has-img' . (App\SiteText::logoVersion('light') ? ' on-dark' : '') : '' ?>"><?php $logoBg = App\SiteText::logoVersion('light') ? 'dark' : 'light'; include APP_ROOT . '/views/partials/logo.php'; ?></span><span class="c-bt"><b>818 Digital Agency</b><small><?= e(t($areaName)) ?></small></span></a>
+  <a class="c-brand c-stack" href="<?= e($home) ?>" aria-label="<?= e(App\Settings::get('company.name') . ' — ' . t($areaName)) ?>"><span class="c-logo<?= App\SiteText::logoVersion() ? ' has-img' . (App\SiteText::logoVersion('light') ? ' on-dark' : '') : '' ?>"><?php $logoBg = App\SiteText::logoVersion('light') ? 'dark' : 'light'; include APP_ROOT . '/views/partials/logo.php'; ?></span><span class="c-bt"><small><?= e(t($areaName)) ?></small></span></a>
   <label class="c-find"><?= nx_icon('search') ?><span class="sr"><?= e(t('Find a page')) ?></span><input type="search" placeholder="<?= e(t('Search pages')) ?>" data-navfind autocomplete="off"><kbd>/</kbd></label>
   <?php if (!empty($nav)): ?>
   <nav class="c-nav c-dest" aria-label="<?= e(t($areaName)) ?>">

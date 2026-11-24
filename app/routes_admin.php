@@ -9,8 +9,8 @@ $P = fn(string $perm) => ['perm' => $perm];
 $me = fn() => Auth::user();
 $page = fn(int $per = 50) => [$per, max(0, ((int)($_GET['page'] ?? 1) - 1) * $per)];
 
-$r->get('/admin', function () use ($me) {
-    View::page('admin/tower', ['title' => 'Control Tower', 'm' => Metrics::overview(30), 'today' => Metrics::overview(1), 'me' => $me(),
+$towerData = function () use ($me): array {
+    return ['title' => 'Control Tower', 'm' => Metrics::overview(30), 'today' => Metrics::overview(1), 'me' => $me(),
         'drafts' => Db::all("SELECT * FROM form_drafts WHERE status = 'open' AND email IS NOT NULL ORDER BY updated_at DESC LIMIT 5"),
         'draftsOpen' => (int)Db::val("SELECT COUNT(*) FROM form_drafts WHERE status = 'open'"),
         'newLeads' => (int)Db::val("SELECT COUNT(*) FROM leads WHERE created_at >= ?", [gmdate('Y-m-d H:i:s', time() - 7 * 86400)]),
@@ -87,7 +87,12 @@ $r->get('/admin', function () use ($me) {
         'failed' => Db::all("SELECT * FROM agent_tasks WHERE status = 'failed' ORDER BY updated_at DESC LIMIT 5"),
         'leads' => Db::all("SELECT l.*, c.name, c.email, c.business_name FROM leads l JOIN customers c ON c.id = l.customer_id WHERE l.status NOT IN ('converted','closed') ORDER BY l.score DESC, l.id DESC LIMIT 6"),
         'agents' => Db::all('SELECT slug, name, status, autonomy_level FROM agents ORDER BY id'),
-        'cron' => Settings::get('system.cron_last_run'), 'providers' => ['anthropic' => Integrations::configured('anthropic'), 'openai' => Integrations::configured('openai'), 'stripe' => Integrations::configured('stripe'), 'resend' => Integrations::configured('resend')]]);
+        'cron' => Settings::get('system.cron_last_run'), 'providers' => ['anthropic' => Integrations::configured('anthropic'), 'openai' => Integrations::configured('openai'), 'stripe' => Integrations::configured('stripe'), 'resend' => Integrations::configured('resend')]];
+};
+$r->get('/admin/money', function () use ($towerData) { View::page('admin/money', ['title' => 'Financial dashboard'] + $towerData()); }, $P('finance.read'));
+$r->get('/admin', function () use ($towerData) {
+    $h = (int)($_GET['days'] ?? 1); if (!in_array($h, [1, 3, 7], true)) $h = 1;
+    View::page('admin/tower', ['title' => 'Overview', 'horizon' => $h, 'team' => App\Briefs::team(), 'due' => App\Briefs::due($h), 'pulse' => App\Briefs::pulse()] + $towerData());
 }, $P('dashboard.view'));
 
 $r->post('/admin/assistant', function () use ($me) {
@@ -316,6 +321,72 @@ $r->post('/admin/coupons', function () {
     if (Db::val('SELECT 1 FROM coupons WHERE code = ?', [$code])) Db::update('coupons', $row, 'code = ?', [$code]); else Db::insert('coupons', $row + ['code' => $code, 'uses' => 0, 'created_at' => now()]);
     Audit::log('coupon.save', 'coupon', $code, $row);
     View::redirect('/admin/catalog');
+}, $P('catalog.write'));
+
+/* Work by service: every request for a service group, or one service */
+$workPage = function (string $cat, ?string $slug) {
+    if (!isset(Catalog::CATEGORIES[$cat])) throw new HttpError(404, 'Service group not found.');
+    $svcs = App\WorkBoard::services($cat);
+    if ($slug !== null && !in_array($slug, array_column($svcs, 'slug'), true)) throw new HttpError(404, 'Service not found.');
+    $type = (string)($_GET['type'] ?? ''); if (!isset(App\WorkBoard::TYPES[$type])) $type = '';
+    $all = App\WorkBoard::requests($slug !== null ? [$slug] : array_column($svcs, 'slug'));
+    View::page('admin/work', ['title' => Catalog::CATEGORIES[$cat], 'cat' => $cat, 'slug' => $slug, 'svcs' => $svcs, 'type' => $type, 'open' => ($_GET['show'] ?? 'open') !== 'all', 'all' => $all]);
+};
+$r->get('/admin/work/{cat}', fn($p) => $workPage((string)$p['cat'], null), $P('projects.read'));
+$r->get('/admin/work/{cat}/{slug}', fn($p) => $workPage((string)$p['cat'], (string)$p['slug']), $P('projects.read'));
+
+/* Pricing strategy: costs, markup, competitor prices and the Pricing Agent */
+$r->get('/admin/pricing', function () {
+    App\Pricing::ensureAgent();
+    $cat = (string)($_GET['cat'] ?? 'registration'); if (!isset(Catalog::CATEGORIES[$cat]) && $cat !== 'all') $cat = 'registration';
+    $rows = App\Pricing::rows($cat === 'all' ? null : $cat);
+    View::page('admin/pricing', ['title' => 'Pricing strategy', 'cat' => $cat, 'rows' => $rows, 'sum' => App\Pricing::summary(App\Pricing::rows()), 'aiOn' => Integrations::configured('anthropic'),
+        'proposals' => Db::all("SELECT p.*, s.name FROM price_proposals p JOIN services s ON s.slug = p.service_slug WHERE p.status = 'open' ORDER BY p.id DESC"),
+        'tasks' => Db::all("SELECT id, title, status, created_at, finished_at, progress_note FROM agent_tasks WHERE agent_slug = 'pricing' ORDER BY id DESC LIMIT 3")]);
+}, $P('finance.read'));
+$r->get('/admin/pricing/{slug}', function ($p) {
+    $s = Catalog::find((string)$p['slug']); if (!$s) throw new HttpError(404, 'Service not found.');
+    View::page('admin/pricing-service', ['title' => 'Pricing: ' . $s['name'], 'svc' => $s, 'rows' => App\Pricing::rows(null, $s['slug']), 'aiOn' => Integrations::configured('anthropic'),
+        'history' => Db::all("SELECT * FROM price_proposals WHERE service_slug = ? AND status <> 'open' ORDER BY id DESC LIMIT 10", [$s['slug']]),
+        'dismissed' => (int)Db::val("SELECT COUNT(*) FROM competitor_prices WHERE service_slug = ? AND status = 'dismissed'", [$s['slug']])]);
+}, $P('finance.read'));
+$r->post('/admin/pricing/action', function () use ($me) {
+    $act = Request::str('action', 30); $slug = Request::str('slug', 60); $by = (string)($me()['email'] ?? 'owner');
+    $back = $slug !== '' ? '/admin/pricing/' . rawurlencode($slug) : '/admin/pricing';
+    try {
+        switch ($act) {
+            case 'research':
+                $id = App\Pricing::research($slug ?: null, Request::str('focus', 600), 'owner');
+                Session::flash('success', Integrations::configured('anthropic') ? 'The Pricing Agent is on it (task #' . $id . '). Findings appear here as it saves them.' : 'Queued (task #' . $id . '), but web research needs the Anthropic connection in Integrations.');
+                break;
+            case 'cost':
+                $v = App\Pricing::normVariant($slug, Request::str('variant', 20));
+                App\Pricing::saveCost($slug, $v, ['gov_fee' => Request::str('gov_fee', 20), 'third_party' => Request::str('third_party', 20), 'source_url' => Request::str('source_url', 500), 'notes' => Request::str('notes', 500), 'confirmed' => Request::input('confirmed')], $by, true);
+                Session::flash('success', 'Costs saved' . (Request::input('confirmed') ? ' and confirmed.' : '.'));
+                break;
+            case 'competitor':
+                App\Pricing::addCompetitor($slug, App\Pricing::normVariant($slug, Request::str('variant', 20)), ['competitor' => Request::str('competitor', 160), 'region' => Request::str('region', 60), 'price' => Request::str('price', 20),
+                    'includes_gov_fee' => Request::str('includes_gov_fee', 1), 'billing' => Request::str('billing', 20), 'url' => Request::str('url', 500), 'notes' => Request::str('notes', 500)], 'owner');
+                Session::flash('success', 'Competitor price added.');
+                break;
+            case 'dismiss':
+                Db::update('competitor_prices', ['status' => 'dismissed'], 'id = ?', [(int)Request::input('id')]); Session::flash('success', 'Removed from the comparison.');
+                break;
+            case 'confirm':
+                Db::update('price_costs', ['status' => 'confirmed', 'updated_by' => $by, 'updated_at' => now()], 'id = ?', [(int)Request::input('id')]); Session::flash('success', 'Fee confirmed.');
+                break;
+            case 'propose':
+                $c = (int)round((float)str_replace([',', '$'], '', Request::str('price', 20)) * 100);
+                App\Pricing::propose($slug, App\Pricing::normVariant($slug, Request::str('variant', 20)), $c, Request::str('strategy', 20), Request::str('rationale', 2000) ?: 'Owner decision', 'owner');
+                Session::flash('success', 'Proposal added. Approve it below to change the price on the website.');
+                break;
+            case 'approve': case 'reject':
+                $pr = App\Pricing::decide((int)Request::input('id'), $act === 'approve', $by);
+                Session::flash('success', $act === 'approve' ? 'New price is live: ' . money((int)$pr['proposed_cents']) . '.' : 'Proposal rejected.');
+                break;
+        }
+    } catch (UserError $e) { Session::flash('error', $e->getMessage()); }
+    View::redirect($back . (Request::str('cat', 20) ? '?cat=' . rawurlencode(Request::str('cat', 20)) : ''));
 }, $P('catalog.write'));
 
 /* Site editor: change the wording on any public page, and the logo */

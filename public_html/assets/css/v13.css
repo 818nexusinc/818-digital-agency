@@ -76,3 +76,6 @@
 .site .site-header .brand img.site-logo{max-width:180px}
 @media(min-width:1241px) and (max-width:1599px){.site .site-header .brand img.site-logo{height:auto;max-height:40px;max-width:72px}}
 @media(min-width:1241px){.site .site-header .brand:has(.wm:not(.wm-off)) img.site-logo{height:auto;max-height:40px;max-width:72px}}
+/* Inter is a little wider than the previous face: keep the desktop menu clear of the buttons on laptop screens. */
+@media(min-width:1360px) and (max-width:1760px){.site .site-header .mn-item>a,.site .site-header .mn-item>button{padding-left:13px!important;padding-right:13px!important;font-size:15px!important}}
+@media(min-width:1360px) and (max-width:1520px){.site .site-header .mn-item>a,.site .site-header .mn-item>button{padding-left:10px!important;padding-right:10px!important}}

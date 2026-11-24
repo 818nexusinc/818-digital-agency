@@ -1,17 +1,13 @@
-@font-face{font-family:"Caslon";src:url(/fonts/libre-caslon-text-latin-400-normal.woff2) format("woff2");font-weight:400;font-style:normal;font-display:swap}
-@font-face{font-family:"Caslon";src:url(/fonts/libre-caslon-text-latin-400-italic.woff2) format("woff2");font-weight:400;font-style:italic;font-display:swap}
-@font-face{font-family:"Caslon";src:url(/fonts/libre-caslon-text-latin-700-normal.woff2) format("woff2");font-weight:700;font-style:normal;font-display:swap}
-@font-face{font-family:"Hanken";src:url(/fonts/hanken-grotesk-latin-400-normal.woff2) format("woff2");font-weight:400;font-display:swap}
-@font-face{font-family:"Hanken";src:url(/fonts/hanken-grotesk-latin-500-normal.woff2) format("woff2");font-weight:500;font-display:swap}
-@font-face{font-family:"Hanken";src:url(/fonts/hanken-grotesk-latin-600-normal.woff2) format("woff2");font-weight:600;font-display:swap}
-@font-face{font-family:"Hanken";src:url(/fonts/hanken-grotesk-latin-700-normal.woff2) format("woff2");font-weight:700;font-display:swap}
+/* Inter (SIL Open Font License, see /assets/fonts/Inter-LICENSE.txt), self-hosted: one variable file covers every weight. */
+@font-face{font-family:"Inter";src:url(/assets/fonts/inter-var.woff2) format("woff2");font-weight:100 900;font-style:normal;font-display:swap}
+@font-face{font-family:"Inter";src:url(/assets/fonts/inter-var-italic.woff2) format("woff2");font-weight:100 900;font-style:italic;font-display:swap}
 /* 818 Digital Agency — design system v4 "Registry". No external fonts or frameworks (fast on shared hosting). */
 :root{
   --ink:#0e1a2e;--ink-2:#334057;--muted:#5b6577;--line:#dce2ec;--line-2:#edf0f5;--bg:#ffffff;--surface:#f6f8fb;
   --navy:#0e2340;--navy-2:#16305a;--blue:#2f5bea;--blue-2:#2349c4;--sky:#9db4ff;--sky-soft:#edf2ff;
   --green:#0b7a83;--green-soft:#e3f4f4;--amber:#9a5b00;--amber-soft:#fff6e5;--red:#b42318;--red-soft:#fdeceb;
   --r:12px;--r-sm:8px;--shadow:0 1px 0 rgba(14,35,64,.04),0 10px 30px -18px rgba(14,35,64,.25);--shadow-lg:0 40px 80px -40px rgba(14,35,64,.45),0 2px 6px rgba(14,35,64,.06);
-  --font:"Sentient","Hanken",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;--serif:"Sentient","Caslon",Georgia,"Times New Roman",serif;--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --font:"Inter",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--serif:var(--font);--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
   --w:1440px;
 }
 *{box-sizing:border-box}html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}

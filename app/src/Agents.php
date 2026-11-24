@@ -45,6 +45,8 @@ final class Agents
             ['save_opportunity', 'search_knowledge'], 1, 'standard', 'Cite sources; label every claim as fact (with source) or assumption. Never fabricate data.'],
         'security' => ['AI Security & Risk Agent', 'Reviews security events, abuse patterns, agent activity and permissions; recommends remediation and escalates incidents.',
             ['security_events', 'request_approval'], 1, 'fast', 'Read-only. No access to secrets.'],
+        'pricing' => ['AI Pricing Agent', 'Researches what competitors across Atlantic Canada charge for every service on the website and the official government filing fees, keeps our costs and markup visible, and proposes prices that stay competitive while making money. Price changes always go to the owner.',
+            ['pricing_overview', 'search_catalog', 'get_service', 'web_search', 'save_cost_finding', 'save_competitor_price', 'propose_price'], 2, 'deep', 'Only record numbers you found on a real page, with its address. Government fees come from the government site. Note whether a competitor price includes the government fee. Never propose a price below our cost (government fee plus third-party cost). Keep reasons short and specific.'],
         'owner_assistant' => ['AI Owner Assistant', "Answers the founder's questions using live platform data and can start safe actions after confirmation.",
             ['business_metrics', 'list_open_tasks', 'list_leads', 'create_task', 'search_knowledge', 'security_events'], 3, 'standard', 'Answer with real numbers from tools. If data is missing say so.'],
     ];

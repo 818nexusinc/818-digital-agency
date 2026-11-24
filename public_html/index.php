@@ -15,7 +15,7 @@ $nonce = base64_encode(random_bytes(16));
 View::$shared['nonce'] = $nonce;
 $https = ($_SERVER['HTTPS'] ?? '') === 'on' || ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https';
 $cft = ''; try { if (App\Integrations::secret('turnstile', 'site_key')) $cft = ' https://challenges.cloudflare.com'; } catch (Throwable) {}
-header("Content-Security-Policy: default-src 'self'; script-src 'self' 'nonce-{$nonce}'{$cft}; frame-src 'self'{$cft}; style-src 'self' 'unsafe-inline' https://api.fontshare.com; img-src 'self' data: https:; font-src 'self' data: https://cdn.fontshare.com; connect-src 'self'{$cft}; frame-ancestors 'self'; form-action 'self' https://checkout.stripe.com; base-uri 'self'; object-src 'none'");
+header("Content-Security-Policy: default-src 'self'; script-src 'self' 'nonce-{$nonce}'{$cft}; frame-src 'self'{$cft}; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self'{$cft}; frame-ancestors 'self'; form-action 'self' https://checkout.stripe.com; base-uri 'self'; object-src 'none'");
 header('X-Content-Type-Options: nosniff');
 header('X-Frame-Options: SAMEORIGIN');
 header('Referrer-Policy: strict-origin-when-cross-origin');
