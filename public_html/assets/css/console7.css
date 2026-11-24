@@ -374,3 +374,52 @@ body.con{
 .con .c-me .c-ico{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.1);color:#c3cde6}
 .con .c-me .c-ico:hover{background:rgba(255,255,255,.12);color:#fff}
 .con .side nav a:focus-visible,.con .c-gh:focus-visible{outline-color:#7c9cff}
+
+/* ── v8 navigation: eight destinations + page tabs ───── */
+.con .shell{grid-template-columns:232px minmax(0,1fr)}
+.con .side{background:#fff;border-right:1px solid var(--line);color:var(--ink-2);padding:14px 12px 12px;gap:14px}
+.con .c-brand{border-bottom-color:var(--line-2)}
+.con .c-logo{background:#0b1530;box-shadow:none}
+.con .c-bt b{color:var(--ink)}.con .c-bt small{color:var(--mut)}
+.con .c-find{background:var(--bg);border-color:transparent}
+.con .c-find svg{stroke:var(--faint)}.con .c-find input{color:var(--ink)}.con .c-find input::placeholder{color:var(--faint)}
+.con .c-find:focus-within{background:#fff;border-color:var(--acc);box-shadow:0 0 0 3px rgba(35,72,216,.12)}
+.con .c-find kbd{background:#fff;border-color:var(--line);color:var(--mut)}
+.con .c-dest{display:grid;gap:2px;align-content:start}
+.con .c-dest a.d{display:flex;align-items:center;gap:12px;height:42px;padding:0 12px;border-radius:10px;color:var(--ink-2);font-size:14.5px;font-weight:550;text-decoration:none;box-shadow:none!important;background:none}
+.con .c-dest a.d svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.8;color:var(--mut);flex:none;opacity:1}
+.con .c-dest a.d:hover{background:var(--bg);color:var(--ink)}
+.con .c-dest a.d:hover svg{color:var(--ink)}
+.con .c-dest a.d[aria-current=page]{background:#0b1530;color:#fff;font-weight:650}
+.con .c-dest a.d[aria-current=page] svg{color:#fff}
+.con .c-dest a.d[hidden]{display:none}
+.con .c-dest .count{margin-left:auto;font-style:normal;font-size:11.5px;font-weight:650;min-width:20px;height:20px;padding:0 6px;border-radius:10px;display:grid;place-items:center;background:var(--bg);color:var(--mut);border:0}
+.con .c-dest .count.hot{background:#e5484d;color:#fff}
+.con .c-dest a.d[aria-current=page] .count{background:rgba(255,255,255,.16);color:#fff}
+.con .c-dest a.d[aria-current=page] .count.hot{background:#e5484d}
+.con .c-results{display:grid;gap:1px}
+.con .c-results a.r{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:8px 10px;border-radius:8px;text-decoration:none;color:var(--ink);font-size:13.5px}
+.con .c-results a.r small{color:var(--faint);font-size:11.5px}
+.con .c-results a.r:hover,.con .c-results a.r:focus{background:var(--bg)}
+.con .c-results a.r[hidden]{display:none}
+.con .c-results .none{font-size:13px;color:var(--mut);padding:8px 10px;margin:0}
+.con .c-me{background:#fff;border-top-color:var(--line-2)}
+.con .c-me .av{background:#0b1530!important}
+.con .c-me b{color:var(--ink)}.con .c-me small{color:var(--mut)}
+.con .c-me .c-ico{background:#fff;border-color:var(--line);color:var(--ink-2)}
+.con .c-me .c-ico:hover{background:var(--bg);color:var(--ink)}
+
+/* Page tabs */
+.con .c-tabs{position:sticky;top:52px;z-index:15;background:rgba(245,246,247,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.con .c-tabs-in{display:flex;gap:4px;padding:0 28px;overflow-x:auto;scrollbar-width:none}
+.con .c-tabs-in::-webkit-scrollbar{display:none}
+.con .c-tabs a{position:relative;display:inline-flex;align-items:center;gap:7px;padding:12px 10px 11px;font-size:13.5px;font-weight:550;color:var(--mut);text-decoration:none;white-space:nowrap}
+.con .c-tabs a:hover{color:var(--ink)}
+.con .c-tabs a[aria-current=page]{color:var(--ink);font-weight:650}
+.con .c-tabs a[aria-current=page]:after{content:"";position:absolute;left:8px;right:8px;bottom:-1px;height:2px;border-radius:2px;background:#0b1530}
+.con .c-tabs a i{font-style:normal;font-size:11px;font-weight:650;min-width:18px;height:18px;padding:0 5px;border-radius:9px;display:grid;place-items:center;background:#e6e8eb;color:var(--ink-2)}
+.con .c-tabs a i.hot{background:#e5484d;color:#fff}
+.con .topbar h1:before{display:none}
+@media(max-width:960px){.con .c-tabs{top:58px}.con .c-tabs-in{padding:0 14px}}
+.con .c-results[hidden],.con .c-results .none[hidden]{display:none}
+.con .c-find input:focus{box-shadow:none!important;border:0!important;outline:0}

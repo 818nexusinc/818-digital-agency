@@ -13,6 +13,15 @@ $nm = trim((string)($user['name'] ?? ''));
 $ini = strtoupper(implode('', array_map(fn($w) => mb_substr($w, 0, 1), array_slice(preg_split('/\s+/', $nm ?: 'U'), 0, 2))));
 $crumb = '';
 foreach ($groups as $g => $links) foreach ($links as $h => $l) if (($path ?? "") !== $home && (($path ?? '') === $h || ($h !== $home && str_starts_with((string)($path ?? ''), $h . '/')))) $crumb = $g;
+$activeDest = null; $activeTab = null;
+if (!empty($nav)) {
+    $best = -1;
+    foreach ($nav as $di => [, , $kids]) foreach ($kids as $h => $v) {
+        $hit = ($path ?? '') === $h || ($h !== $home && str_starts_with((string)($path ?? ''), $h . '/'));
+        if ($hit && strlen($h) > $best) { $best = strlen($h); $activeDest = $di; $activeTab = $h; }
+    }
+    if ($activeDest !== null) $crumb = $nav[$activeDest][0];
+}
 ?><!doctype html>
 <html lang="<?= lang() === 'fr' ? 'fr-CA' : 'en-CA' ?>"<?= lang() === 'fr' ? " data-i18n='" . e(js_dict()) . "'" : '' ?>><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title><?= e(t($title ?? $areaName)) ?> · <?= e(t($areaName)) ?></title><meta name="robots" content="noindex">
 <meta name="csrf" content="<?= e($csrf ?? '') ?>"><link rel="icon" href="/assets/img/favicon.svg"><link rel="preload" href="/fonts/hanken-grotesk-latin-500-normal.woff2" as="font" type="font/woff2" crossorigin>
@@ -23,6 +32,15 @@ foreach ($groups as $g => $links) foreach ($links as $h => $l) if (($path ?? "")
 <aside class="side" id="side">
   <a class="c-brand" href="<?= e($home) ?>"><span class="c-logo"><?php include APP_ROOT . '/views/partials/logo.php'; ?></span><span class="c-bt"><b>818 Digital Agency</b><small><?= e(t($areaName)) ?></small></span></a>
   <label class="c-find"><?= nx_icon('search') ?><span class="sr"><?= e(t('Find a page')) ?></span><input type="search" placeholder="<?= e(t('Search pages')) ?>" data-navfind autocomplete="off"><kbd>/</kbd></label>
+  <?php if (!empty($nav)): ?>
+  <nav class="c-nav c-dest" aria-label="<?= e(t($areaName)) ?>">
+    <?php foreach ($nav as $di => [$dl, $di_icon, $kids]): $first = array_key_first($kids); $cnt = 0; $hot = false;
+      foreach ($kids as $v) if (is_array($v) && empty($v[3])) { $cnt += (int)$v[1]; if (!empty($v[2]) && $v[1]) $hot = true; } ?>
+    <a class="d" href="<?= e($first) ?>"<?= $activeDest === $di ? ' aria-current="page"' : '' ?>><?= nx_icon($di_icon) ?><span class="nl"><?= e(t($dl)) ?></span><?php if ($cnt): ?><i class="count<?= $hot ? ' hot' : '' ?>"><?= $cnt ?></i><?php endif; ?></a>
+    <?php endforeach; ?>
+    <div class="c-results" hidden><?php foreach ($nav as [$dl, , $kids]) foreach ($kids as $h => $v): ?><a class="r" href="<?= e($h) ?>"><span class="nl"><?= e(t(is_array($v) ? $v[0] : $v)) ?></span><small><?= e(t($dl)) ?></small></a><?php endforeach; ?><p class="none" hidden><?= e(t('No matching page')) ?></p></div>
+  </nav>
+  <?php else: ?>
   <nav class="c-nav" aria-label="<?= e(t($areaName)) ?>">
   <?php $gc = ['Operate' => '#7c9cff', 'Sell' => '#f472b6', 'AI workforce' => '#2dd4bf', 'Grow' => '#fb923c', 'System' => '#a3adc2'];
   $urgent = ['/admin/approvals', '/portal/support'];
@@ -37,6 +55,7 @@ foreach ($groups as $g => $links) foreach ($links as $h => $l) if (($path ?? "")
     </div></div>
   <?php endforeach; ?>
   </nav>
+  <?php endif; ?>
   <div class="c-me">
     <span class="av"><?= e($ini) ?></span><span class="who"><b><?= e($nm) ?></b><small><?= e(t(ucfirst((string)($user['role'] ?? '')))) ?> · v<?= e(APP_VERSION) ?></small></span>
     <a class="c-ico" href="/" title="<?= e(t('View website')) ?>" aria-label="<?= e(t('View website')) ?>"><?= nx_icon('globe') ?></a>
@@ -53,6 +72,12 @@ foreach ($groups as $g => $links) foreach ($links as $h => $l) if (($path ?? "")
       <span class="av" title="<?= e($nm) ?>"><?= e($ini) ?></span>
     </div>
   </header>
+  <?php if ($activeDest !== null && count($nav[$activeDest][2]) > 1): ?>
+  <nav class="c-tabs" aria-label="<?= e(t($nav[$activeDest][0])) ?>"><div class="c-tabs-in">
+    <?php foreach ($nav[$activeDest][2] as $h => $v): [$tl, $tc, $tu] = is_array($v) ? [$v[0], (int)$v[1], !empty($v[2])] : [$v, 0, false]; ?>
+    <a href="<?= e($h) ?>"<?= $activeTab === $h ? ' aria-current="page"' : '' ?>><?= e(t($tl)) ?><?php if ($tc): ?><i class="<?= $tu ? 'hot' : '' ?>"><?= $tc ?></i><?php endif; ?></a>
+    <?php endforeach; ?></div></nav>
+  <?php endif; ?>
   <main class="main" id="main"><?php include APP_ROOT . '/views/partials/flash.php'; ?><?= $content ?></main>
 </div></div>
 <?php if ($area === 'portal') include APP_ROOT . '/views/partials/chat.php'; ?>
