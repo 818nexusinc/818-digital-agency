@@ -654,5 +654,24 @@ tcase('two-step codes: drift tolerance and one-time recovery codes', function ()
     ok($m->invoke(null, $uid, str_replace('-', '', $codes[1])), 'works without the dash');
 });
 
+tcase('site editor: edits apply per page or everywhere, keep placeholders, strip tags, and undo', function () {
+    $T = App\SiteText::class;
+    ok($T::placeholdersMatch('From %s', 'Starting at %s'), 'placeholder kept'); ok(!$T::placeholdersMatch('From %s', 'From'), 'placeholder dropped is refused');
+    ok($T::placeholdersMatch('Save up to 15%.', 'Save 20% now'), 'percent signs fine where there are no placeholders');
+    eq($T::clean('Plain', 'Hi <script>x</script><b>there</b>'), 'Hi xthere'); eq($T::clean('Some <b>bold</b>', 'New <b>bold</b><img src=x>'), 'New <b>bold</b>');
+    Db::run('DELETE FROM site_text'); Db::run('DELETE FROM site_pages');
+    $T::remember('/about', ['About us', 'Skip to content'], 1);
+    [$n, $bad] = $T::save('/about', [['key' => $T::key('About us'), 'scope' => 'one', 'en' => 'Who we are', 'fr' => 'Qui sommes-nous'], ['key' => $T::key('Skip to content'), 'scope' => 'all', 'en' => 'Skip ahead', 'fr' => ''], ['key' => sha1('not on page'), 'en' => 'x']], 'test');
+    eq($n, 2); eq($bad, []);
+    $f = $T::fields('/about'); eq($f[0]['en'], 'Who we are'); eq($f[0]['scope'], 'one'); ok($f[1]['shared'] && $f[1]['scope'] === 'all');
+    $rp = new ReflectionProperty($T, 'page'); $ro = new ReflectionProperty($T, 'over');
+    $rp->setValue(null, '/about'); $ro->setValue(null, null);
+    eq($T::apply('About us', 'fr'), 'Qui sommes-nous'); eq($T::apply('Skip to content', 'en'), 'Skip ahead');
+    $rp->setValue(null, '/contact'); eq($T::apply('About us', 'en'), null); eq($T::apply('Skip to content', 'en'), 'Skip ahead');
+    $T::save('/about', [['key' => $T::key('About us'), 'reset' => true]], 'test');
+    eq((int)Db::val("SELECT COUNT(*) FROM site_text WHERE skey = ?", [$T::key('About us')]), 0);
+    $rp->setValue(null, null); $ro->setValue(null, null); Db::run('DELETE FROM site_text'); Db::run('DELETE FROM site_pages');
+});
+
 echo "\n" . ($fail ? "\033[31m{$fail} failed\033[0m, " : '') . "\033[32m{$pass} passed\033[0m\n";
 exit($fail ? 1 : 0);

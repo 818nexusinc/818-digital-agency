@@ -545,3 +545,121 @@
     });
   });
 })();
+
+/* Site editor: page text fields beside a live preview. */
+(function () {
+  var root = document.querySelector('[data-site-editor]'); if (!root) return;
+  document.querySelectorAll('[data-autosubmit]').forEach(function (el) { el.addEventListener('change', function () { el.form && el.form.requestSubmit(); }); });
+  var lf = root.querySelector('[data-logo-file]');
+  if (lf) lf.addEventListener('change', function () { var n = root.querySelector('[data-logo-name]'); if (n && lf.files[0]) n.textContent = lf.files[0].name + ' · ' + Math.round(lf.files[0].size / 1024) + ' KB'; });
+  var form = root.querySelector('[data-se-form]'); if (!form) return;
+  var box = root.querySelector('[data-se-fields]'), save = root.querySelector('[data-se-save]'), countEl = root.querySelector('[data-se-count]');
+  var frame = root.querySelector('[data-se-iframe]'), wrap = root.querySelector('[data-se-frame]');
+  var page = root.getAttribute('data-page'), dirty = false;
+  var norm = function (s) { return String(s || '').replace(/\s+/g, ' ').trim(); };
+
+  root.querySelector('[data-se-page]').addEventListener('change', function (e) {
+    if (dirty && !window.confirm('Leave this page? Your unsaved changes will be lost.')) { e.target.value = page; return; }
+    dirty = false; location.href = '/admin/site?page=' + encodeURIComponent(e.target.value);
+  });
+  function refreshCount() {
+    var n = box.querySelectorAll('.sf.is-dirty').length; dirty = n > 0;
+    save.hidden = !n; countEl.textContent = n + (n === 1 ? ' unsaved change' : ' unsaved changes');
+  }
+  function markDirty(sf) { sf.classList.add('is-dirty'); refreshCount(); }
+  box.addEventListener('input', function (e) {
+    var sf = e.target.closest('[data-sf]'); if (!sf) return;
+    sf.removeAttribute('data-reset'); markDirty(sf);
+    if (e.target.getAttribute('data-l') === 'en') live(sf, e.target.value);
+  });
+  box.addEventListener('change', function (e) { if (e.target.matches('[data-scope]')) markDirty(e.target.closest('[data-sf]')); });
+  box.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-reset]'); if (!b) return;
+    var sf = b.closest('[data-sf]');
+    sf.querySelector('[data-l=en]').value = sf.getAttribute('data-src');
+    sf.querySelector('[data-l=fr]').value = sf.getAttribute('data-fr-default') || '';
+    sf.setAttribute('data-reset', '1'); live(sf, sf.getAttribute('data-src')); markDirty(sf);
+  });
+  box.addEventListener('focusin', function (e) { var sf = e.target.closest('[data-sf]'); if (sf) show(sf); });
+  root.querySelector('[data-se-discard]').addEventListener('click', function () { dirty = false; location.reload(); });
+  window.addEventListener('beforeunload', function (e) { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
+  form.addEventListener('submit', function () {
+    var out = [];
+    box.querySelectorAll('.sf.is-dirty').forEach(function (sf) {
+      out.push({ key: sf.getAttribute('data-key'), scope: sf.querySelector('[data-scope]').value, en: sf.querySelector('[data-l=en]').value, fr: sf.querySelector('[data-l=fr]').value, reset: sf.getAttribute('data-reset') === '1' });
+    });
+    root.querySelector('[data-se-changes]').value = JSON.stringify(out); dirty = false;
+  });
+
+  /* Find and "changed only" filters */
+  var find = root.querySelector('[data-se-find]'), only = root.querySelector('[data-se-changed]');
+  function filter() {
+    var q = norm(find.value).toLowerCase(), c = only.checked;
+    box.querySelectorAll('[data-sf]').forEach(function (sf) {
+      var t = (sf.getAttribute('data-src') + ' ' + sf.querySelector('[data-l=en]').value + ' ' + sf.querySelector('[data-l=fr]').value).toLowerCase();
+      sf.hidden = (q && t.indexOf(q) < 0) || (c && !sf.classList.contains('is-edited') && !sf.classList.contains('is-dirty'));
+    });
+    box.querySelectorAll('.se-group').forEach(function (g) { g.hidden = !g.querySelector('[data-sf]:not([hidden])'); });
+  }
+  find.addEventListener('input', filter); only.addEventListener('change', filter);
+
+  /* Preview: scale a desktop-width page into the panel */
+  function fit() { var w = wrap.clientWidth; if (!w) return; var s = Math.min(1, w / 1280); frame.style.transform = 'scale(' + s + ')'; frame.style.width = '1280px'; frame.style.height = Math.round(wrap.clientHeight / s) + 'px'; }
+  window.addEventListener('resize', fit); fit();
+
+  var doc = null, marked = null;
+  function textNodes(fn) {
+    if (!doc || !doc.body) return;
+    var w = doc.createTreeWalker(doc.body, NodeFilter.SHOW_TEXT, { acceptNode: function (n) { var p = n.parentNode && n.parentNode.nodeName; return p === 'SCRIPT' || p === 'STYLE' ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT; } });
+    var n; while ((n = w.nextNode())) fn(n);
+  }
+  function findEls(text) {
+    var t = norm(text), out = [];
+    if (!t) return out;
+    textNodes(function (n) { if (norm(n.nodeValue) === t) out.push(n); });
+    if (!out.length) doc.querySelectorAll('[placeholder],[alt],[title]').forEach(function (el) { ['placeholder', 'alt', 'title'].forEach(function (a) { if (norm(el.getAttribute(a)) === t) out.push(el); }); });
+    return out;
+  }
+  function mark(nodes) {
+    if (marked) marked.forEach(function (el) { el.removeAttribute('data-nx-on'); });
+    marked = nodes.map(function (n) { return n.nodeType === 3 ? n.parentElement : n; }).filter(Boolean);
+    marked.forEach(function (el) { el.setAttribute('data-nx-on', ''); });
+    if (marked[0]) marked[0].scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }
+  function show(sf) { if (doc) mark(findEls(sf.getAttribute('data-live'))); }
+  function live(sf, val) {
+    if (!doc) return;
+    var nodes = findEls(sf.getAttribute('data-live'));
+    nodes.forEach(function (n) { if (n.nodeType === 3) { var m = n.nodeValue.match(/^\s*/)[0], z = n.nodeValue.match(/\s*$/)[0]; n.nodeValue = m + val + z; } });
+    if (nodes.length) sf.setAttribute('data-live', val);
+  }
+  function hook() {
+    try { doc = frame.contentDocument; } catch (e) { doc = null; }
+    if (!doc || !doc.body) return;
+    var st = doc.createElement('style');
+    st.textContent = '[data-nx-on]{outline:2px solid #3b6ff5!important;outline-offset:3px;border-radius:2px}[data-nx-hov]{outline:2px dashed #3b6ff5!important;outline-offset:3px;cursor:text!important}.st-in,.ch .st-in,[data-reveal]{opacity:1!important;transform:none!important}';
+    doc.head.appendChild(st);
+    doc.addEventListener('mouseover', function (e) { var el = e.target; if (el.nodeType !== 1 || !norm(el.textContent)) return; el.setAttribute('data-nx-hov', ''); el.addEventListener('mouseout', function o() { el.removeAttribute('data-nx-hov'); el.removeEventListener('mouseout', o); }); });
+    doc.addEventListener('click', function (e) {
+      e.preventDefault(); e.stopPropagation();
+      var el = e.target, texts = [];
+      // The clicked element's own text first, then its children's.
+      Array.prototype.forEach.call(el.childNodes, function (n) { if (n.nodeType === 3 && norm(n.nodeValue)) texts.push(norm(n.nodeValue)); });
+      if (!texts.length) { var w = doc.createTreeWalker(el, NodeFilter.SHOW_TEXT); var n; while ((n = w.nextNode())) if (norm(n.nodeValue)) texts.push(norm(n.nodeValue)); }
+      ['placeholder', 'alt', 'title'].forEach(function (a) { if (el.getAttribute && el.getAttribute(a)) texts.push(norm(el.getAttribute(a))); });
+      var fields = box.querySelectorAll('[data-sf]');
+      for (var i = 0; i < texts.length; i++) for (var j = 0; j < fields.length; j++) if (norm(fields[j].getAttribute('data-live')) === texts[i]) {
+        var sf = fields[j]; find.value = ''; only.checked = false; filter();
+        sf.scrollIntoView({ block: 'center', behavior: 'smooth' }); sf.classList.add('is-flash'); setTimeout(function () { sf.classList.remove('is-flash'); }, 1200);
+        var ta = sf.querySelector('[data-l=en]'); ta.focus({ preventScroll: true }); mark([el]); return;
+      }
+    }, true);
+    doc.addEventListener('submit', function (e) { e.preventDefault(); }, true);
+  }
+  frame.addEventListener('load', function () {
+    hook();
+    // The preview records the page's text; fetch the up-to-date field list unless edits are in progress.
+    if (dirty) return;
+    fetch('/admin/site/fields?page=' + encodeURIComponent(page), { credentials: 'same-origin' }).then(function (r) { return r.ok ? r.text() : null; }).then(function (h) { if (h && !dirty) { box.innerHTML = h; filter(); } });
+  });
+})();

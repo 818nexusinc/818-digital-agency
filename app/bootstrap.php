@@ -7,7 +7,7 @@ declare(strict_types=1);
  */
 
 define('APP_ROOT', __DIR__);
-define('APP_VERSION', '4.10.0');
+define('APP_VERSION', '4.11.0');
 
 spl_autoload_register(static function (string $class): void {
     if (!str_starts_with($class, 'App\\')) return;

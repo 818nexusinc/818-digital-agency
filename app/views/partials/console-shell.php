@@ -31,7 +31,7 @@ if (!empty($nav)) {
 <a class="skip" href="#main"><?= e(t('Skip to content')) ?></a>
 <div class="shell">
 <aside class="side" id="side">
-  <a class="c-brand" href="<?= e($home) ?>"><span class="c-logo"><?php include APP_ROOT . '/views/partials/logo.php'; ?></span><span class="c-bt"><b>818 Digital Agency</b><small><?= e(t($areaName)) ?></small></span></a>
+  <a class="c-brand" href="<?= e($home) ?>"><span class="c-logo<?= App\SiteText::logoVersion() ? ' has-img' : '' ?>"><?php include APP_ROOT . '/views/partials/logo.php'; ?></span><span class="c-bt"><b>818 Digital Agency</b><small><?= e(t($areaName)) ?></small></span></a>
   <label class="c-find"><?= nx_icon('search') ?><span class="sr"><?= e(t('Find a page')) ?></span><input type="search" placeholder="<?= e(t('Search pages')) ?>" data-navfind autocomplete="off"><kbd>/</kbd></label>
   <?php if (!empty($nav)): ?>
   <nav class="c-nav c-dest" aria-label="<?= e(t($areaName)) ?>">

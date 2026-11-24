@@ -66,3 +66,7 @@
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%235f6b85' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")!important;
   background-repeat:no-repeat!important;background-position:right 14px center!important;background-size:16px 16px!important;text-overflow:ellipsis}
 .site select[multiple]{background-image:none!important;padding-right:12px!important}
+
+/* Uploaded logo (Control Tower → Site editor → Logo) */
+.site .brand img.site-logo{display:block;height:40px;width:auto;max-width:220px;object-fit:contain;flex:none}
+.site .brand .wm.wm-off{display:none}

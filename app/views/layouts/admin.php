@@ -13,7 +13,7 @@ $nav = [
   ['Customers', 'users', ['/admin/customers' => 'Customers', '/admin/tickets' => ['Support', $openT]]],
   ['Work', 'folder', ['/admin/projects' => 'Projects', '/admin/filings' => ['Government filings', $filings]]],
   ['AI team', 'bot', ['/admin/guide' => 'How agents work', '/admin/agents' => 'Agents', '/admin/tasks' => ['Tasks', $failed], '/admin/workflows' => 'Workflows', '/admin/kb' => 'Knowledge base', '/admin/simulator' => 'Simulator']],
-  ['Marketing', 'chart', ['/admin/search' => 'Search & AI visibility', '/admin/blog' => 'Blog', '/admin/content' => 'Content studio', '/admin/growth' => 'Reports']],
+  ['Marketing', 'chart', ['/admin/site' => 'Site editor', '/admin/search' => 'Search & AI visibility', '/admin/blog' => 'Blog', '/admin/content' => 'Content studio', '/admin/growth' => 'Reports']],
   ['Money', 'stack', ['/admin/finance' => 'Finance', '/admin/catalog' => 'Services & pricing']],
   ['Settings', 'cog', ['/admin/settings' => 'Settings & team', '/admin/integrations' => 'Integrations', '/admin/security' => 'Security check', '/admin/spam' => 'Spam shield',
       '/admin/system' => 'System health', '/admin/update' => 'Updates', '/admin/demo' => ['Demo data', $demo, false, true], '/admin/audit' => 'Audit log', '/classic' => 'Classic archive']],

@@ -39,7 +39,11 @@ if (isset($_GET['lang']) && in_array($_GET['lang'], ['en', 'fr'], true)) {
     $q = $_GET; unset($q['lang']);
     header('Location: ' . $path . ($q ? '?' . http_build_query($q) : ''), true, 302); exit;
 }
-if (lang() === 'fr') ob_start('tr_html');
+// Site editor preview: a signed-in editor opening a public page with ?nx_edit=1 gets the English page and its text is recorded for the editor.
+if (isset($_GET['nx_edit']) && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET' && !preg_match('#^/(admin|portal|api)#', $path)) {
+    try { $eu = Auth::user(); if ($eu && App\Rbac::can($eu, 'content.write')) { App\SiteText::$editing = true; header('Cache-Control: no-store'); header('X-Robots-Tag: noindex'); } } catch (Throwable) {}
+}
+if (lang() === 'fr') ob_start('tr_html'); else ob_start('site_html');
 
 // Legacy SPA archive — owner/admin only. The old bundle (which contains hard-coded credentials) is never public.
 if ($path === '/classic' || str_starts_with($path, '/classic/')) {

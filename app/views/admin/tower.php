@@ -63,7 +63,7 @@ $today = count($d['week']) - 1;
   <section class="db-card db-year">
     <div class="db-ch"><div><h2>Yearly summary</h2><p class="db-tot"><span>Invoiced <b><?= money($yInv) ?></b></span><span>Paid <b><?= money($yPaid) ?></b></span><span>AI costs <b>US$<?= number_format($d['expenses'] / 100, 2) ?></b></span></p></div>
       <div class="seg" role="tablist" aria-label="Chart period"><button type="button" role="tab" aria-selected="true" data-show="yb-m">Monthly</button><button type="button" role="tab" aria-selected="false" data-show="yb-q">Quarterly</button></div></div>
-    <div class="db-legend"><span><i class="sw sw-inv"></i>Invoiced</span><span><i class="sw sw-paid"></i>Paid</span></div>
+    <div class="db-legend"><span><i class="lg-sw sw-inv"></i>Invoiced</span><span><i class="lg-sw sw-paid"></i>Paid</span></div>
     <div class="db-chart"><div data-chart="yb-m"><?= $chart($d['months'], 'yb-m') ?></div><div data-chart="yb-q" hidden><?= $chart($quarters, 'yb-q') ?></div></div>
     <details class="db-table"><summary>Show as table</summary><table><thead><tr><th>Month</th><th>Invoiced</th><th>Paid</th></tr></thead><tbody><?php foreach ($d['months'] as $r): ?><tr><td><?= e($r['label']) ?></td><td><?= money($r['inv']) ?></td><td><?= money($r['paid']) ?></td></tr><?php endforeach; ?></tbody></table></details>
   </section>

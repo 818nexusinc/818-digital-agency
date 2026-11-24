@@ -318,6 +318,36 @@ $r->post('/admin/coupons', function () {
     View::redirect('/admin/catalog');
 }, $P('catalog.write'));
 
+/* Site editor: change the wording on any public page, and the logo */
+$sitePage = function (): string { $p = '/' . ltrim((string)($_GET['page'] ?? $_POST['page'] ?? '/'), '/'); $p = rtrim(preg_replace('#[^a-zA-Z0-9/_\-.]#', '', $p), '/') ?: '/'; return mb_substr($p, 0, 190); };
+$r->get('/admin/site', function () use ($sitePage) {
+    $pg = $sitePage();
+    View::page('admin/site', ['title' => 'Site editor', 'tab' => ($_GET['tab'] ?? '') === 'brand' ? 'brand' : 'pages', 'pg' => $pg, 'pages' => App\SiteText::pages(), 'fields' => App\SiteText::fields($pg),
+        'logo' => App\SiteText::logoVersion(), 'logoMime' => App\SiteText::asset('logo')['mime'] ?? null, 'wordmark' => Settings::get('site.logo_wordmark', '1') === '1', 'company' => Settings::get('company.name')]);
+}, $P('content.write'));
+$r->get('/admin/site/fields', function () use ($sitePage) {
+    header('Cache-Control: no-store');
+    echo View::render('admin/site-fields', ['fields' => App\SiteText::fields($sitePage())]);
+}, $P('content.write'));
+$r->post('/admin/site', function () use ($sitePage, $me) {
+    $pg = $sitePage();
+    $changes = jdec(Request::str('changes', 2_000_000), []);
+    [$n, $bad] = App\SiteText::save($pg, is_array($changes) ? $changes : [], (string)($me()['email'] ?? 'staff'));
+    if ($bad) Session::flash('error', 'Not saved: ' . implode('; ', array_slice($bad, 0, 4)) . (count($bad) > 4 ? ' and ' . (count($bad) - 4) . ' more' : '') . '.');
+    if ($n) Session::flash('success', $n === 1 ? 'Saved. The change is live.' : "Saved {$n} changes. They are live.");
+    elseif (!$bad) Session::flash('success', 'Nothing changed.');
+    View::redirect('/admin/site?page=' . rawurlencode($pg));
+}, $P('content.write'));
+$r->post('/admin/site/brand', function () {
+    $act = Request::str('action', 20);
+    try {
+        if ($act === 'remove') { App\SiteText::removeAsset('logo'); Session::flash('success', 'The original 818 logo is back.'); }
+        elseif ($act === 'upload') { App\SiteText::saveLogo($_FILES['logo'] ?? []); Settings::set('site.logo_wordmark', Request::input('wordmark') ? '1' : '0'); Session::flash('success', 'New logo saved. It now shows on the website and here.'); }
+        else { Settings::set('site.logo_wordmark', Request::input('wordmark') ? '1' : '0'); Session::flash('success', 'Saved.'); }
+    } catch (UserError $e) { Session::flash('error', $e->getMessage()); }
+    View::redirect('/admin/site?tab=brand');
+}, $P('content.write'));
+
 /* Content studio */
 $r->get('/admin/content', fn() => View::page('admin/content', ['title' => 'Content studio', 'rows' => Db::all('SELECT * FROM content_items ORDER BY updated_at DESC LIMIT 200'), 'item' => isset($_GET['edit']) ? Db::one('SELECT * FROM content_items WHERE id = ?', [(int)$_GET['edit']]) : null,
     'versions' => isset($_GET['edit']) ? Db::all('SELECT version, author, created_at FROM content_versions WHERE content_id = ? ORDER BY version DESC', [(int)$_GET['edit']]) : []]), $P('content.read'));

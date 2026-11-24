@@ -159,6 +159,15 @@ $r->post('/order/draft', function () { $in = Request::json(); App\Spam::guard('d
 /* SEO / machine-readable */
 $r->get('/sitemap.xml', function () { header('Content-Type: application/xml; charset=UTF-8'); echo Seo::sitemap(); });
 $r->get('/llms.txt', function () { header('Content-Type: text/plain; charset=UTF-8'); echo Seo::llms(); });
+$r->get('/brand/logo', function () {
+    $a = App\SiteText::asset('logo');
+    if (!$a) { http_response_code(404); header('Content-Type: text/plain'); echo 'No logo'; return; }
+    $etag = '"' . substr(sha1($a['updated_at']), 0, 16) . '"';
+    header('Content-Type: ' . $a['mime']); header('Cache-Control: public, max-age=86400'); header('ETag: ' . $etag);
+    header("Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; sandbox"); header('X-Content-Type-Options: nosniff');
+    if (($_SERVER['HTTP_IF_NONE_MATCH'] ?? '') === $etag) { http_response_code(304); return; }
+    echo base64_decode((string)$a['data']);
+});
 $r->get('/robots.txt', function () { header('Content-Type: text/plain; charset=UTF-8'); header('Cache-Control: public, max-age=3600'); echo Seo::robots(); });
 $r->get('/llms-full.txt', function () { header('Content-Type: text/plain; charset=UTF-8'); header('Cache-Control: public, max-age=3600'); echo Seo::llmsFull(); });
 $r->get('/{key}.txt', function ($p) { if (!hash_equals(Seo::indexNowKey(), (string)$p['key'])) throw new HttpError(404, 'Page not found.'); header('Content-Type: text/plain; charset=UTF-8'); echo Seo::indexNowKey(); });

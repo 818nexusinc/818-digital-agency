@@ -50,19 +50,23 @@ function label(string $status): string { return ucwords(str_replace('_', ' ', $s
 function lang(): string
 {
     static $l = null;
+    if (\App\SiteText::$editing) return 'en';
     if ($l === null) { $c = $_COOKIE['lang'] ?? ''; $l = in_array($c, ['en', 'fr'], true) ? $c : 'en'; }
     return $l;
 }
 /** Translate a UI string. English is the key; missing French entries fall back to English. */
 function t(string $s): string
 {
-    if ($s === '' || lang() !== 'fr') return $s;
+    if ($s === '') return $s;
+    $l = lang();
+    if (($o = \App\SiteText::apply($s, $l)) !== null) return $o;
+    if ($l !== 'fr') return $s;
     static $d = null;
     $d ??= is_file(APP_ROOT . '/i18n/fr.php') ? (require APP_ROOT . '/i18n/fr.php') : [];
     return $d[$s] ?? $s;
 }
 /** Translate, then format with sprintf (for strings with prices or names). */
-function tf(string $s, mixed ...$a): string { return vsprintf(t($s), $a); }
+function tf(string $s, mixed ...$a): string { try { return vsprintf(t($s), $a); } catch (\ValueError) { return vsprintf($s, $a); } }
 
 /** French pass over a rendered HTML page: swaps text nodes and UI attributes that match the dictionary or a pattern. */
 function tr_html(string $html): string
@@ -87,6 +91,47 @@ function tr_html(string $html): string
         $p = preg_replace_callback('/\b(placeholder|aria-label|title|alt|data-label|data-confirm|data-text|data-line)="([^"]*)"/u', fn($m) => $m[1] . '="' . ($one($m[2]) ?? $m[2]) . '"', $p);
     }
     return implode('', $parts);
+}
+/**
+ * English pass over a rendered public page for the Site editor: applies saved wording to text that is written straight into
+ * the templates (header, footer, buttons), and, in an editor preview, records every piece of text in page order.
+ */
+function site_html(string $html): string
+{
+    if ($html === '' || lang() === 'fr') return $html;
+    foreach (headers_list() as $h) if (stripos($h, 'content-type:') === 0 && stripos($h, 'text/html') === false) return $html;
+    $page = \App\SiteText::pageNow();
+    if ($page === null || stripos($html, '<body') === false) return $html;
+    $rec = \App\SiteText::$editing && http_response_code() === 200;
+    if (!$rec && !\App\SiteText::hasEdits()) return $html;
+    $main = []; $shared = []; $inMain = false;
+    $one = function (string $raw, bool $record = true) use (&$main, &$shared, &$inMain, $rec): ?string {
+        $s = trim(preg_replace('/\s+/u', ' ', html_entity_decode($raw, ENT_QUOTES | ENT_HTML5, 'UTF-8')));
+        if ($s === '' || !preg_match('/\p{L}/u', $s)) return null;
+        if ($rec && $record) { $o = \App\SiteText::$from[$s] ?? $s; if ($inMain) $main[$o] = true; else $shared[$o] = true; }
+        $f = \App\SiteText::apply($s, 'en');
+        if ($f === null || $f === $s) return null;
+        preg_match('/^\s*/u', $raw, $a); preg_match('/\s*$/u', $raw, $b);
+        return $a[0] . htmlspecialchars($f, ENT_QUOTES | ENT_HTML5, 'UTF-8', false) . $b[0];
+    };
+    [$head, $body] = preg_split('/(?=<body\b)/i', $html, 2) + [1 => ''];
+    $parts = preg_split('/(<script\b.*?<\/script>|<style\b.*?<\/style>|<textarea\b.*?<\/textarea>|<svg\b.*?<\/svg>)/is', $body, -1, PREG_SPLIT_DELIM_CAPTURE);
+    foreach ($parts as $i => &$p) {
+        if ($i % 2) continue;
+        // Walk tags and text in order so we know whether we are inside <main>.
+        $p = preg_replace_callback('/(<main\b[^>]*>)|(<\/main>)|<([a-zA-Z][^\s>\/]*)([^>]*)>|(<!--.*?-->|<[\/!?][^>]*>)|([^<]+)/us', function ($m) use ($one, &$inMain) {
+            if (!empty($m[1])) { $inMain = true; return $m[1]; }
+            if (!empty($m[2])) { $inMain = false; return $m[2]; }
+            if (isset($m[5]) && $m[5] !== '') return $m[5];
+            if (isset($m[6]) && $m[6] !== '') return $one($m[6]) ?? $m[6];
+            if (empty($m[3])) return $m[0];
+            $attrs = preg_replace_callback('/\b(placeholder|aria-label|title|alt)="([^"]*)"/u', fn($a) => $a[1] . '="' . ($one($a[2]) ?? $a[2]) . '"', $m[4]);
+            return '<' . $m[3] . $attrs . '>';
+        }, $p);
+    }
+    unset($p);
+    if ($rec) { try { \App\SiteText::remember($page, array_merge(array_keys($main), array_keys(array_diff_key($shared, $main))), count($main)); } catch (\Throwable) {} }
+    return $head . implode('', $parts);
 }
 /** Strings the browser scripts need, as JSON for <html data-i18n>. */
 function js_dict(): string

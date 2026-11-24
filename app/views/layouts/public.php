@@ -29,7 +29,7 @@ $cartCount = count(Cart::lines());
 <a class="skip" href="#main">Skip to content</a>
 <header class="site-header">
   <div class="wrap hd">
-    <a class="brand" href="/" aria-label="818 Digital Agency home"><?php include APP_ROOT . '/views/partials/logo.php'; ?><span class="wm"><b>818 Digital Agency</b><span>by 818 Nexus Inc.</span></span></a>
+    <a class="brand" href="/" aria-label="818 Digital Agency home"><?php include APP_ROOT . '/views/partials/logo.php'; ?><span class="wm<?= App\SiteText::logoVersion() && App\Settings::get('site.logo_wordmark', '1') !== '1' ? ' wm-off' : '' ?>"><b>818 Digital Agency</b><span>by 818 Nexus Inc.</span></span></a>
     <div class="navbar" id="site-navbar"><?php include APP_ROOT . '/views/partials/megamenu.php'; ?>
       <div class="drawer-foot"><?php if (!empty($user)): ?><a class="btn btn-primary" href="<?= App\Auth::isStaff($user) ? '/admin' : '/portal' ?>"><?= App\Auth::isStaff($user) ? 'Control Tower' : 'My portal' ?></a><?php else: ?><a class="btn btn-ghost" href="/login">Log in</a><a class="btn btn-primary" href="/signup">Create account</a><?php endif; ?></div>
     </div>
