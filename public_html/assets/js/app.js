@@ -506,8 +506,42 @@
 
 /* Console: collapse the menu to icons only (remembered per browser). */
 (function () {
-  var b = document.querySelector('[data-collapse]'); if (!b) return;
-  function sync() { var m = document.body.classList.contains('nav-mini'); b.setAttribute('aria-label', m ? 'Expand menu' : 'Collapse menu'); b.title = b.getAttribute('aria-label'); b.setAttribute('aria-expanded', m ? 'false' : 'true'); }
-  b.addEventListener('click', function () { document.body.classList.toggle('nav-mini'); try { localStorage.setItem('nx818_nav_mini', document.body.classList.contains('nav-mini') ? '1' : '0'); } catch (e) {} sync(); });
+  var bs = document.querySelectorAll('[data-collapse]'); if (!bs.length) return;
+  function sync() { var m = document.body.classList.contains('nav-mini'); bs.forEach(function (b) { b.setAttribute('aria-label', m ? 'Expand menu' : 'Collapse menu'); b.title = b.getAttribute('aria-label'); b.setAttribute('aria-expanded', m ? 'false' : 'true'); }); }
+  bs.forEach(function (b) { b.addEventListener('click', function () {
+    if (innerWidth <= 960) { var sd = document.getElementById('side'); if (sd) sd.classList.toggle('open'); return; }
+    document.body.classList.toggle('nav-mini'); try { localStorage.setItem('nx818_nav_mini', document.body.classList.contains('nav-mini') ? '1' : '0'); } catch (e) {} sync(); }); });
   sync();
+  /* Parents open and close their pages (in the slim menu they go straight to the first page). */
+  document.querySelectorAll('.c-par > a[data-par]').forEach(function (a) {
+    a.addEventListener('click', function (e) {
+      if (document.body.classList.contains('nav-mini')) return;
+      e.preventDefault(); var p = a.parentNode, o = !p.classList.contains('open'); p.classList.toggle('open', o); a.setAttribute('aria-expanded', o ? 'true' : 'false');
+    });
+  });
+  var os = document.querySelector('[data-open-search]'), nf = document.querySelector('[data-navfind]');
+  if (os && nf) os.addEventListener('click', function () {
+    if (document.body.classList.contains('nav-mini')) { document.body.classList.remove('nav-mini'); sync(); }
+    if (innerWidth <= 960) { var sd = document.getElementById('side'); if (sd) sd.classList.add('open'); }
+    var sd2 = document.getElementById('side'); if (sd2) sd2.classList.add('searching');
+    setTimeout(function () { nf.focus(); }, 0);
+  });
+  if (nf) nf.addEventListener('blur', function () { setTimeout(function () { if (!nf.value) { var sd3 = document.getElementById('side'); if (sd3) sd3.classList.remove('searching'); } }, 150); });
+  document.addEventListener('keydown', function (e) { if ((e.key === '/' || ((e.metaKey || e.ctrlKey) && e.key === 'k')) && !/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) { var sd4 = document.getElementById('side'); if (sd4) sd4.classList.add('searching'); } }, true);
+})();
+
+/* Dashboard: Monthly/Quarterly chart switch and the Earnings day picker. */
+(function () {
+  document.querySelectorAll('[data-show]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var grp = b.parentNode; grp.querySelectorAll('[data-show]').forEach(function (x) { x.setAttribute('aria-selected', x === b ? 'true' : 'false'); });
+      document.querySelectorAll('[data-chart]').forEach(function (c) { c.hidden = c.getAttribute('data-chart') !== b.getAttribute('data-show'); });
+    });
+  });
+  document.querySelectorAll('[data-day]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.querySelectorAll('[data-day]').forEach(function (x) { x.setAttribute('aria-selected', x === b ? 'true' : 'false'); });
+      document.querySelectorAll('[data-day-panel]').forEach(function (p) { p.hidden = p.getAttribute('data-day-panel') !== b.getAttribute('data-day'); });
+    });
+  });
 })();

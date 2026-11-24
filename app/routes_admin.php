@@ -45,6 +45,27 @@ $r->get('/admin', function () use ($me) {
         })(),
         'autos' => array_map(fn($k) => ['name' => App\Automations::JOBS[$k][0], 'last' => App\Automations::last($k), 'on' => App\Automations::enabled($k)], ['lead_followups', 'draft_followups', 'blog_weekly', 'agents_selftest', 'security_daily', 'backup_nightly']),
         'spamToday' => App\Spam::stats(1)['total'],
+        'dash' => (function () {
+            $r = (int)($_GET['range'] ?? 30); if (!in_array($r, [7, 30, 90], true)) $r = 30;
+            $since = gmdate('Y-m-d H:i:s', time() - $r * 86400);
+            $paidSql = "status IN ('paid','processing','completed')";
+            $tot = (int)Db::val("SELECT COUNT(*) FROM orders WHERE created_at >= ? AND status NOT IN ('cancelled')", [$since]);
+            $paid = (int)Db::val("SELECT COUNT(*) FROM orders WHERE created_at >= ? AND {$paidSql}", [$since]);
+            $await = (int)Db::val("SELECT COUNT(*) FROM orders WHERE created_at >= ? AND status IN ('pending','awaiting_payment')", [$since]);
+            $leads = (int)Db::val("SELECT COUNT(*) FROM leads WHERE created_at >= ?", [$since]);
+            $conv = (int)Db::val("SELECT COUNT(*) FROM leads WHERE created_at >= ? AND status = 'converted'", [$since]);
+            // Last 12 months: invoiced (all non-cancelled orders by created month) and paid (by paid month).
+            $months = []; for ($i = 11; $i >= 0; $i--) { $t = strtotime(gmdate('Y-m-01') . " -{$i} months"); $months[gmdate('Y-m', $t)] = ['label' => gmdate('M', $t), 'inv' => 0, 'paid' => 0]; }
+            $from = array_key_first($months) . '-01 00:00:00';
+            foreach (Db::all("SELECT SUBSTR(created_at, 1, 7) m, SUM(total_cents) v FROM orders WHERE created_at >= ? AND status <> 'cancelled' GROUP BY SUBSTR(created_at, 1, 7)", [$from]) as $x) if (isset($months[$x['m']])) $months[$x['m']]['inv'] = (int)$x['v'];
+            foreach (Db::all("SELECT SUBSTR(paid_at, 1, 7) m, SUM(total_cents) v FROM orders WHERE paid_at >= ? AND {$paidSql} GROUP BY SUBSTR(paid_at, 1, 7)", [$from]) as $x) if (isset($months[$x['m']])) $months[$x['m']]['paid'] = (int)$x['v'];
+            // Earnings for each of the last 7 days.
+            $week = []; for ($i = 6; $i >= 0; $i--) { $d = gmdate('Y-m-d', time() - $i * 86400); $week[$d] = ['label' => gmdate('D', strtotime($d)), 'cents' => 0, 'orders' => 0]; }
+            foreach (Db::all("SELECT SUBSTR(paid_at, 1, 10) d, SUM(total_cents) v, COUNT(*) n FROM orders WHERE paid_at >= ? AND {$paidSql} GROUP BY SUBSTR(paid_at, 1, 10)", [array_key_first($week) . ' 00:00:00']) as $x) if (isset($week[$x['d']])) { $week[$x['d']]['cents'] = (int)$x['v']; $week[$x['d']]['orders'] = (int)$x['n']; }
+            return ['range' => $r, 'orders' => $tot, 'paid' => $paid, 'await' => $await, 'leads' => $leads, 'conv' => $conv, 'months' => array_values($months), 'week' => array_values($week),
+                'recent' => Db::all("SELECT o.number, o.total_cents, o.status, o.created_at, c.name, c.email, c.business_name FROM orders o JOIN customers c ON c.id = o.customer_id ORDER BY o.id DESC LIMIT 6"),
+                'expenses' => (int)Db::val("SELECT COALESCE(SUM(cost_micros),0) FROM agent_runs WHERE created_at >= ?", [$from]) / 10000];
+        })(),
         'trend' => (function () {
             $from = gmdate('Y-m-d', time() - 13 * 86400); $days = []; for ($i = 13; $i >= 0; $i--) $days[gmdate('Y-m-d', time() - $i * 86400)] = 0;
             $rev = $days; foreach (Db::all("SELECT SUBSTR(paid_at, 1, 10) d, SUM(total_cents) v FROM orders WHERE paid_at >= ? GROUP BY SUBSTR(paid_at, 1, 10)", [$from . ' 00:00:00']) as $r) if (isset($rev[$r['d']])) $rev[$r['d']] = (int)$r['v'];

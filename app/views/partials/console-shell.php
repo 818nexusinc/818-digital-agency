@@ -32,14 +32,22 @@ if (!empty($nav)) {
 <div class="shell">
 <aside class="side" id="side">
   <a class="c-brand" href="<?= e($home) ?>"><span class="c-logo"><?php include APP_ROOT . '/views/partials/logo.php'; ?></span><span class="c-bt"><b>818 Digital Agency</b><small><?= e(t($areaName)) ?></small></span></a>
-  <button type="button" class="c-collapse" data-collapse aria-label="<?= e(t('Collapse menu')) ?>" title="<?= e(t('Collapse menu')) ?>"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button>
   <label class="c-find"><?= nx_icon('search') ?><span class="sr"><?= e(t('Find a page')) ?></span><input type="search" placeholder="<?= e(t('Search pages')) ?>" data-navfind autocomplete="off"><kbd>/</kbd></label>
   <?php if (!empty($nav)): ?>
   <nav class="c-nav c-dest" aria-label="<?= e(t($areaName)) ?>">
-    <?php foreach ($nav as $di => [$dl, $di_icon, $kids]): $first = array_key_first($kids); $cnt = 0; $hot = false;
-      foreach ($kids as $v) if (is_array($v) && empty($v[3])) { $cnt += (int)$v[1]; if (!empty($v[2]) && $v[1]) $hot = true; } ?>
-    <a class="d" href="<?= e($first) ?>" title="<?= e(t($dl)) ?>"<?= $activeDest === $di ? ' aria-current="page"' : '' ?>><?= nx_icon($di_icon) ?><span class="nl"><?= e(t($dl)) ?></span><?php if ($cnt): ?><i class="count<?= $hot ? ' hot' : '' ?>"><?= $cnt ?></i><?php endif; ?></a>
-    <?php endforeach; ?>
+    <?php $sections = ['Navigation' => [0, 1, 2, 3], 'Growth' => [4, 5, 6], 'System' => [7]];
+    foreach ($sections as $sec => $idx): ?><p class="c-sec"><?= e(t($sec)) ?></p>
+    <?php foreach ($idx as $di): if (!isset($nav[$di])) continue; [$dl, $di_icon, $kids] = $nav[$di]; $first = array_key_first($kids); $cnt = 0; $hot = false;
+      foreach ($kids as $v) if (is_array($v) && empty($v[3])) { $cnt += (int)$v[1]; if (!empty($v[2]) && $v[1]) $hot = true; } $open = $activeDest === $di; ?>
+    <div class="c-par<?= $open ? ' open' : '' ?>">
+      <a class="d" href="<?= e($first) ?>" title="<?= e(t($dl)) ?>" data-par<?= $open ? ' aria-current="true"' : '' ?> aria-expanded="<?= $open ? 'true' : 'false' ?>"><?= nx_icon($di_icon) ?><span class="nl"><?= e(t($dl)) ?></span><?php if ($cnt): ?><i class="count<?= $hot ? ' hot' : '' ?>"><?= $cnt ?></i><?php endif; ?><svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></a>
+      <div class="c-kids">
+      <?php foreach ($kids as $h => $v): [$kl, $kc, $ku] = is_array($v) ? [$v[0], (int)$v[1], !empty($v[2])] : [$v, 0, false]; ?>
+        <a class="k" href="<?= e($h) ?>"<?= $activeTab === $h ? ' aria-current="page"' : '' ?>><span class="nl"><?= e(t($kl)) ?></span><?php if ($kc): ?><i class="count<?= $ku ? ' hot' : '' ?>"><?= $kc ?></i><?php endif; ?></a>
+      <?php endforeach; ?>
+      </div>
+    </div>
+    <?php endforeach; endforeach; ?>
     <div class="c-results" hidden><?php foreach ($nav as [$dl, , $kids]) foreach ($kids as $h => $v): ?><a class="r" href="<?= e($h) ?>"><span class="nl"><?= e(t(is_array($v) ? $v[0] : $v)) ?></span><small><?= e(t($dl)) ?></small></a><?php endforeach; ?><p class="none" hidden><?= e(t('No matching page')) ?></p></div>
   </nav>
   <?php else: ?>
@@ -66,21 +74,18 @@ if (!empty($nav)) {
 </aside>
 <div class="c-main">
   <header class="c-top">
-    <button class="c-ico c-menu" data-toggle="side" aria-label="<?= e(t('Menu')) ?>"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
-    <nav class="c-crumb" aria-label="Breadcrumb"><a href="<?= e($home) ?>"><?= e(t($areaName)) ?></a><?php if ($crumb && !is_int($crumb)): ?><span>/</span><span><?= e(t($crumb)) ?></span><?php endif; ?><?php if (($path ?? '') !== $home): ?><span>/</span><b><?= e(t($title ?? '')) ?></b><?php endif; ?></nav>
+<?php if (empty($nav)): ?>    <button class="c-ico c-menu" data-toggle="side" aria-label="<?= e(t('Menu')) ?>"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><?php endif; ?>
+    <?php if (!empty($nav)): ?><button type="button" class="c-tb" data-collapse aria-label="<?= e(t('Collapse menu')) ?>"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h10M4 18h16"/></svg></button>
+    <button type="button" class="c-tsearch" data-open-search><?= nx_icon('search') ?><span><?= e(t('Search pages')) ?></span><kbd>/</kbd></button><?php endif; ?>
+    <nav class="c-crumb" aria-label="Breadcrumb"><?php if (!empty($nav) && $activeDest !== null): ?><span><?= e(t($nav[$activeDest][0])) ?></span><?php endif; ?></nav>
     <div class="c-actions">
       <a class="c-lang" href="?lang=<?= lang() === 'fr' ? 'en' : 'fr' ?>" hreflang="<?= lang() === 'fr' ? 'en' : 'fr' ?>"><?= lang() === 'fr' ? 'EN' : 'FR' ?></a>
       <a class="c-pill" href="/"><?= nx_icon('globe') ?><span><?= e(t('View website')) ?></span></a>
+      <?php $bell = !empty($nav) ? (int)(($nav[0][2]['/admin/approvals'][1] ?? 0) + ($nav[2][2]['/admin/tickets'][1] ?? 0)) : 0; if (!empty($nav)): ?><a class="c-bell" href="/admin/approvals" aria-label="<?= e(t('Notifications')) ?><?= $bell ? ': ' . $bell : '' ?>"><?= nx_icon('inbox') ?><?php if ($bell): ?><i><?= $bell ?></i><?php endif; ?></a><?php endif; ?>
       <span class="av" title="<?= e($nm) ?>"><?= e($ini) ?></span>
     </div>
   </header>
-  <?php if ($activeDest !== null && count($nav[$activeDest][2]) > 1): ?>
-  <nav class="c-tabs" aria-label="<?= e(t($nav[$activeDest][0])) ?>"><div class="c-tabs-in">
-    <?php foreach ($nav[$activeDest][2] as $h => $v): [$tl, $tc, $tu] = is_array($v) ? [$v[0], (int)$v[1], !empty($v[2])] : [$v, 0, false]; ?>
-    <a href="<?= e($h) ?>"<?= $activeTab === $h ? ' aria-current="page"' : '' ?>><?= e(t($tl)) ?><?php if ($tc): ?><i class="<?= $tu ? 'hot' : '' ?>"><?= $tc ?></i><?php endif; ?></a>
-    <?php endforeach; ?></div></nav>
-  <?php endif; ?>
-  <main class="main" id="main"><?php include APP_ROOT . '/views/partials/flash.php'; ?><?= $content ?></main>
+  <main class="main" id="main"><?php if (!empty($nav) && $activeDest !== null && ($path ?? '') !== $home): $tl = $nav[$activeDest][2][$activeTab] ?? ''; $tl = is_array($tl) ? $tl[0] : $tl; ?><p class="c-bc"><a href="<?= e($home) ?>"><?= e(t('Home')) ?></a> / <a href="<?= e(array_key_first($nav[$activeDest][2])) ?>"><?= e(t($nav[$activeDest][0])) ?></a> / <span><?= e(t($tl ?: ($title ?? ''))) ?></span></p><?php endif; ?><?php include APP_ROOT . '/views/partials/flash.php'; ?><?= $content ?></main>
 </div></div>
 <?php if ($area === 'portal') include APP_ROOT . '/views/partials/chat.php'; ?>
 <?php if (($path ?? '') === '/admin/settings'): ?><script src="/assets/js/qrcode.js?v=<?= APP_VERSION ?>" nonce="<?= e($nonce ?? '') ?>" defer></script><?php endif; ?><script src="/assets/js/app.js?v=<?= APP_VERSION ?>" nonce="<?= e($nonce ?? '') ?>" defer></script></body></html>
