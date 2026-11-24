@@ -423,3 +423,35 @@ body.con{
 @media(max-width:960px){.con .c-tabs{top:58px}.con .c-tabs-in{padding:0 14px}}
 .con .c-results[hidden],.con .c-results .none[hidden]{display:none}
 .con .c-find input:focus{box-shadow:none!important;border:0!important;outline:0}
+
+/* ── v8.1 black accent + collapsible menu ─────────────── */
+body.con{--blk:#0a0a0a}
+.con .c-logo{background:var(--blk)}
+.con .c-dest a.d[aria-current=page]{background:var(--blk);color:#fff}
+.con .c-tabs a[aria-current=page]:after{background:var(--blk)}
+.con .c-find:focus-within{border-color:var(--blk);box-shadow:0 0 0 3px rgba(10,10,10,.1)}
+.con .c-me .av{background:var(--blk)!important}
+.con .btn-primary{background:var(--blk);border-color:var(--blk)}
+.con .btn-primary:hover{background:#2a2a2a;border-color:#2a2a2a}
+.con input:focus,.con select:focus,.con textarea:focus{border-color:var(--blk)!important;box-shadow:0 0 0 3px rgba(10,10,10,.1)!important}
+
+.con .side{position:sticky;top:0;transition:width .2s}
+.con .c-brand{position:relative;padding-right:44px}
+.con .c-collapse{position:absolute;top:20px;right:12px;width:28px;height:28px;border-radius:7px;border:1px solid var(--line);background:#fff;display:grid;place-items:center;cursor:pointer;color:var(--ink-2);padding:0}
+.con .c-collapse:hover{border-color:var(--blk);color:var(--blk)}
+.con .c-collapse svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2.2;transition:transform .2s}
+.con .shell{transition:grid-template-columns .2s}
+
+body.con.nav-mini .shell{grid-template-columns:72px minmax(0,1fr)}
+body.con.nav-mini .side{padding:14px 10px 12px;align-items:stretch}
+body.con.nav-mini .c-bt,body.con.nav-mini .c-find,body.con.nav-mini .c-dest .nl,body.con.nav-mini .c-me .who,body.con.nav-mini .c-me .c-ico,body.con.nav-mini .c-me form{display:none}
+body.con.nav-mini .c-brand{justify-content:center;padding:6px 0 12px;margin:0 -10px}
+body.con.nav-mini .c-collapse{position:static;margin:0 auto}
+body.con.nav-mini .c-collapse svg{transform:rotate(180deg)}
+body.con.nav-mini .c-brand{flex-direction:column;gap:10px}
+body.con.nav-mini .c-dest a.d{justify-content:center;padding:0;height:44px;position:relative}
+body.con.nav-mini .c-dest .count{position:absolute;top:5px;right:8px;min-width:16px;height:16px;padding:0 4px;font-size:10px}
+body.con.nav-mini .c-me{justify-content:center;margin:0 -10px -12px;padding:12px 0}
+@media(max-width:960px){body.con.nav-mini .shell{grid-template-columns:1fr}.con .c-collapse{display:none}}
+@media(prefers-reduced-motion:reduce){.con .side,.con .shell,.con .c-collapse svg{transition:none}}
+body.con.nav-mini .main{max-width:1440px}

@@ -27,16 +27,18 @@ if (!empty($nav)) {
 <meta name="csrf" content="<?= e($csrf ?? '') ?>"><link rel="icon" href="/assets/img/favicon.svg"><link rel="preload" href="/fonts/hanken-grotesk-latin-500-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/assets/css/app.css?v=<?= APP_VERSION ?>"><link rel="stylesheet" href="/assets/css/console5.css?v=<?= APP_VERSION ?>"><link rel="stylesheet" href="/assets/css/console7.css?v=<?= APP_VERSION ?>"></head>
 <body class="con con-<?= e($area) ?>"<?= ($path ?? '') === '/portal/assistant' ? ' data-chat-inline' : '' ?>>
+<script nonce="<?= e($nonce ?? '') ?>">try{if(localStorage.getItem("nx818_nav_mini")==="1")document.body.classList.add("nav-mini")}catch(e){}</script>
 <a class="skip" href="#main"><?= e(t('Skip to content')) ?></a>
 <div class="shell">
 <aside class="side" id="side">
   <a class="c-brand" href="<?= e($home) ?>"><span class="c-logo"><?php include APP_ROOT . '/views/partials/logo.php'; ?></span><span class="c-bt"><b>818 Digital Agency</b><small><?= e(t($areaName)) ?></small></span></a>
+  <button type="button" class="c-collapse" data-collapse aria-label="<?= e(t('Collapse menu')) ?>" title="<?= e(t('Collapse menu')) ?>"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button>
   <label class="c-find"><?= nx_icon('search') ?><span class="sr"><?= e(t('Find a page')) ?></span><input type="search" placeholder="<?= e(t('Search pages')) ?>" data-navfind autocomplete="off"><kbd>/</kbd></label>
   <?php if (!empty($nav)): ?>
   <nav class="c-nav c-dest" aria-label="<?= e(t($areaName)) ?>">
     <?php foreach ($nav as $di => [$dl, $di_icon, $kids]): $first = array_key_first($kids); $cnt = 0; $hot = false;
       foreach ($kids as $v) if (is_array($v) && empty($v[3])) { $cnt += (int)$v[1]; if (!empty($v[2]) && $v[1]) $hot = true; } ?>
-    <a class="d" href="<?= e($first) ?>"<?= $activeDest === $di ? ' aria-current="page"' : '' ?>><?= nx_icon($di_icon) ?><span class="nl"><?= e(t($dl)) ?></span><?php if ($cnt): ?><i class="count<?= $hot ? ' hot' : '' ?>"><?= $cnt ?></i><?php endif; ?></a>
+    <a class="d" href="<?= e($first) ?>" title="<?= e(t($dl)) ?>"<?= $activeDest === $di ? ' aria-current="page"' : '' ?>><?= nx_icon($di_icon) ?><span class="nl"><?= e(t($dl)) ?></span><?php if ($cnt): ?><i class="count<?= $hot ? ' hot' : '' ?>"><?= $cnt ?></i><?php endif; ?></a>
     <?php endforeach; ?>
     <div class="c-results" hidden><?php foreach ($nav as [$dl, , $kids]) foreach ($kids as $h => $v): ?><a class="r" href="<?= e($h) ?>"><span class="nl"><?= e(t(is_array($v) ? $v[0] : $v)) ?></span><small><?= e(t($dl)) ?></small></a><?php endforeach; ?><p class="none" hidden><?= e(t('No matching page')) ?></p></div>
   </nav>

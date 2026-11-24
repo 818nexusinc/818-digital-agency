@@ -503,3 +503,11 @@
     });
   });
 })();
+
+/* Console: collapse the menu to icons only (remembered per browser). */
+(function () {
+  var b = document.querySelector('[data-collapse]'); if (!b) return;
+  function sync() { var m = document.body.classList.contains('nav-mini'); b.setAttribute('aria-label', m ? 'Expand menu' : 'Collapse menu'); b.title = b.getAttribute('aria-label'); b.setAttribute('aria-expanded', m ? 'false' : 'true'); }
+  b.addEventListener('click', function () { document.body.classList.toggle('nav-mini'); try { localStorage.setItem('nx818_nav_mini', document.body.classList.contains('nav-mini') ? '1' : '0'); } catch (e) {} sync(); });
+  sync();
+})();

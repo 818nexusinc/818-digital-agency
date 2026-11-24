@@ -1,6 +1,8 @@
 <?php
 /* French (Canada) UI strings. English is the key. Generated from the rendered site; edit freely. */
 return [
+    'Expand menu' => 'Agrandir le menu',
+    'Collapse menu' => 'Réduire le menu',
     'Search pages' => 'Chercher une page',
     'Enter the 6-digit code from your authenticator app.' => 'Entrez le code à 6 chiffres de votre application d’authentification.',
     'Lost your phone?' => 'Téléphone perdu?',
