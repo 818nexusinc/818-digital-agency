@@ -24,11 +24,11 @@ foreach ($groups as $g => $links) foreach ($links as $h => $l) if (($path ?? "")
   <a class="c-brand" href="<?= e($home) ?>"><span class="c-logo"><?php include APP_ROOT . '/views/partials/logo.php'; ?></span><span class="c-bt"><b>818 Digital Agency</b><small><?= e(t($areaName)) ?></small></span></a>
   <label class="c-find"><?= nx_icon('search') ?><span class="sr"><?= e(t('Find a page')) ?></span><input type="search" placeholder="<?= e(t('Search pages')) ?>" data-navfind autocomplete="off"><kbd>/</kbd></label>
   <nav class="c-nav" aria-label="<?= e(t($areaName)) ?>">
-  <?php $gc = ['Operate' => '#2348d8', 'Sell' => '#be185d', 'AI workforce' => '#0d9488', 'Grow' => '#c2410c', 'System' => '#5b6470'];
+  <?php $gc = ['Operate' => '#7c9cff', 'Sell' => '#f472b6', 'AI workforce' => '#2dd4bf', 'Grow' => '#fb923c', 'System' => '#a3adc2'];
   $urgent = ['/admin/approvals', '/portal/support'];
   foreach ($groups as $g => $links): $gid = is_int($g) ? 'g' . $g : strtolower(preg_replace('/[^a-z]+/i', '-', $g));
     $hasCur = false; foreach ($links as $h => $l) if (($path ?? '') === $h || ($h !== $home && str_starts_with((string)($path ?? ''), $h))) $hasCur = true; ?>
-  <div class="c-grp" data-grp="<?= e($gid) ?>" style="--g:<?= e($gc[$g] ?? '#2348d8') ?>"<?= $hasCur ? ' data-cur' : '' ?>>
+  <div class="c-grp" data-grp="<?= e($gid) ?>" style="--g:<?= e($gc[$g] ?? '#7c9cff') ?>"<?= $hasCur ? ' data-cur' : '' ?>>
     <?php if (!is_int($g)): ?><button type="button" class="c-gh" aria-expanded="true" aria-controls="gl-<?= e($gid) ?>"><span><?= e(t($g)) ?></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><?php endif; ?>
     <div class="c-gl" id="gl-<?= e($gid) ?>">
     <?php foreach ($links as $h => $l): [$lbl, $n] = is_array($l) ? $l : [$l, 0]; $cur = ($path ?? '') === $h || ($h !== $home && str_starts_with((string)($path ?? ''), $h)); ?>
