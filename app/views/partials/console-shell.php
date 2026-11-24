@@ -21,17 +21,27 @@ foreach ($groups as $g => $links) foreach ($links as $h => $l) if (($path ?? "")
 <a class="skip" href="#main"><?= e(t('Skip to content')) ?></a>
 <div class="shell">
 <aside class="side" id="side">
-  <a class="c-brand" href="<?= e($home) ?>"><?php include APP_ROOT . '/views/partials/logo.php'; ?><span><b>818</b><small><?= e(t($areaName)) ?></small></span></a>
-  <label class="c-find"><?= nx_icon('search') ?><span class="sr"><?= e(t('Find a page')) ?></span><input type="search" placeholder="<?= e(t('Jump to…')) ?>" data-navfind autocomplete="off"><kbd>/</kbd></label>
-  <nav aria-label="<?= e(t($areaName)) ?>">
-  <?php foreach ($groups as $g => $links): ?><div class="c-grp"><?php if (!is_int($g)): ?><h6><?= e(t($g)) ?></h6><?php endif; ?>
+  <a class="c-brand" href="<?= e($home) ?>"><span class="c-logo"><?php include APP_ROOT . '/views/partials/logo.php'; ?></span><span class="c-bt"><b>818 Digital Agency</b><small><?= e(t($areaName)) ?></small></span></a>
+  <label class="c-find"><?= nx_icon('search') ?><span class="sr"><?= e(t('Find a page')) ?></span><input type="search" placeholder="<?= e(t('Search pages')) ?>" data-navfind autocomplete="off"><kbd>/</kbd></label>
+  <nav class="c-nav" aria-label="<?= e(t($areaName)) ?>">
+  <?php $gc = ['Operate' => '#2348d8', 'Sell' => '#be185d', 'AI workforce' => '#0d9488', 'Grow' => '#c2410c', 'System' => '#5b6470'];
+  $urgent = ['/admin/approvals', '/portal/support'];
+  foreach ($groups as $g => $links): $gid = is_int($g) ? 'g' . $g : strtolower(preg_replace('/[^a-z]+/i', '-', $g));
+    $hasCur = false; foreach ($links as $h => $l) if (($path ?? '') === $h || ($h !== $home && str_starts_with((string)($path ?? ''), $h))) $hasCur = true; ?>
+  <div class="c-grp" data-grp="<?= e($gid) ?>" style="--g:<?= e($gc[$g] ?? '#2348d8') ?>"<?= $hasCur ? ' data-cur' : '' ?>>
+    <?php if (!is_int($g)): ?><button type="button" class="c-gh" aria-expanded="true" aria-controls="gl-<?= e($gid) ?>"><span><?= e(t($g)) ?></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><?php endif; ?>
+    <div class="c-gl" id="gl-<?= e($gid) ?>">
     <?php foreach ($links as $h => $l): [$lbl, $n] = is_array($l) ? $l : [$l, 0]; $cur = ($path ?? '') === $h || ($h !== $home && str_starts_with((string)($path ?? ''), $h)); ?>
-    <a href="<?= e($h) ?>"<?= $cur ? ' aria-current="page"' : '' ?>><?= nx_icon($h === $home ? 'home' : $ico($h)) ?><span><?= e(t($lbl)) ?></span><?php if ($n): ?><i class="count"><?= (int)$n ?></i><?php endif; ?></a>
-    <?php endforeach; ?></div>
+      <a href="<?= e($h) ?>"<?= $cur ? ' aria-current="page"' : '' ?>><span class="ni"><?= nx_icon($h === $home ? 'home' : $ico($h)) ?></span><span class="nl"><?= e(t($lbl)) ?></span><?php if ($n): ?><i class="count<?= in_array($h, $urgent, true) ? ' hot' : '' ?>"><?= (int)$n ?></i><?php endif; ?></a>
+    <?php endforeach; ?>
+    </div></div>
   <?php endforeach; ?>
   </nav>
-  <div class="c-me"><span class="av"><?= e($ini) ?></span><span class="who"><b><?= e($nm) ?></b><small><?= e(t(ucfirst((string)($user['role'] ?? '')))) ?></small></span>
-    <form method="post" action="/logout"><?= App\Csrf::field() ?><button class="c-ico" title="<?= e(t('Sign out')) ?>" aria-label="<?= e(t('Sign out')) ?>"><?= nx_icon('out') ?></button></form></div>
+  <div class="c-me">
+    <span class="av"><?= e($ini) ?></span><span class="who"><b><?= e($nm) ?></b><small><?= e(t(ucfirst((string)($user['role'] ?? '')))) ?> · v<?= e(APP_VERSION) ?></small></span>
+    <a class="c-ico" href="/" title="<?= e(t('View website')) ?>" aria-label="<?= e(t('View website')) ?>"><?= nx_icon('globe') ?></a>
+    <form method="post" action="/logout"><?= App\Csrf::field() ?><button class="c-ico" title="<?= e(t('Sign out')) ?>" aria-label="<?= e(t('Sign out')) ?>"><?= nx_icon('out') ?></button></form>
+  </div>
 </aside>
 <div class="c-main">
   <header class="c-top">

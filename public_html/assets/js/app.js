@@ -280,7 +280,7 @@
   var nf = $('[data-navfind]');
   if (nf) {
     var navA = $$('.side nav a');
-    nf.addEventListener('input', function () { var q = nf.value.trim().toLowerCase(); navA.forEach(function (a) { a.hidden = q && a.textContent.toLowerCase().indexOf(q) < 0; }); $$('.c-grp').forEach(function (g) { g.hidden = !$$('a:not([hidden])', g).length; }); });
+    nf.addEventListener('input', function () { var q = nf.value.trim().toLowerCase(); navA.forEach(function (a) { a.hidden = q && a.textContent.toLowerCase().indexOf(q) < 0; }); $$('.c-grp').forEach(function (g) { g.hidden = !$$('a:not([hidden])', g).length; g.classList.toggle('searching', !!q); }); });
     nf.addEventListener('keydown', function (e) { if (e.key === 'Enter') { var f = navA.filter(function (a) { return !a.hidden; })[0]; if (f) location.href = f.href; } if (e.key === 'Escape') { nf.value = ''; nf.dispatchEvent(new Event('input')); nf.blur(); } });
     document.addEventListener('keydown', function (e) { var tg = e.target.tagName; if ((e.key === '/' || ((e.metaKey || e.ctrlKey) && e.key === 'k')) && !/INPUT|TEXTAREA|SELECT/.test(tg)) { e.preventDefault(); var sd = $('#side'); if (sd && innerWidth <= 960) sd.classList.add('open'); nf.focus(); } });
   }
@@ -475,4 +475,21 @@
     }
   }
   if (document.readyState === 'complete') draw(); else addEventListener('load', draw);
+})();
+
+/* Console sidebar: collapsible sections, remembered per browser. The section you're in always stays open. */
+(function () {
+  var KEY = 'nx818_nav_closed', closed = [];
+  try { closed = JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) {}
+  document.querySelectorAll('.c-grp').forEach(function (g) {
+    var b = g.querySelector('.c-gh'); if (!b) return;
+    var id = g.getAttribute('data-grp');
+    function set(open) { g.classList.toggle('closed', !open); b.setAttribute('aria-expanded', open ? 'true' : 'false'); }
+    set(g.hasAttribute('data-cur') || closed.indexOf(id) < 0);
+    b.addEventListener('click', function () {
+      var open = g.classList.contains('closed'); set(open);
+      closed = closed.filter(function (x) { return x !== id; }); if (!open) closed.push(id);
+      try { localStorage.setItem(KEY, JSON.stringify(closed)); } catch (e) {}
+    });
+  });
 })();

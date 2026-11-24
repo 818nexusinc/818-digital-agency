@@ -1,6 +1,7 @@
 <?php
 /* French (Canada) UI strings. English is the key. Generated from the rendered site; edit freely. */
 return [
+    'Search pages' => 'Chercher une page',
     'Enter the 6-digit code from your authenticator app.' => 'Entrez le code à 6 chiffres de votre application d’authentification.',
     'Lost your phone?' => 'Téléphone perdu?',
     'Type one of your recovery codes (like 1a2b-3c4d) in the box above instead. Each code works once.' => 'Tapez plutôt l’un de vos codes de récupération (comme 1a2b-3c4d) dans la case ci-dessus. Chaque code fonctionne une seule fois.',
