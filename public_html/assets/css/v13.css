@@ -81,3 +81,24 @@
 @media(min-width:1360px) and (max-width:1520px){.site .site-header .mn-item>a,.site .site-header .mn-item>button{padding-left:10px!important;padding-right:10px!important}}
 [data-tone=dark] .nm-end input:checked+span{background:#fff;color:#111827;border-color:#fff}
 .site .foot-social{list-style:none;margin:14px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:8px}.site .foot-social a{display:inline-block;padding:5px 12px;border:1px solid rgba(255,255,255,.22);border-radius:999px;font-size:13px;color:#dbe3f5;text-decoration:none}.site .foot-social a:hover{border-color:#fff;color:#fff}
+/* Messages (sign-in errors, confirmations): float just below the fixed menu bar, never under it. */
+.flash-stack{position:fixed;left:50%;top:98px;transform:translateX(-50%);z-index:200;display:grid;gap:10px;width:min(560px,calc(100% - 28px));pointer-events:none}
+.flash{pointer-events:auto;display:flex;align-items:flex-start;gap:12px;padding:13px 14px 13px 18px;border-radius:12px;font-size:15px;line-height:1.45;box-shadow:0 14px 40px -12px rgba(15,23,42,.35);animation:flashIn .25s ease-out}
+.flash span{flex:1}
+.flash-error{background:#fff;color:#7f1d1d;border:1px solid #fecaca;border-left:4px solid #dc2626}
+.flash-ok{background:#fff;color:#064e3b;border:1px solid #bbf0dd;border-left:4px solid #14a38b}
+.flash button{appearance:none;border:0;background:transparent;font-size:20px;line-height:1;color:inherit;opacity:.6;cursor:pointer;padding:0 2px}.flash button:hover{opacity:1}
+.flash.out{opacity:0;transform:translateY(-6px);transition:opacity .3s,transform .3s}
+@keyframes flashIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.flash{animation:none}}
+/* Multi-sentence titles: one sentence per line, each kept whole (phones may still wrap so nothing runs off screen). */
+@media(min-width:700px){.site h1.tb-lines,.site h2.tb-lines,.site h3.tb-lines,.site h4.tb-lines{white-space:nowrap}}
+@media(min-width:700px){.site .tb-lines{max-width:none!important}}
+/* French menu labels are longer: tighter spacing on laptop widths so the menu never runs into the buttons. */
+@media(min-width:1241px) and (max-width:1759px){
+  html[lang^=fr] .site .site-header .mn-item>a,html[lang^=fr] .site .site-header .mn-item>button{padding-left:7px!important;padding-right:7px!important;font-size:14px!important;letter-spacing:-.005em}
+  html[lang^=fr] .site .site-header .hd{gap:16px}
+}
+@media(min-width:1241px) and (max-width:1439px){html[lang^=fr] .site .site-header .mn-dot{display:none}}
+@media(max-width:1240px){.flash-stack{top:80px}}
+.site main>.flash-stack,.site .flash-stack{padding:0!important;margin:0!important}

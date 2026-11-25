@@ -43,7 +43,7 @@ $cartCount = count(Cart::lines());
   </div>
 </header>
 <main id="main">
-<?php $fl = App\Session::takeFlash(); if ($fl): ?><div class="wrap" style="padding-top:18px"><?php foreach ($fl as [$t, $m]): ?><div class="alert alert-<?= $t === 'error' ? 'error' : 'success' ?>" role="status"><?= e($m) ?></div><?php endforeach; ?></div><?php endif; ?>
+<?php $fl = App\Session::takeFlash(); if ($fl): ?><div class="flash-stack" aria-live="polite"><?php foreach ($fl as [$t, $m]): ?><div class="flash flash-<?= $t === 'error' ? 'error' : 'ok' ?>" role="<?= $t === 'error' ? 'alert' : 'status' ?>" data-flash><span><?= e($m) ?></span><button type="button" aria-label="Dismiss" data-flash-x>×</button></div><?php endforeach; ?></div><?php endif; ?>
 <?= $content ?>
 <?php $pl = pillar($path ?? '/'); if ($pl !== 'brand'): $cta = ['register' => ['Your business, official this week.', 'Start registration', '/register'], 'manage' => ['Stay in good standing. All year.', 'See management services', '/manage-business'],
   'web' => ['Get found. Get customers.', 'Choose a website plan', '/website'], 'bundle' => ['Do it all. Save up to 15%.', 'Build your bundle', '/bundle'], 'opps' => ['Most programs need a registered business.', 'Register first', '/register']][$pl]; ?>

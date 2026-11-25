@@ -292,7 +292,8 @@ $r->post('/proposal/{token}/accept', function ($p) {
 $r->get('/login', fn() => View::page('public/login', ['title' => 'Sign in', 'noindex' => true]));
 $r->post('/login', function () {
     App\Spam::guard('login', []);
-    $res = Auth::attempt(Request::str('email', 190), (string)Request::input('password', ''));
+    try { $res = Auth::attempt(Request::str('email', 190), (string)Request::input('password', '')); }
+    catch (UserError $e) { Session::flash('error', $e->getMessage()); View::redirect('/login'); }
     if ($res === 'mfa') View::redirect('/login/mfa');
     Session::start();
     $to = $_SESSION['after_login'] ?? (Auth::isStaff() ? '/admin' : '/portal');
@@ -301,7 +302,8 @@ $r->post('/login', function () {
 });
 $r->get('/login/mfa', fn() => View::page('public/mfa', ['title' => 'Two-step verification', 'noindex' => true]));
 $r->post('/login/mfa', function () {
-    if (!Auth::verifyMfa(Request::str('code', 10))) throw new UserError('That code did not match. Try the latest code from your authenticator app.');
+    try { $ok = Auth::verifyMfa(Request::str('code', 10)); } catch (UserError $e) { Session::flash('error', $e->getMessage()); View::redirect('/login/mfa'); }
+    if (!$ok) { Session::flash('error', 'That code did not match. Try the latest code from your authenticator app.'); View::redirect(Auth::user() || !empty($_SESSION['mfa_pending']) ? '/login/mfa' : '/login'); }
     View::redirect('/admin');
 });
 $signup = function () {

@@ -148,7 +148,9 @@ final class View
         // Only allow same-site relative redirects (open-redirect protection).
         if (!str_starts_with($to, '/') || str_starts_with($to, '//')) {
             $p = parse_url($to);
-            $to = (($p['host'] ?? '') === parse_url(url('/'), PHP_URL_HOST)) ? (($p['path'] ?? '/') . (isset($p['query']) ? '?' . $p['query'] : '')) : '/';
+            $host = strtolower((string)($p['host'] ?? ''));
+            $ours = [strtolower((string)parse_url(url('/'), PHP_URL_HOST)), strtolower((string)preg_replace('/:\d+$/', '', (string)($_SERVER['HTTP_HOST'] ?? '')))];
+            $to = ($host !== '' && in_array($host, $ours, true)) ? (($p['path'] ?? '/') . (isset($p['query']) ? '?' . $p['query'] : '')) : '/';
         }
         if (PHP_SAPI === 'cli') { View::$shared['_redirect'] = $to; throw new Redirected($to); }
         header('Location: ' . $to, true, $code);

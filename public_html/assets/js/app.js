@@ -718,3 +718,33 @@
   var up = function () { var n = t.value.length; c.textContent = n + ' characters · X allows 280'; c.style.color = n > 280 ? '#b45309' : ''; };
   t.addEventListener('input', up); up();
 })();
+
+/* Website messages: dismiss with ×; confirmations fade after a few seconds, errors stay until read. */
+(function () {
+  document.querySelectorAll('[data-flash]').forEach(function (f) {
+    var close = function () { f.classList.add('out'); setTimeout(function () { f.remove(); }, 320); };
+    var x = f.querySelector('[data-flash-x]'); if (x) x.addEventListener('click', close);
+    if (f.classList.contains('flash-ok')) setTimeout(close, 6000);
+  });
+})();
+
+/* One-sentence-per-line titles: shrink the type just enough that the longest sentence fits its column. */
+(function () {
+  var hs = Array.prototype.slice.call(document.querySelectorAll('.tb-lines')); if (!hs.length) return;
+  function fit() {
+    hs.forEach(function (h) {
+      h.style.removeProperty('font-size');
+      if (window.innerWidth < 700 || !h.clientWidth) return;
+      var base = parseFloat(getComputedStyle(h).fontSize), size = base;
+      var room = function () { var p = h.parentElement, cs = getComputedStyle(p); return Math.min(h.clientWidth, p.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight)); };
+      // Shrink only when the longest sentence is wider than its column.
+      for (var i = 0; i < 4 && h.scrollWidth > room() + 1 && size > base * 0.55; i++) {
+        size = Math.max(base * 0.55, Math.floor(size * room() / h.scrollWidth * 0.98));
+        h.style.setProperty('font-size', size + 'px', 'important');
+      }
+    });
+  }
+  var t; window.addEventListener('resize', function () { clearTimeout(t); t = setTimeout(fit, 120); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
+  fit();
+})();

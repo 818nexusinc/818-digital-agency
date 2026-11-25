@@ -207,7 +207,14 @@ function title_breaks(string $html): string
     foreach (headers_list() as $h) if (stripos($h, 'content-type:') === 0 && stripos($h, 'text/html') === false) return $html;
     if (\App\SiteText::pageNow() === null) return $html;
     // Headings already laid out line by line (class "…lines…") are left alone.
-    return preg_replace_callback('#(<h([1-4])\b[^>]*>)(.*?)(</h\2>)#is', fn($m) => preg_match('/class="[^"]*lines/i', $m[1]) ? $m[0] : $m[1] . title_breaks_inner($m[3]) . $m[4], $html) ?? $html;
+    return preg_replace_callback('#(<h([1-4])\b[^>]*>)(.*?)(</h\2>)#is', function ($m) {
+        if (preg_match('/class="[^"]*lines/i', $m[1])) return $m[0];
+        $in = title_breaks_inner($m[3]);
+        if ($in === $m[3]) return $m[0];
+        // Mark the heading so each sentence stays on one line (CSS), instead of wrapping mid-sentence.
+        $open = preg_match('/\sclass="/i', $m[1]) ? preg_replace('/\sclass="/i', ' class="tb-lines ', $m[1], 1) : preg_replace('/^<h([1-4])/i', '<h$1 class="tb-lines"', $m[1]);
+        return $open . $in . $m[4];
+    }, $html) ?? $html;
 }
 function title_breaks_inner(string $in): string
 {
