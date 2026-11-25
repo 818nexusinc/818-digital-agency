@@ -66,6 +66,6 @@ $cartCount = count(Cart::lines());
 </div></footer>
 <?php include APP_ROOT . '/views/partials/chat.php'; ?>
 <div class="cookie" id="cookie" hidden><b>Cookies</b><p class="small" style="margin:6px 0 10px">We use one essential cookie to keep you signed in and remember your cart. No advertising trackers. <a href="/legal/cookies">Details</a></p><button class="btn btn-dark btn-sm" data-consent="essential">OK</button></div>
-<script src="/assets/js/app.js?v=<?= APP_VERSION ?>" nonce="<?= e($nonce ?? '') ?>" defer></script><script src="/assets/js/wizard.js?v=<?= APP_VERSION ?>" nonce="<?= e($nonce ?? '') ?>" defer></script>
+<?php if (str_starts_with((string)($path ?? ''), '/login')): ?><script src="/assets/js/passkey.js?v=<?= APP_VERSION ?>" nonce="<?= e($nonce ?? '') ?>" defer></script><?php endif; ?><script src="/assets/js/app.js?v=<?= APP_VERSION ?>" nonce="<?= e($nonce ?? '') ?>" defer></script><script src="/assets/js/wizard.js?v=<?= APP_VERSION ?>" nonce="<?= e($nonce ?? '') ?>" defer></script>
 </body>
 </html>

@@ -344,6 +344,71 @@ $workPage = function (string $cat, ?string $slug) {
 $r->get('/admin/work/{cat}', fn($p) => $workPage((string)$p['cat'], null), $P('projects.read'));
 $r->get('/admin/work/{cat}/{slug}', fn($p) => $workPage((string)$p['cat'], (string)$p['slug']), $P('projects.read'));
 
+/* Sign-in & recovery: passkeys, sign-in recovery codes, password sign-in on/off (each team member, for their own account) */
+$signinPage = function (?array $codes = null) use ($me) {
+    $u = $me(); $uid = (int)$u['id'];
+    View::page('admin/sign-in', ['title' => 'Sign-in & recovery', 'u' => $u, 'keys' => App\Passkeys::forUser($uid), 'codesLeft' => App\OwnerAccess::codesLeft($uid),
+        'pwOff' => App\OwnerAccess::passwordOff($uid), 'recent' => Auth::recent(900), 'codes' => $codes, 'rp' => App\Passkeys::rpId()]);
+};
+$needRecent = function (string $back = '/admin/sign-in') {
+    if (Auth::recent(900)) return;
+    $msg = 'For safety, sign in again (within the last 15 minutes) before changing how you sign in.';
+    if (str_contains((string)($_SERVER['HTTP_ACCEPT'] ?? ''), 'application/json')) { View::json(['ok' => false, 'error' => $msg . ' Sign out, sign back in and try again.'], 403); exit; }
+    Session::flash('error', $msg); Auth::logout(); Session::start(); $_SESSION['after_login'] = $back; View::redirect('/login');
+};
+$r->get('/admin/sign-in', fn() => $signinPage());
+$r->post('/admin/sign-in/passkey/options', function () use ($me, $needRecent) { $needRecent(); View::json(App\Passkeys::registerOptions($me())); });
+$r->post('/admin/sign-in/passkey', function () use ($me, $needRecent) {
+    $needRecent(); $in = Request::json();
+    try { $k = App\Passkeys::registerFinish($me(), $in, (string)($in['name'] ?? '')); } catch (UserError $e) { View::json(['ok' => false, 'error' => $e->getMessage()], 400); return; }
+    Session::flash('success', 'Passkey "' . $k['name'] . '" added. You can now sign in with it.');
+    View::json(['ok' => true]);
+});
+$r->post('/admin/sign-in', function () use ($me, $needRecent, $signinPage) {
+    $uid = (int)$me()['id']; $act = Request::str('action', 20);
+    if ($act !== 'remove') $needRecent();
+    try {
+        if ($act === 'codes') { $signinPage(App\OwnerAccess::newCodes($uid)); return; }
+        if ($act === 'password_off') { App\OwnerAccess::setPasswordOff($uid, true); Session::flash('success', 'Password sign-in is off for your account. Sign in with a passkey, or with an email link plus a recovery code.'); }
+        if ($act === 'password_on') { App\OwnerAccess::setPasswordOff($uid, false); Session::flash('success', 'Password sign-in is back on for your account.'); }
+        if ($act === 'remove') { App\Passkeys::remove($uid, (int)Request::input('id', 0)); Session::flash('success', 'Passkey removed.'); }
+    } catch (UserError $e) { Session::flash('error', $e->getMessage()); }
+    View::redirect('/admin/sign-in');
+});
+
+/* Data safety: encryption key copies, recovery kit, configuration backups (owner only) */
+$ownerOnly = function () use ($me) { if (($me()['role'] ?? '') !== 'owner') throw new HttpError(403, 'Only the owner can manage data safety.'); };
+$r->get('/admin/data-safety', function () use ($ownerOnly) {
+    $ownerOnly();
+    $snaps = App\Vault::snapshots();
+    View::page('admin/data-safety', ['title' => 'Data safety', 'st' => App\Vault::status(), 'snaps' => array_slice($snaps, 0, 15), 'recent' => Auth::recent(), 'code' => null,
+        'preview' => isset($_GET['preview']) ? (function () { try { return App\Vault::describe((string)$_GET['preview']) + ['name' => basename((string)$_GET['preview'])]; } catch (UserError $e) { Session::flash('error', $e->getMessage()); return null; } })() : null]);
+}, $P('settings.write'));
+$r->get('/admin/data-safety/kit', function () use ($ownerOnly) {
+    $ownerOnly();
+    $k = App\Vault::kitInfo(); if (!$k) throw new HttpError(404, 'No recovery kit yet.');
+    header('Content-Type: application/json'); header('Content-Disposition: attachment; filename="818-recovery-kit-' . substr((string)$k['at'], 0, 10) . '.json"'); header('Cache-Control: no-store');
+    echo jenc($k + ['note' => 'Keep this file and your recovery code in different places. The code is not in this file.']);
+}, $P('settings.write'));
+$r->post('/admin/data-safety', function () use ($ownerOnly, $me) {
+    $ownerOnly();
+    $act = Request::str('action', 20); $by = (string)$me()['email'];
+    $needRecent = in_array($act, ['kit', 'restore', 'unlock'], true);
+    if ($needRecent && !Auth::recent(900)) { Session::flash('error', 'For safety, sign in again (within the last 15 minutes) before doing this.'); Auth::logout(); Session::start(); $_SESSION['after_login'] = '/admin/data-safety'; View::redirect('/login'); }
+    try {
+        if ($act === 'kit') {
+            $code = App\Vault::createKit($by);
+            $snaps = App\Vault::snapshots();
+            View::page('admin/data-safety', ['title' => 'Data safety', 'st' => App\Vault::status(), 'snaps' => array_slice($snaps, 0, 15), 'recent' => true, 'code' => $code, 'preview' => null]);
+            return;
+        }
+        if ($act === 'backup') { $n = App\Vault::snapshot('manual', $by); Session::flash('success', 'Backup saved (' . $n . ').'); }
+        if ($act === 'restore') { $n = App\Vault::restore(Request::str('name', 200), $by); Session::flash('success', 'Restored ' . array_sum($n) . ' settings and records. A backup of how things were just before is saved too.'); }
+        if ($act === 'unlock') { App\Vault::restoreWithKit(Request::str('code', 60), $by); Session::flash('success', 'Your original encryption key is back. Integrations and two-step secrets can be read again.'); }
+    } catch (UserError $e) { Session::flash('error', $e->getMessage()); }
+    View::redirect('/admin/data-safety');
+}, $P('settings.write'));
+
 /* Registry form check: the Filing Agent's suggestions for our forms */
 $r->get('/admin/form-check', function () {
     $st = (string)($_GET['status'] ?? 'open'); if (!in_array($st, ['open', 'done', 'dismissed', 'all'], true)) $st = 'open';

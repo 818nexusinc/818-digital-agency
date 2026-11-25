@@ -13,12 +13,26 @@ final class Crypto
         return substr(hash('sha256', $k, true), 0, SODIUM_CRYPTO_SECRETBOX_KEYBYTES);
     }
 
-    /** Earlier keys kept in storage/keys, so data saved before a key change can still be read. */
+    /** The binary key for a raw APP_KEY value (the live one when null). */
+    public static function rawKey(?string $raw = null): string { return self::key($raw); }
+
+    /** Earlier keys kept in every safe folder (see Vault), so data saved before a key change can still be read. */
     private static function oldKeys(): array
     {
-        $o = [];
-        foreach (glob(STORAGE_ROOT . '/keys/old-*.key') ?: [] as $f) { $v = trim((string)@file_get_contents($f)); if ($v !== '') { try { $o[] = self::key($v); } catch (\Throwable) {} } }
-        return $o;
+        static $cache = null; if ($cache !== null) return $cache;
+        $o = []; $dirs = [STORAGE_ROOT . '/keys'];
+        try { $dirs = array_unique(array_merge($dirs, Vault::dirs())); } catch (\Throwable) {}
+        foreach ($dirs as $d) foreach (array_merge(glob($d . '/old-*.key') ?: [], glob($d . '/app.key') ?: []) as $f) { $v = trim((string)@file_get_contents($f)); if ($v !== '') { try { $o[] = self::key($v); } catch (\Throwable) {} } }
+        return $cache = array_values(array_unique($o));
+    }
+
+    /** Decrypt with one specific raw key (used to find which key a database was encrypted with). */
+    public static function decryptWith(string $blob, string $raw): ?string
+    {
+        if (!str_starts_with($blob, 'v1:')) return null;
+        $b = base64_decode(substr($blob, 3), true); if ($b === false || strlen($b) < SODIUM_CRYPTO_SECRETBOX_NONCEBYTES) return null;
+        try { $p = sodium_crypto_secretbox_open(substr($b, SODIUM_CRYPTO_SECRETBOX_NONCEBYTES), substr($b, 0, SODIUM_CRYPTO_SECRETBOX_NONCEBYTES), self::key($raw)); } catch (\Throwable) { return null; }
+        return $p === false ? null : $p;
     }
 
     public static function encrypt(string $plain): string

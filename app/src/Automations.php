@@ -20,6 +20,7 @@ final class Automations
         'blog_weekly'       => ['Weekly blog article', 'Writes and publishes one SEO article every 7 days and tells search engines about it.', 21600, 'Marketing', true],
         'pricing_weekly'    => ['Weekly pricing check', 'Asks the Pricing Agent to check competitor prices and government fees across Atlantic Canada every Monday and propose changes for you to approve. Needs the Anthropic connection for web research.', 604800, 'Sales', true],
         'filing_forms'      => ['Registry form check', 'Once a month, the Filing Agent compares every registration and corporate form on the website with what each government registry asks for, and lists what to update. Needs the Anthropic connection for web research.', 2592000, 'Health', true],
+        'config_backup'     => ['Configuration backup', 'Every day, saves an encrypted copy of all settings, integrations, site edits, logos and agent setups in the private folder outside the website, so they can always be restored.', 86400, 'Health', true],
         'indexnow_weekly'   => ['Notify search engines', 'Sends every page address to Bing and other IndexNow engines once a week so changes are picked up quickly.', 604800, 'Marketing', true],
         'agents_selftest'   => ['AI agent self-test', 'Runs all agents through the simulator every night and emails you if any of them fails.', 86400, 'Health', true],
         'security_daily'    => ['Daily security check', 'Runs the security check every morning and emails you if a new problem appears.', 86400, 'Health', true],
@@ -87,6 +88,10 @@ final class Automations
             case 'filing_forms':
                 if (!Integrations::configured('anthropic')) return 'Skipped: connect Anthropic so the Filing Agent can check the registries.';
                 return 'Queued the registry form check (task #' . FormCheck::queue('schedule') . ').';
+            case 'config_backup':
+                $k = Vault::verify();
+                if ($k === 'mismatch') { Mailer::notifyOwner('Saved keys cannot be read on the server', 'The encryption key on the server is not the one your saved integrations were made with. Open Settings → Data safety and use your recovery kit.', '/admin/data-safety'); return 'Key mismatch: owner told.'; }
+                return 'Saved ' . Vault::snapshot('daily') . ($k === 'healed' ? ' (key put back from a safe copy)' : '') . '.';
             case 'indexnow_weekly': $r = Seo::indexNow(Seo::allUrls()); return $r['ok'] ? "Sent {$r['count']} pages." : ($r['note'] ?? 'Search engines did not accept the list (code ' . ($r['code'] ?? 0) . ').');
             case 'agents_selftest':
                 $res = Simulator::run(); $bad = array_filter($res, fn($x) => !$x['ok']);

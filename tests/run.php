@@ -746,5 +746,61 @@ tcase('social posting refuses unknown or unconnected accounts', function () {
     ok(App\Integrations::DEFS['facebook'][0] === 'social');
 });
 
+tcase('passkeys: register and sign in with a software authenticator (ES256), refuse replays and other sites', function () {
+    $_SERVER['HTTP_HOST'] = 'localhost:8099';
+    $cb = function ($v) use (&$cb): string {   // tiny CBOR encoder for the test authenticator
+        $hd = function (int $mt, int $n): string { if ($n < 24) return chr($mt << 5 | $n); if ($n < 256) return chr($mt << 5 | 24) . chr($n); return chr($mt << 5 | 25) . pack('n', $n); };
+        if (is_int($v)) return $v >= 0 ? $hd(0, $v) : $hd(1, -1 - $v);
+        if (is_array($v)) { $o = $hd(5, count($v)); foreach ($v as $k => $x) $o .= $cb($k) . $cb($x); return $o; }
+        if ($v instanceof \stdClass) return $hd(3, strlen($v->s)) . $v->s;
+        return $hd(2, strlen($v)) . $v;
+    };
+    $txt = fn(string $s) => (object)['s' => $s];
+    $key = openssl_pkey_new(['curve_name' => 'prime256v1', 'private_key_type' => OPENSSL_KEYTYPE_EC]); $d = openssl_pkey_get_details($key)['ec'];
+    $x = str_pad($d['x'], 32, "\0", STR_PAD_LEFT); $y = str_pad($d['y'], 32, "\0", STR_PAD_LEFT);
+    $cid = random_bytes(16); $rpHash = hash('sha256', 'localhost', true);
+    $uid = (int)(App\Db::val("SELECT id FROM users WHERE role = 'owner' ORDER BY id LIMIT 1") ?: App\Db::insert('users', ['email' => 'owner-pk@test.local', 'password_hash' => password_hash('x-Pass-123456', PASSWORD_DEFAULT), 'name' => 'Owner', 'role' => 'owner', 'status' => 'active', 'created_at' => now(), 'updated_at' => now()])); $u = App\Db::one('SELECT * FROM users WHERE id = ?', [$uid]);
+    App\Db::run('DELETE FROM passkeys WHERE user_id = ?', [$uid]); App\Db::run('DELETE FROM rate_limits');
+    $o = App\Passkeys::registerOptions($u);
+    $cd = json_encode(['type' => 'webauthn.create', 'challenge' => $o['challenge'], 'origin' => 'http://localhost:8099']);
+    $cose = $cb([1 => 2, 3 => -7, -1 => 1, -2 => $x, -3 => $y]);
+    $ad = $rpHash . chr(0x45) . pack('N', 1) . str_repeat("\0", 16) . pack('n', 16) . $cid . $cose;
+    $att = $cb(['fmt' => $txt('none'), 'attStmt' => [], 'authData' => $ad]);
+    $att = str_replace($cb('fmt'), $cb($txt('fmt')), $att); $att = str_replace($cb('attStmt'), $cb($txt('attStmt')), $att); $att = str_replace($cb('authData'), $cb($txt('authData')), $att);
+    $B = fn($b) => App\Passkeys::b64u($b);
+    $k = App\Passkeys::registerFinish($u, ['id' => $B($cid), 'rawId' => $B($cid), 'response' => ['clientDataJSON' => $B($cd), 'attestationObject' => $B($att)]], 'Test key');
+    eq($k['name'], 'Test key');
+    $sign = function (int $count, string $origin = 'http://localhost:8099') use ($key, $rpHash, $cid, $B) {
+        $o = App\Passkeys::loginOptions();
+        $cd = json_encode(['type' => 'webauthn.get', 'challenge' => $o['challenge'], 'origin' => $origin]);
+        $ad = $rpHash . chr(0x05) . pack('N', $count);
+        openssl_sign($ad . hash('sha256', $cd, true), $sig, $key, OPENSSL_ALGO_SHA256);
+        return App\Passkeys::loginFinish(['id' => $B($cid), 'rawId' => $B($cid), 'response' => ['clientDataJSON' => $B($cd), 'authenticatorData' => $B($ad), 'signature' => $B($sig)]]);
+    };
+    App\Db::update('users', ['locked_until' => now(900), 'failed_logins' => 8], 'id = ?', [$uid]);
+    eq($sign(2), $uid);                                   // works even while password sign-in is locked
+    throws(fn() => $sign(2));                             // counter did not move: looks cloned
+    throws(fn() => $sign(5, 'https://evil.example'));     // another website
+    throws(fn() => App\Passkeys::loginFinish(['rawId' => 'nope', 'response' => []]));  // no challenge in session
+    App\Db::update('users', ['locked_until' => null, 'failed_logins' => 0], 'id = ?', [$uid]);
+});
+
+tcase('owner recovery: codes work once, links work once, password can only be turned off with a way back in', function () {
+    $uid = (int)(App\Db::val("SELECT id FROM users WHERE role = 'owner' ORDER BY id LIMIT 1") ?: App\Db::insert('users', ['email' => 'owner-pk@test.local', 'password_hash' => password_hash('x-Pass-123456', PASSWORD_DEFAULT), 'name' => 'Owner', 'role' => 'owner', 'status' => 'active', 'created_at' => now(), 'updated_at' => now()])); App\Db::run('DELETE FROM rate_limits');
+    App\Db::run('DELETE FROM passkeys WHERE user_id = ?', [$uid]); App\Db::run("DELETE FROM settings WHERE skey = ?", ['auth.recovery.' . $uid]);
+    throws(fn() => App\OwnerAccess::setPasswordOff($uid, true));   // no passkey, no codes
+    $codes = App\OwnerAccess::newCodes($uid); eq(count($codes), 10);
+    ok(App\OwnerAccess::useCode($uid, strtolower($codes[3])), 'code accepted (any case)');
+    ok(!App\OwnerAccess::useCode($uid, $codes[3]), 'same code refused the second time');
+    eq(App\OwnerAccess::codesLeft($uid), 9);
+    $t = App\Passkeys::b64u(random_bytes(32));
+    App\Db::insert('login_links', ['user_id' => $uid, 'token_hash' => hash('sha256', $t), 'expires_at' => now(900), 'created_at' => now()]);
+    ok(App\OwnerAccess::linkValid($t), 'fresh link valid');
+    eq(App\OwnerAccess::useLink($t), $uid);
+    throws(fn() => App\OwnerAccess::useLink($t));
+    eq(App\OwnerAccess::linkSecondStep($uid), 'code');
+    App\Db::run("DELETE FROM settings WHERE skey = ?", ['auth.recovery.' . $uid]);
+});
+
 echo "\n" . ($fail ? "\033[31m{$fail} failed\033[0m, " : '') . "\033[32m{$pass} passed\033[0m\n";
 exit($fail ? 1 : 0);

@@ -300,6 +300,40 @@ $r->post('/login', function () {
     unset($_SESSION['after_login']);
     View::redirect($to);
 });
+/* Passkeys and lockout-free recovery (see App\Passkeys, App\OwnerAccess). */
+$afterLogin = function (): string { Session::start(); $to = $_SESSION['after_login'] ?? (Auth::isStaff() ? '/admin' : '/portal'); unset($_SESSION['after_login']); return $to; };
+$r->post('/login/passkey/options', fn() => View::json(App\Passkeys::loginOptions()));
+$r->post('/login/passkey', function () use ($afterLogin) {
+    try { $uid = App\Passkeys::loginFinish(Request::json()); }
+    catch (UserError $e) { View::json(['ok' => false, 'error' => $e->getMessage()], 400); return; }
+    Auth::finishPasswordless($uid, 'passkey');
+    View::json(['ok' => true, 'to' => $afterLogin()]);
+});
+$r->get('/login/link', fn() => View::page('public/login-link', ['title' => 'Email me a sign-in link', 'noindex' => true]));
+$r->post('/login/link', function () {
+    App\Spam::guard('signin-link', ['email' => Request::str('email', 190)], function () { Session::flash('success', 'If that email belongs to a team account, a sign-in link is on its way. It works once, for 15 minutes.'); View::redirect('/login'); });
+    App\OwnerAccess::sendLink(Request::str('email', 190));
+    Session::flash('success', 'If that email belongs to a team account, a sign-in link is on its way. It works once, for 15 minutes.');
+    View::redirect('/login');
+});
+$r->get('/login/link/{token}', function ($p) {
+    if (!App\OwnerAccess::linkValid($p['token'])) { Session::flash('error', 'This sign-in link has expired or was already used. Ask for a new one.'); View::redirect('/login/link'); }
+    View::page('public/login-link-open', ['title' => 'Finish signing in', 'token' => $p['token'], 'noindex' => true]);
+});
+$r->post('/login/link/{token}', function ($p) use ($afterLogin) {
+    try { $uid = App\OwnerAccess::useLink($p['token']); }
+    catch (UserError $e) { Session::flash('error', $e->getMessage()); View::redirect('/login/link'); return; }
+    $step = App\OwnerAccess::linkSecondStep($uid);
+    if ($step === 'code') {
+        // The link proves the inbox; the printed recovery code is the second factor. Wrong code: the link is spent, ask for another.
+        if (!App\OwnerAccess::useCode($uid, Request::str('recovery_code', 40))) { Session::flash('error', 'That recovery code did not match. For safety the link is now used up: ask for a new one and try again.'); View::redirect('/login/link'); return; }
+        Auth::finishPasswordless($uid, 'email_link');
+        View::redirect($afterLogin());
+    }
+    if ($step === 'mfa') { Session::start(); Session::regenerate(); $_SESSION['uid'] = $uid; $_SESSION['role'] = Db::val('SELECT role FROM users WHERE id = ?', [$uid]); $_SESSION['mfa_pending'] = 1; App\Audit::security('login.email_link_mfa', (string)$uid); View::redirect('/login/mfa'); }
+    Auth::finishPasswordless($uid, 'email_link');
+    View::redirect($afterLogin());
+});
 $r->get('/login/mfa', fn() => View::page('public/mfa', ['title' => 'Two-step verification', 'noindex' => true]));
 $r->post('/login/mfa', function () {
     try { $ok = Auth::verifyMfa(Request::str('code', 10)); } catch (UserError $e) { Session::flash('error', $e->getMessage()); View::redirect('/login/mfa'); }

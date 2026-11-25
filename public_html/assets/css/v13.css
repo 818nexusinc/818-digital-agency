@@ -102,3 +102,10 @@
 @media(min-width:1241px) and (max-width:1439px){html[lang^=fr] .site .site-header .mn-dot{display:none}}
 @media(max-width:1240px){.flash-stack{top:80px}}
 .site main>.flash-stack,.site .flash-stack{padding:0!important;margin:0!important}
+/* Passkey sign-in */
+.pk-btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;width:100%}
+.pk-msg{margin:6px 0 0;font-size:.92rem;color:#2c5a2e}.pk-msg.bad{color:#a32020}
+.auth-or{display:flex;align-items:center;gap:12px;margin:18px 0 8px;color:#6b7280;font-size:.85rem}
+.auth-or::before,.auth-or::after{content:"";flex:1;height:1px;background:#e6e8ec}
+.auth-card form{display:grid;gap:4px}
+.auth-card .auth-links+.auth-links{margin-top:6px}

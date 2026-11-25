@@ -50,6 +50,9 @@ final class Updater
         $boot = (string)$z->getFromName('public_html/_app/bootstrap.php');
         $newVer = preg_match("/APP_VERSION', '([0-9.]+)'/", $boot, $m) ? $m[1] : '?';
 
+        // 0. Snapshot every setting, integration and site edit first (kept outside the website folder too).
+        try { Vault::snapshot('before update to ' . $newVer, $by); } catch (\Throwable $e) { throw new UserError('Could not save a configuration backup before updating, so nothing was changed: ' . $e->getMessage()); }
+
         // 1. Save the current code (only files the package will replace) for rollback.
         $dir = STORAGE_ROOT . '/backups'; if (!is_dir($dir)) @mkdir($dir, 0750, true);
         $bk = $dir . '/code-' . APP_VERSION . '-' . gmdate('Ymd-His') . '.zip';

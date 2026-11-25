@@ -82,6 +82,10 @@ final class Auth
             Audit::security('login.failed', $email);
             throw new UserError('That email and password combination did not match.');
         }
+        if (OwnerAccess::passwordOff((int)$u['id'])) {
+            Audit::security('login.password_off', $email);
+            throw new UserError('Password sign-in is turned off for this account. Use "Sign in with a passkey", or "Email me a sign-in link".');
+        }
         if (password_needs_rehash($u['password_hash'], defined('PASSWORD_ARGON2ID') ? PASSWORD_ARGON2ID : PASSWORD_DEFAULT)) {
             Db::update('users', ['password_hash' => self::hash($password)], 'id = ?', [$u['id']]);
         }
@@ -140,6 +144,7 @@ final class Auth
 
     private static function complete(int $id): void
     {
+        $_SESSION['auth_at'] = time();
         Db::update('users', ['failed_logins' => 0, 'locked_until' => null, 'last_login_at' => now()], 'id = ?', [$id]);
         self::forget();
         Audit::log('user.login', 'user', $id, [], 'user', (string)$id);
@@ -151,6 +156,19 @@ final class Auth
         $_SESSION = [];
         if (PHP_SAPI !== 'cli') { session_regenerate_id(true); }
         self::forget();
+    }
+
+    /** Signed in (by any method) within the last $seconds — required for the most sensitive owner actions. */
+    public static function recent(int $seconds = 900): bool { Session::start(); return (int)($_SESSION['auth_at'] ?? 0) >= time() - $seconds; }
+
+    /** Finish a passwordless sign-in (passkey, recovery code, email link): same session handling as a password sign-in. */
+    public static function finishPasswordless(int $userId, string $method): void
+    {
+        Session::start(); Session::regenerate();
+        $_SESSION['uid'] = $userId; $_SESSION['role'] = Db::val('SELECT role FROM users WHERE id = ?', [$userId]);
+        unset($_SESSION['mfa_pending']);
+        self::complete($userId);
+        Audit::security('login.' . $method, (string)$userId);
     }
 
     public static function loginAs(int $userId): void

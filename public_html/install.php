@@ -9,6 +9,8 @@ $envFile = $appRoot . '/.env';
 $cur = is_file($envFile) ? (string)file_get_contents($envFile) : '';
 // A private copy of the settings is kept in storage/keys; if the live .env was replaced, put it back instead of reinstalling.
 $bk = $appRoot . '/storage/keys/env.backup';
+// The private copy outside the website folder survives even when public_html was emptied: prefer it.
+foreach ([dirname(__DIR__) . '/818-private/env.backup', $appRoot . '/storage/keys/env.backup'] as $__c) if (is_file($__c) && preg_match('/^APP_INSTALLED=1/m', (string)@file_get_contents($__c))) { $bk = $__c; break; }
 if (!preg_match('/^APP_INSTALLED=1/m', $cur) && is_file($bk) && preg_match('/^APP_INSTALLED=1/m', (string)file_get_contents($bk))) { @file_put_contents($envFile, (string)file_get_contents($bk)); @chmod($envFile, 0600); $cur = (string)file_get_contents($envFile); }
 header('X-Robots-Tag: noindex'); header('Cache-Control: no-store'); header("Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; form-action 'self'");
 if (preg_match('/^APP_INSTALLED=1/m', $cur)) { http_response_code(404); exit('Not found'); }
@@ -25,12 +27,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) throw new RuntimeException('Enter a valid owner email.');
         if (strlen($pw) < 12 || $pw !== ($_POST['owner_pass2'] ?? '')) throw new RuntimeException('Owner password must be at least 12 characters and both entries must match.');
         if (!preg_match('#^https://[a-z0-9.-]+$#i', $url)) throw new RuntimeException('Site address must look like https://818digitalagency.com');
-        try { new PDO("mysql:host={$host};port={$port};dbname={$name};charset=utf8mb4", $user, $pass, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_TIMEOUT => 8]); }
+        try { $pdo = new PDO("mysql:host={$host};port={$port};dbname={$name};charset=utf8mb4", $user, $pass, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_TIMEOUT => 8]); }
         catch (PDOException $e) { throw new RuntimeException('Could not connect to the database: ' . preg_replace('/using password: \w+/', '', $e->getMessage())); }
+
+        // Reinstalling over an existing database: keep its saved integrations and two-step secrets readable.
+        $keyFile = null; foreach ([dirname(__DIR__) . '/818-private/app.key', $appRoot . '/storage/keys/app.key'] as $__k) if (is_file($__k) && trim((string)file_get_contents($__k)) !== '') { $keyFile = trim((string)file_get_contents($__k)); break; }
+        $appKey = $val('APP_KEY') ?: ($keyFile ?: 'base64:' . base64_encode(random_bytes(32)));
+        $fpOf = function (string $raw): string { $k = str_starts_with($raw, 'base64:') ? (base64_decode(substr($raw, 7), true) ?: '') : $raw; return substr(hash('sha256', 'nx818-fp|' . substr(hash('sha256', $k, true), 0, 32)), 0, 24); };
+        $old = []; try { foreach ($pdo->query("SELECT skey, value FROM settings WHERE skey IN ('crypto.key_fp','recovery.kit')") as $row) $old[$row['skey']] = $row['value']; } catch (PDOException) {}
+        if (!empty($old['crypto.key_fp']) && !hash_equals($old['crypto.key_fp'], $fpOf($appKey))) {
+            $rc = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', (string)($_POST['recovery_code'] ?? '')));
+            if ($rc !== '' && !empty($old['recovery.kit'])) {
+                $kit = json_decode($old['recovery.kit'], true) ?: [];
+                $kk = sodium_crypto_pwhash(SODIUM_CRYPTO_SECRETBOX_KEYBYTES, $rc, base64_decode((string)$kit['salt']), SODIUM_CRYPTO_PWHASH_OPSLIMIT_MODERATE, SODIUM_CRYPTO_PWHASH_MEMLIMIT_INTERACTIVE, SODIUM_CRYPTO_PWHASH_ALG_ARGON2ID13);
+                $plain = sodium_crypto_secretbox_open(base64_decode((string)$kit['ct']), base64_decode((string)$kit['nonce']), $kk);
+                if ($plain === false) throw new RuntimeException('That recovery code does not match the kit saved in this database.');
+                $appKey = (string)(json_decode($plain, true)['app_key'] ?? $appKey);
+            } elseif (empty($_POST['start_fresh'])) {
+                throw new RuntimeException(!empty($old['recovery.kit'])
+                    ? 'This database already holds your saved integrations and settings. Enter your recovery code so they stay readable (or tick "Start fresh" to re-enter integrations by hand).'
+                    : 'This database already holds saved integrations made with a different encryption key. Restore the original app.key file (or your private 818-private folder) and try again, or tick "Start fresh" to re-enter integrations by hand.');
+            }
+        }
 
         $q = fn($v) => '"' . str_replace(['\\', '"'], ['\\\\', '\"'], $v) . '"';
         $env = "# 818 Digital Agency — production settings. Written by install.php on " . gmdate('Y-m-d H:i') . " UTC. Keep private; back up APP_KEY.\n"
-            . "APP_URL={$url}\nAPP_DEBUG=false\nAPP_KEY=" . ($val('APP_KEY') ?: (is_file($appRoot . '/storage/keys/app.key') ? trim((string)file_get_contents($appRoot . '/storage/keys/app.key')) : '') ?: 'base64:' . base64_encode(random_bytes(32))) . "\n\n"
+            . "APP_URL={$url}\nAPP_DEBUG=false\nAPP_KEY=" . $appKey . "\n\n"
             . "DB_HOST={$host}\nDB_PORT={$port}\nDB_NAME={$name}\nDB_USER={$user}\nDB_PASS=" . $q($pass) . "\nDB_SSL=off\n\n"
             . "SESSION_SECURE=true\nMAIL_DRIVER=" . ($val('MAIL_DRIVER') ?: 'auto') . "\nMAIL_FROM=" . ($val('MAIL_FROM') ?: 'hello@818nexus.ca') . "\nOWNER_EMAIL={$email}\n"
             . "CRON_SECRET=" . bin2hex(random_bytes(24)) . "\nAPP_INSTALLED=1\n";
@@ -80,6 +102,10 @@ h1{font-size:22px;margin:0 0 6px}p{color:#5f6b85}label{display:block;font-size:1
     <label for="e">Owner email</label><input id="e" name="owner_email" type="email" value="<?= $h($_POST['owner_email'] ?? 'hello@818nexus.ca') ?>" required>
     <label for="o1">Owner password (12+ characters)</label><input id="o1" name="owner_pass" type="password" minlength="12" required>
     <label for="o2">Owner password again</label><input id="o2" name="owner_pass2" type="password" minlength="12" required>
+    <details style="margin:14px 0"><summary>Reinstalling over an existing site?</summary>
+      <p style="font-size:14px">If this database already has your settings and integrations, enter the recovery code from <b>Settings → Data safety</b> so they stay readable.</p>
+      <label for="rc">Recovery code (optional)</label><input id="rc" name="recovery_code" type="text" autocomplete="off" spellcheck="false" placeholder="XXXXX-XXXXX-XXXXX-XXXXX-XXXXX">
+      <label style="display:flex;gap:8px;align-items:center;margin-top:10px"><input type="checkbox" name="start_fresh" value="1" style="width:auto"> Start fresh: I will re-enter integrations by hand</label></details>
     <button>Install</button>
   </form>
 <?php endif; ?>

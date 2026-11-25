@@ -3,3 +3,4 @@ app/storage/*
 !app/storage/.gitkeep
 *.zip
 .vercel
+818-private/

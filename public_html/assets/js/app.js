@@ -748,3 +748,10 @@
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
   fit();
 })();
+
+/* Recovery code: copy and print */
+(function () {
+  var c = document.querySelector('[data-code]'); if (!c) return;
+  var b = document.querySelector('[data-copy-code]'); if (b) b.addEventListener('click', function () { navigator.clipboard && navigator.clipboard.writeText((c.innerText || c.textContent).trim()).then(function () { b.textContent = 'Copied'; }); });
+  var p = document.querySelector('[data-print]'); if (p) p.addEventListener('click', function () { window.print(); });
+})();

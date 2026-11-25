@@ -62,6 +62,8 @@ if ($path === '/classic' || str_starts_with($path, '/classic/')) {
     exit;
 }
 
+// Make sure the database's secrets are read with the right key (puts a lost key back from a safe copy by itself).
+if (preg_match('#^/(admin|login|portal)(/|$)#', $path)) { try { App\Vault::verify(); } catch (Throwable) {} }
 $router = (static fn() => require APP_ROOT . '/routes.php')();
 View::$shared['user'] = Auth::user();
 View::$shared['csrf'] = Csrf::token();
