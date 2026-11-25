@@ -829,5 +829,24 @@ tcase('user management: who can manage whom, resets replace older links, suspend
     throws(fn() => App\Users::invite($owner, 'Dup', (string)App\Db::val('SELECT email FROM users WHERE id = ?', [$id]), 'staff'));
 });
 
+tcase('passwords and deletes: set by admin forces a change, own change needs the current password, delete keeps customer records', function () {
+    $owner = App\Db::one("SELECT * FROM users WHERE role = 'owner' ORDER BY id LIMIT 1");
+    $sid = App\Users::invite($owner, 'Pw Test', 'um-pw-' . rid(3) . '@test.local', 'staff'); $s = App\Users::get($sid);
+    throws(fn() => App\Users::setPassword($owner, $sid, 'Temp-Pass-4455', 'Different-4455', true));
+    App\Users::setPassword($owner, $sid, 'Temp-Pass-4455', 'Temp-Pass-4455', true);
+    ok(App\Users::mustChange($sid), 'must choose their own');
+    throws(fn() => App\Users::changeOwn($s, '', 'Temp-Pass-4455', 'Temp-Pass-4455'));     // same as the one given
+    App\Users::changeOwn($s, '', 'Own-Choice-778899', 'Own-Choice-778899');
+    ok(!App\Users::mustChange($sid) && password_verify('Own-Choice-778899', (string)App\Db::val('SELECT password_hash FROM users WHERE id = ?', [$sid])), 'changed');
+    throws(fn() => App\Users::changeOwn($s, 'wrong-current-1', 'Another-One-12345', 'Another-One-12345'));   // current password now required
+    $cid = App\Users::invite($owner, 'Cust Test', 'um-cust-' . rid(3) . '@test.local', 'customer');
+    $cust = customer((string)App\Db::val('SELECT email FROM users WHERE id = ?', [$cid])); App\Db::update('customers', ['user_id' => $cid], 'id = ?', [$cust['id']]);
+    throws(fn() => App\Users::delete($owner, $cid, 'not-their@email.ca'));
+    App\Users::delete($owner, $cid, (string)App\Db::val('SELECT email FROM users WHERE id = ?', [$cid]));
+    ok(!App\Db::val('SELECT 1 FROM users WHERE id = ?', [$cid]), 'login removed');
+    ok(App\Db::val('SELECT user_id FROM customers WHERE id = ?', [$cust['id']]) === null, 'customer record kept, unlinked');
+    throws(fn() => App\Users::delete($owner, (int)$owner['id'], (string)$owner['email']));   // never yourself
+});
+
 echo "\n" . ($fail ? "\033[31m{$fail} failed\033[0m, " : '') . "\033[32m{$pass} passed\033[0m\n";
 exit($fail ? 1 : 0);

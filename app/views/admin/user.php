@@ -12,7 +12,7 @@ $isTeam = $u['role'] !== 'customer';
 <div class="db-head"><div><h1><?= e($u['name']) ?></h1><p class="db-bc"><?= e($u['email']) ?> · <?= e(Users::ROLE_NAMES[$u['role']] ?? $u['role']) ?> · joined <?= e(substr((string)$u['created_at'], 0, 10)) ?></p></div>
   <a class="btn btn-ghost" href="/admin/users?group=<?= $isTeam ? 'team' : 'customers' ?>">All users</a></div>
 
-<?php if ($mine): ?><div class="alert alert-info">This is your own account. Change how you sign in under <a href="/admin/sign-in">Sign-in &amp; recovery</a>.</div>
+<?php if ($mine): ?><div class="alert alert-info">This is your own account. <a href="/account/password">Change your password</a>, or add passkeys under <a href="/admin/sign-in">Sign-in &amp; recovery</a>.</div>
 <?php elseif (!$can): ?><div class="alert alert-info"><?= $u['role'] === 'owner' ? 'The owner account can only be changed by the owner, from their own Sign-in & recovery page.' : 'Only the owner can manage admin accounts.' ?></div><?php endif; ?>
 
 <div class="um-status">
@@ -62,6 +62,18 @@ $isTeam = $u['role'] !== 'customer';
   </section>
 
   <section class="db-card">
+    <h2>Set a new password</h2>
+    <p class="small muted">Prefer "Send password reset email" so only they know it. Use this when they can't get email, then tell them the password privately (by phone, not email).</p>
+    <form method="post" action="/admin/users/<?= $id ?>" class="um-pwset" autocomplete="off"><?= Csrf::field() ?><input type="hidden" name="action" value="password">
+      <label>New password<input type="password" name="new" minlength="10" required autocomplete="new-password"></label>
+      <label>New password again<input type="password" name="confirm" minlength="10" required autocomplete="new-password"></label>
+      <label class="check small"><input type="checkbox" name="must_change" value="1" checked> Make them choose their own password when they sign in</label>
+      <div><button class="btn btn-sm btn-primary">Save new password</button></div>
+    </form>
+    <p class="small muted">Also unlocks the account, cancels open reset links, turns password sign-in back on and signs them out everywhere.</p>
+  </section>
+
+  <section class="db-card">
     <h2>History</h2>
     <?php if (!$d['audit'] && !$d['events']): ?><p class="small muted">Nothing recorded yet.</p><?php endif; ?>
     <?php $hist = [];
@@ -73,6 +85,13 @@ $isTeam = $u['role'] !== 'customer';
     </ul>
   </section>
 </div>
+<section class="db-card um-danger" id="delete" style="margin-top:20px;padding:22px 24px;display:grid;gap:10px">
+  <h2>Delete this account</h2>
+  <p class="small">Permanently removes <?= e($u['name']) ?>'s login, passkeys and pending emails. <?= $isTeam ? 'Work they did stays, and the audit log keeps a record.' : 'Their orders, invoices, filings and customer record are kept, just no longer linked to a login.' ?> This can't be undone. To only stop them signing in, use "Suspend access" instead.</p>
+  <form method="post" action="/admin/users/<?= $id ?>" class="um-row" data-confirm="Delete <?= e($u['email']) ?> permanently? This can't be undone."><?= Csrf::field() ?><input type="hidden" name="action" value="delete">
+    <label><span>Type <b><?= e($u['email']) ?></b> to confirm</span><input type="text" name="confirm_email" required autocomplete="off" spellcheck="false"></label>
+    <button class="btn btn-sm btn-danger">Delete permanently</button></form>
+</section>
 <?php endif; ?>
 <?php if ($d['customer']): ?><p style="margin-top:16px"><a class="db-more" href="/admin/customers/<?= (int)$d['customer']['id'] ?>">Open their customer record</a></p><?php endif; ?>
 </div>

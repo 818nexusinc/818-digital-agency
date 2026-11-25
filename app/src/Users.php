@@ -193,6 +193,60 @@ final class Users
         Audit::log('user.passkeys_reset', 'user', $id, [], 'user', (string)$actor['id']);
     }
 
+    /** Set a new password for someone (they can be asked to choose their own at next sign-in). */
+    public static function setPassword(array $actor, int $id, string $pw, string $confirm, bool $mustChange): void
+    {
+        $u = self::get($id); self::guard($actor, $u);
+        if ($pw !== $confirm) throw new UserError('The two passwords don\'t match.');
+        if ($p = Auth::passwordProblem($pw)) throw new UserError($p);
+        Db::update('users', ['password_hash' => Auth::hash($pw), 'failed_logins' => 0, 'locked_until' => null, 'updated_at' => now()], 'id = ?', [$id]);
+        Db::run('UPDATE password_resets SET used_at = ? WHERE user_id = ? AND used_at IS NULL', [now(), $id]);
+        Settings::set('auth.password_off.' . $id, '0');
+        Settings::set('auth.must_change.' . $id, $mustChange ? '1' : '');
+        self::signOutEverywhere($id);
+        Audit::log('user.password_set', 'user', $id, ['must_change' => $mustChange], 'user', (string)$actor['id']);
+        Audit::security('password.set_by_admin', $id . ' · by ' . $actor['email']);
+    }
+
+    /** Change your own password (current password required, unless they were told to choose a new one after an admin set it). */
+    public static function changeOwn(array $me, string $current, string $pw, string $confirm): void
+    {
+        $id = (int)$me['id'];
+        $forced = Settings::get('auth.must_change.' . $id) === '1';
+        if (!$forced && !password_verify($current, (string)Db::val('SELECT password_hash FROM users WHERE id = ?', [$id]))) {
+            if (!RateLimit::hit('pwchange:' . $id, 8, 900)) throw new UserError('Too many tries. Wait 15 minutes.');
+            throw new UserError('Your current password is not right.');
+        }
+        if ($pw !== $confirm) throw new UserError('The two new passwords don\'t match.');
+        if ($forced && password_verify($pw, (string)Db::val('SELECT password_hash FROM users WHERE id = ?', [$id]))) throw new UserError('Choose a password different from the one you were given.');
+        if ($p = Auth::passwordProblem($pw)) throw new UserError($p);
+        Db::update('users', ['password_hash' => Auth::hash($pw), 'updated_at' => now()], 'id = ?', [$id]);
+        Settings::set('auth.must_change.' . $id, '');
+        self::signOutEverywhere($id);          // other devices sign in again with the new password
+        Session::start(); $_SESSION['auth_mt'] = microtime(true) + 0.001; $_SESSION['auth_at'] = time();   // this one stays signed in
+        Audit::log('user.password_changed', 'user', $id);
+    }
+
+    public static function mustChange(int $id): bool { return Settings::get('auth.must_change.' . $id) === '1'; }
+
+    /**
+     * Delete an account permanently. Their orders, invoices, filings and customer record stay (unlinked from the login);
+     * passkeys, reset links and notifications go with it. The audit log keeps a record. Confirm by typing their email.
+     */
+    public static function delete(array $actor, int $id, string $typedEmail): void
+    {
+        $u = self::get($id); self::guard($actor, $u);
+        if (strtolower(trim($typedEmail)) !== strtolower((string)$u['email'])) throw new UserError('Type their email address exactly to confirm the delete.');
+        Db::tx(function () use ($id) {
+            foreach (['password_resets', 'passkeys', 'login_links', 'notifications'] as $t) try { Db::run("DELETE FROM {$t} WHERE user_id = ?", [$id]); } catch (\Throwable) {}
+            foreach (['customers', 'conversations'] as $t) try { Db::run("UPDATE {$t} SET user_id = NULL WHERE user_id = ?", [$id]); } catch (\Throwable) {}
+            Db::run('DELETE FROM users WHERE id = ?', [$id]);
+            foreach (['auth.epoch.', 'auth.must_change.', 'auth.password_off.', 'auth.recovery.', 'mfa.recovery.', 'mfa.paused.', 'passkey.handle.'] as $k) Db::run('DELETE FROM settings WHERE skey = ?', [$k . $id]);
+        });
+        Settings::flush();
+        Audit::log('user.deleted', 'user', $id, ['email' => $u['email'], 'name' => $u['name'], 'role' => $u['role']], 'user', (string)$actor['id']);
+    }
+
     /** End every signed-in session of this user on their next page load. */
     public static function signOutEverywhere(int $id): void
     {

@@ -62,6 +62,7 @@ $when = fn(?string $d) => $d ? substr($d, 0, 16) . ' UTC' : 'Never';
       <form method="post" data-confirm="Turn off password sign-in for your account? You'll sign in with a passkey, or an email link plus a recovery code."><?= Csrf::field() ?><input type="hidden" name="action" value="password_off"><button class="btn btn-primary" <?= $ready ? '' : 'disabled' ?>>Turn off password sign-in</button></form>
       <?php if (!$ready): ?><p class="small muted">Available after you add a passkey and make recovery codes.</p><?php endif; ?>
     <?php endif; ?>
+    <?php if (!$pwOff): ?><p><a class="btn btn-sm" href="/account/password">Change my password</a></p><?php endif; ?>
     <p class="small muted">Two-step codes (authenticator app) still work for password sign-in. A passkey already counts as two steps: your device plus your face, fingerprint or PIN.</p>
   </section>
 </div>

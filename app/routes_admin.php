@@ -373,8 +373,16 @@ $r->post('/admin/users/{id}', function ($p) use ($me) {
         'rename' => ['Name saved.', fn() => App\Users::rename($a, $id, Request::str('name', 190))],
         'mfa' => ['Two-step verification turned off for this account. They can set it up again after signing in.', fn() => App\Users::resetMfa($a, $id)],
         'passkeys' => ['Passkeys removed and password sign-in turned back on. Send a password reset so they can get in.', fn() => App\Users::resetPasskeys($a, $id)],
+        'password' => [Request::input('must_change') ? 'New password saved. Share it with them privately; they\'ll be asked to choose their own when they sign in.' : 'New password saved. Share it with them privately.',
+            fn() => App\Users::setPassword($a, $id, (string)Request::input('new', ''), (string)Request::input('confirm', ''), (bool)Request::input('must_change'))],
         'signout' => ['Signed out on every device.', function () use ($a, $id) { $u = App\Users::get($id); if (!App\Users::canManage($a, $u)) throw new HttpError(403, 'No permission.'); App\Users::signOutEverywhere($id); App\Audit::log('user.signed_out_everywhere', 'user', $id); }],
     ];
+    if ($act === 'delete') {
+        try { $u = App\Users::get($id); App\Users::delete($a, $id, Request::str('confirm_email', 190));
+            Session::flash('success', 'Deleted ' . $u['email'] . '. Their orders and customer record were kept.'); View::redirect('/admin/users?group=' . ($u['role'] === 'customer' ? 'customers' : 'team')); }
+        catch (UserError $e) { Session::flash('error', $e->getMessage()); View::redirect('/admin/users/' . $id . '#delete'); }
+        return;
+    }
     if (!isset($done[$act])) throw new UserError('Unknown action.');
     try { $done[$act][1](); Session::flash('success', $done[$act][0]); } catch (UserError $e) { Session::flash('error', $e->getMessage()); }
     View::redirect('/admin/users/' . $id);

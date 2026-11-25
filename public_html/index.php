@@ -64,6 +64,11 @@ if ($path === '/classic' || str_starts_with($path, '/classic/')) {
 
 // Make sure the database's secrets are read with the right key (puts a lost key back from a safe copy by itself).
 if (preg_match('#^/(admin|login|portal)(/|$)#', $path)) { try { App\Vault::verify(); } catch (Throwable) {} }
+// A password set by an admin with "choose your own at next sign-in": nothing else opens until it's changed.
+if (preg_match('#^/(admin|portal)(/|$)#', $path) && ($mcU = Auth::user()) && App\Users::mustChange((int)$mcU['id'])) {
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET') { header('Location: /account/password', true, 303); exit; }
+    http_response_code(403); exit('Choose a new password first: /account/password');
+}
 $router = (static fn() => require APP_ROOT . '/routes.php')();
 View::$shared['user'] = Auth::user();
 View::$shared['csrf'] = Csrf::token();

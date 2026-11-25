@@ -977,3 +977,7 @@ body.con.nav-mini .c-stack .c-logo.has-img img{max-width:56px;height:auto;max-he
 .um-log{list-style:none;margin:0;padding:0;display:grid}
 .um-log li{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid var(--line-2,#eef0f3);font-size:.92rem}
 @media(max-width:1000px){.um-inv-form{grid-template-columns:1fr 1fr}.um-status{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.um-pw{padding:24px;max-width:560px;display:grid;gap:12px}
+.pw-form{display:grid;gap:12px}.pw-form label{display:grid;gap:6px;font-size:.9rem}.pw-form p{margin:0}
+.um-danger{border-color:#f3c7c2!important}.um-danger h2{color:#b42318}
+.um-pwset{display:grid;gap:10px}.um-pwset label{display:grid;gap:6px;font-size:.88rem}.um-pwset .check{display:flex;gap:8px;align-items:center}

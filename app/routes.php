@@ -334,6 +334,18 @@ $r->post('/login/link/{token}', function ($p) use ($afterLogin) {
     Auth::finishPasswordless($uid, 'email_link');
     View::redirect($afterLogin());
 });
+/* Change your own password (team and customers). */
+$r->get('/account/password', function () {
+    $u = Auth::user(); if (!$u) { Session::start(); $_SESSION['after_login'] = '/account/password'; View::redirect('/login'); }
+    View::page(Auth::isStaff($u) ? 'admin/password' : 'portal/password', ['title' => 'Change password', 'forced' => App\Users::mustChange((int)$u['id']), 'u' => $u]);
+});
+$r->post('/account/password', function () {
+    $u = Auth::user(); if (!$u) View::redirect('/login');
+    try { App\Users::changeOwn($u, (string)Request::input('current', ''), (string)Request::input('new', ''), (string)Request::input('confirm', '')); }
+    catch (UserError $e) { Session::flash('error', $e->getMessage()); View::redirect('/account/password'); }
+    Session::flash('success', 'Password changed. Your other devices will be asked to sign in again.');
+    View::redirect(Auth::isStaff($u) ? '/admin/sign-in' : '/portal/account');
+});
 $r->get('/login/mfa', fn() => View::page('public/mfa', ['title' => 'Two-step verification', 'noindex' => true]));
 $r->post('/login/mfa', function () {
     try { $ok = Auth::verifyMfa(Request::str('code', 10)); } catch (UserError $e) { Session::flash('error', $e->getMessage()); View::redirect('/login/mfa'); }
