@@ -33,6 +33,8 @@ final class Mailer
         'follow_up' => ['marketing' => false, 'unsub' => true, 'subject' => '{subject}', 'body' => "{body}"],
         'password_reset' => ['marketing' => false, 'subject' => 'Reset your 818 Digital Agency password',
             'body' => "Hi,\n\nUse this link within one hour to choose a new password:\n\n{link}\n\nIf you didn't request this, ignore this email."],
+        'account_invite' => ['marketing' => false, 'subject' => 'Your 818 Digital Agency account is ready',
+            'body' => "Hi {name},\n\n{by} set up an 818 Digital Agency account for you ({role}).\n\nChoose your password here (the link works once, for 72 hours):\n\n{link}\n\nAfter signing in, team members can add a passkey (Face ID, fingerprint or PIN) under Settings → Sign-in & recovery.\n\nIf you weren't expecting this, ignore this email."],
         'signin_link' => ['marketing' => false, 'subject' => 'Your one-time sign-in link — 818 Digital Agency',
             'body' => "Hi,\n\nSomeone (hopefully you) asked to sign in to the Control Tower without a passkey.\n\nThis link works once, for 15 minutes:\n\n{link}\n\nRequested from {ip} at {at} UTC. If this wasn't you, ignore this email: nobody can sign in without the link, and you can see every attempt in the Control Tower's audit log."],
         'owner_alert' => ['marketing' => false, 'subject' => '[818 Ops] {title}', 'body' => "{body}\n\nOpen the Control Tower: {link}"],

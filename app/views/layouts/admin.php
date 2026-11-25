@@ -18,7 +18,7 @@ $nav = [
   ['AI team', 'bot', ['/admin/guide' => 'How agents work', '/admin/agents' => 'Agents', '/admin/tasks' => ['Tasks', $failed], '/admin/workflows' => 'Workflows', '/admin/kb' => 'Knowledge base', '/admin/simulator' => 'Simulator']],
   ['Marketing', 'chart', ['/admin/site' => 'Site editor', '/admin/social' => 'Social media', '/admin/search' => 'Search & AI visibility', '/admin/blog' => 'Blog', '/admin/content' => 'Content studio', '/admin/growth' => 'Reports']],
   ['Money', 'stack', ['/admin/money' => 'Financial dashboard', '/admin/pricing' => 'Pricing strategy', '/admin/finance' => 'Finance', '/admin/catalog' => 'Services & pricing']],
-  ['Settings', 'cog', ['/admin/settings' => 'Settings & team', '/admin/sign-in' => 'Sign-in & recovery', '/admin/integrations' => 'Integrations', '/admin/data-safety' => 'Data safety', '/admin/security' => 'Security check', '/admin/spam' => 'Spam shield',
+  ['Settings', 'cog', ['/admin/settings' => 'Settings & team', '/admin/users' => 'Users', '/admin/sign-in' => 'Sign-in & recovery', '/admin/integrations' => 'Integrations', '/admin/data-safety' => 'Data safety', '/admin/security' => 'Security check', '/admin/spam' => 'Spam shield',
       '/admin/system' => 'System health', '/admin/update' => 'Updates', '/admin/demo' => ['Demo data', $demo, false, true], '/admin/audit' => 'Audit log', '/classic' => 'Classic archive']],
 ];
 // Older code paths still read $groups (search, breadcrumbs); build it from $nav.

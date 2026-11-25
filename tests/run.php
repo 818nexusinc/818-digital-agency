@@ -802,5 +802,32 @@ tcase('owner recovery: codes work once, links work once, password can only be tu
     App\Db::run("DELETE FROM settings WHERE skey = ?", ['auth.recovery.' . $uid]);
 });
 
+tcase('user management: who can manage whom, resets replace older links, suspend and role changes sign people out', function () {
+    $mk = fn(string $role, string $em) => App\Db::insert('users', ['email' => $em, 'name' => ucfirst($role), 'password_hash' => password_hash('x-Pass-123456', PASSWORD_DEFAULT), 'role' => $role, 'status' => 'active', 'created_at' => now(), 'updated_at' => now()]);
+    $owner = App\Db::one("SELECT * FROM users WHERE role = 'owner' ORDER BY id LIMIT 1") ?: App\Db::one('SELECT * FROM users WHERE id = ?', [$mk('owner', 'um-owner@test.local')]);
+    $admin = App\Db::one('SELECT * FROM users WHERE id = ?', [$mk('admin', 'um-admin-' . rid(3) . '@test.local')]);
+    $admin2 = App\Db::one('SELECT * FROM users WHERE id = ?', [$mk('admin', 'um-admin2-' . rid(3) . '@test.local')]);
+    $staffId = $mk('staff', 'um-staff-' . rid(3) . '@test.local');
+    ok(App\Users::canManage($owner, $admin), 'owner manages admins');
+    ok(!App\Users::canManage($admin, $owner) && !App\Users::canManage($admin, $admin2), 'admins cannot manage the owner or other admins');
+    ok(!App\Users::canManage($owner, $owner), 'nobody changes their own access here');
+    throws(fn() => App\Users::setStatus($admin, (int)$owner['id'], 'suspended'), App\HttpError::class);
+    throws(fn() => App\Users::setRole($admin, $staffId, 'admin'));                    // admins can't make admins
+    throws(fn() => App\Users::setRole($owner, $staffId, 'owner'));                    // no second owner
+    App\Users::sendReset($owner, $staffId); App\Users::sendReset($owner, $staffId);
+    eq((int)App\Db::val('SELECT COUNT(*) FROM password_resets WHERE user_id = ? AND used_at IS NULL', [$staffId]), 1);
+    App\Db::update('users', ['failed_logins' => 8, 'locked_until' => now(900)], 'id = ?', [$staffId]);
+    App\Users::unlock($admin, $staffId);
+    ok(App\Db::val('SELECT locked_until FROM users WHERE id = ?', [$staffId]) === null, 'unlocked');
+    $before = (float)App\Settings::get('auth.epoch.' . $staffId);
+    App\Users::setStatus($owner, $staffId, 'suspended');
+    eq(App\Db::val('SELECT status FROM users WHERE id = ?', [$staffId]), 'suspended');
+    ok((float)App\Settings::get('auth.epoch.' . $staffId) > $before, 'suspending signs them out everywhere');
+    throws(fn() => App\Users::sendReset($owner, $staffId));                           // restore access first
+    $id = App\Users::invite($owner, 'New One', 'um-new-' . rid(3) . '@test.local', 'staff');
+    ok((bool)App\Db::val('SELECT 1 FROM password_resets WHERE user_id = ? AND used_at IS NULL AND expires_at > ?', [$id, now(70 * 3600)]), 'invite link lasts 72 hours');
+    throws(fn() => App\Users::invite($owner, 'Dup', (string)App\Db::val('SELECT email FROM users WHERE id = ?', [$id]), 'staff'));
+});
+
 echo "\n" . ($fail ? "\033[31m{$fail} failed\033[0m, " : '') . "\033[32m{$pass} passed\033[0m\n";
 exit($fail ? 1 : 0);

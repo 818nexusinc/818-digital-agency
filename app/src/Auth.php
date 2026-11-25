@@ -27,6 +27,8 @@ final class Auth
         $id = $_SESSION['uid'] ?? null;
         if (!$id || !empty($_SESSION['mfa_pending'])) return self::$user = null;
         $u = Db::one('SELECT * FROM users WHERE id = ? AND status = ?', [$id, 'active']);
+        // "Sign out everywhere" (from User management, a role change or a password reset): older sessions end here.
+        if ($u && (float)($_SESSION['auth_mt'] ?? $_SESSION['auth_at'] ?? 0) < (float)Settings::get('auth.epoch.' . $id)) { $_SESSION = []; return self::$user = null; }
         return self::$user = $u ?: null;
     }
 
@@ -145,6 +147,7 @@ final class Auth
     private static function complete(int $id): void
     {
         $_SESSION['auth_at'] = time();
+        $_SESSION['auth_mt'] = microtime(true);
         Db::update('users', ['failed_logins' => 0, 'locked_until' => null, 'last_login_at' => now()], 'id = ?', [$id]);
         self::forget();
         Audit::log('user.login', 'user', $id, [], 'user', (string)$id);
@@ -196,6 +199,7 @@ final class Auth
         if ($p = self::passwordProblem($pw)) throw new UserError($p);
         Db::update('users', ['password_hash' => self::hash($pw), 'failed_logins' => 0, 'locked_until' => null, 'updated_at' => now()], 'id = ?', [$r['user_id']]);
         Db::update('password_resets', ['used_at' => now()], 'id = ?', [$r['id']]);
+        Settings::set('auth.epoch.' . $r['user_id'], sprintf('%.4F', microtime(true))); // a new password signs out every other session
         Audit::log('user.password_reset', 'user', $r['user_id']);
         return true;
     }

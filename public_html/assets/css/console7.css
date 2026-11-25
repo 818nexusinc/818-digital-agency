@@ -959,3 +959,21 @@ body.con.nav-mini .c-stack .c-logo.has-img img{max-width:56px;height:auto;max-he
 .si .db-card h2{margin:0 0 4px}.si .db-card h3{margin:8px 0 0}
 .si .db-card form{margin:0}.si .si-tbl{margin:0 -24px;width:calc(100% + 48px)}
 .si .si-tbl th:first-child,.si .si-tbl td:first-child{padding-left:24px}
+/* User management */
+.bad-t{color:#b42318}
+.um .db-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+.um-filter{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:0 0 16px}
+.um-filter input[type=search]{flex:1 1 260px;max-width:420px}.um-filter select{width:auto}
+.um-list{padding:0;overflow:auto}.um-list .tbl{margin:0}.um-list td{vertical-align:middle}
+.um-list th:first-child,.um-list td:first-child{padding-left:24px}
+.um-invite,.um .ds-grid>.db-card{padding:22px 24px;display:grid;gap:12px;align-content:start}
+.um-invite{margin-top:20px}.um .db-card h2{margin:0}.um .db-card h3{margin:6px 0 0;font-size:.95rem}
+.um-inv-form{display:grid;grid-template-columns:1fr 1.3fr 160px auto;gap:12px;align-items:end}
+.um-inv-form label,.um-row label{display:grid;gap:6px;font-size:.88rem}
+.um-row{display:flex;gap:10px;align-items:flex-end}.um-row label{flex:1}
+.um-status{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:0 0 20px}
+.um-status>div{display:grid;gap:4px;padding:14px 16px;background:#fff;border:1px solid var(--line,#e6e8ec);border-radius:12px}
+.um-acts{display:grid;gap:12px}.um-acts form{margin:0}.um-acts p{margin:4px 0 0}
+.um-log{list-style:none;margin:0;padding:0;display:grid}
+.um-log li{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid var(--line-2,#eef0f3);font-size:.92rem}
+@media(max-width:1000px){.um-inv-form{grid-template-columns:1fr 1fr}.um-status{grid-template-columns:repeat(2,minmax(0,1fr))}}

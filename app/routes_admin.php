@@ -344,6 +344,42 @@ $workPage = function (string $cat, ?string $slug) {
 $r->get('/admin/work/{cat}', fn($p) => $workPage((string)$p['cat'], null), $P('projects.read'));
 $r->get('/admin/work/{cat}/{slug}', fn($p) => $workPage((string)$p['cat'], (string)$p['slug']), $P('projects.read'));
 
+/* User management: invite, roles and access, unlock, password-reset / set-password / sign-in emails (see App\Users) */
+$r->get('/admin/users', function () use ($me) {
+    $group = (string)($_GET['group'] ?? 'team'); if (!in_array($group, ['team', 'customers', 'all'], true)) $group = 'team';
+    $status = (string)($_GET['status'] ?? ''); $q = trim(mb_substr((string)($_GET['q'] ?? ''), 0, 100));
+    View::page('admin/users', ['title' => 'Users', 'rows' => App\Users::search($group, $q, $status), 'counts' => App\Users::counts(), 'group' => $group, 'status' => $status, 'q' => $q,
+        'me' => $me(), 'roles' => App\Users::assignable($me())]);
+}, $P('settings.write'));
+$r->post('/admin/users', function () use ($me) {
+    try { $id = App\Users::invite($me(), Request::str('name', 190), Request::str('email', 190), Request::str('role', 20));
+        Session::flash('success', 'Account created. A "choose your password" email is on its way (the link works for 72 hours).'); View::redirect('/admin/users/' . $id); }
+    catch (UserError $e) { Session::flash('error', $e->getMessage()); View::redirect('/admin/users#invite'); }
+}, $P('settings.write'));
+$r->get('/admin/users/{id}', function ($p) use ($me) {
+    $d = App\Users::detail((int)$p['id']);
+    View::page('admin/user', ['title' => $d['u']['name'] ?: $d['u']['email'], 'd' => $d, 'me' => $me(), 'can' => App\Users::canManage($me(), $d['u']), 'roles' => App\Users::assignable($me())]);
+}, $P('settings.write'));
+$r->post('/admin/users/{id}', function ($p) use ($me) {
+    $id = (int)$p['id']; $a = $me(); $act = Request::str('action', 30);
+    $done = [
+        'reset' => ['Password reset email sent. The link works once, for 1 hour; any older reset links stopped working.', fn() => App\Users::sendReset($a, $id)],
+        'invite' => ['"Choose your password" email sent again. The link works for 72 hours; older links stopped working.', fn() => App\Users::sendInvite($a, $id)],
+        'link' => ['One-time sign-in link sent. It works once, for 15 minutes.', fn() => App\Users::sendSigninLink($a, $id)],
+        'unlock' => ['Unlocked. They can sign in again now.', fn() => App\Users::unlock($a, $id)],
+        'role' => ['Role changed. They\'ll be asked to sign in again.', fn() => App\Users::setRole($a, $id, Request::str('role', 20))],
+        'suspend' => ['Access suspended and signed out everywhere. Nothing was deleted.', fn() => App\Users::setStatus($a, $id, 'suspended')],
+        'restore' => ['Access restored.', fn() => App\Users::setStatus($a, $id, 'active')],
+        'rename' => ['Name saved.', fn() => App\Users::rename($a, $id, Request::str('name', 190))],
+        'mfa' => ['Two-step verification turned off for this account. They can set it up again after signing in.', fn() => App\Users::resetMfa($a, $id)],
+        'passkeys' => ['Passkeys removed and password sign-in turned back on. Send a password reset so they can get in.', fn() => App\Users::resetPasskeys($a, $id)],
+        'signout' => ['Signed out on every device.', function () use ($a, $id) { $u = App\Users::get($id); if (!App\Users::canManage($a, $u)) throw new HttpError(403, 'No permission.'); App\Users::signOutEverywhere($id); App\Audit::log('user.signed_out_everywhere', 'user', $id); }],
+    ];
+    if (!isset($done[$act])) throw new UserError('Unknown action.');
+    try { $done[$act][1](); Session::flash('success', $done[$act][0]); } catch (UserError $e) { Session::flash('error', $e->getMessage()); }
+    View::redirect('/admin/users/' . $id);
+}, $P('settings.write'));
+
 /* Sign-in & recovery: passkeys, sign-in recovery codes, password sign-in on/off (each team member, for their own account) */
 $signinPage = function (?array $codes = null) use ($me) {
     $u = $me(); $uid = (int)$u['id'];

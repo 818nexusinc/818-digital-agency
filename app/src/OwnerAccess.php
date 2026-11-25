@@ -61,10 +61,16 @@ final class OwnerAccess
         if (!RateLimit::hit('signin-link:' . client_ip(), 5, 3600) || !RateLimit::hit('signin-link:' . $email, 3, 3600)) return;
         $u = Db::one("SELECT id, email, status FROM users WHERE email = ? AND role <> 'customer'", [$email]);
         if (!$u || $u['status'] !== 'active') { Audit::security('auth.link_unknown', $email); return; }
+        self::mailLink($u);
+        Audit::security('auth.link_sent', $email);
+    }
+
+    /** Create and email a one-time sign-in link (15 minutes) for this user row. */
+    public static function mailLink(array $u): void
+    {
         $t = Passkeys::b64u(random_bytes(32));
         Db::insert('login_links', ['user_id' => $u['id'], 'token_hash' => hash('sha256', $t), 'expires_at' => now(900), 'ip' => client_ip(), 'created_at' => now()]);
         Mailer::send('signin_link', (string)$u['email'], ['link' => url('/login/link/' . $t), 'ip' => client_ip(), 'at' => substr(now(), 0, 16)], null, 'user', (int)$u['id']);
-        Audit::security('auth.link_sent', $email);
     }
 
     public static function linkValid(string $t): bool
