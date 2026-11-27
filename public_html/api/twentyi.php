@@ -72,7 +72,8 @@ $API_BASE = 'https://api.20i.com';
 function ti_request(string $path, string $method = 'GET', ?array $payload = null): array {
     global $apiKey, $API_BASE;
     $headers = [
-        'Authorization: Bearer ' . $apiKey,
+        // 20i expects the *general* API key base64-encoded in the Bearer header.
+        'Authorization: Bearer ' . base64_encode(trim((string)$apiKey)),
         'Content-Type: application/json',
         'Accept: application/json',
     ];

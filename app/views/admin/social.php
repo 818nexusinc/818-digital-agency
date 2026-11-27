@@ -12,11 +12,14 @@
 </section>
 
 <section class="db-card sm-post"><div class="db-ch"><div><h2>Post now</h2><p class="db-sub">Goes out straight away to the accounts you tick. Posts written by the Social Media Agent wait in the Action center for your approval.</p></div></div>
-  <?php if (!$live): ?><div class="ct-empty"><b>No account can post yet.</b><p>Add an access token for Facebook, Instagram, LinkedIn or X in Integrations.</p></div>
+  <?php if (!$live): ?><div class="ct-empty"><b>No account can post yet.</b><p>Add an access token for Facebook, Instagram, LinkedIn or X, or connect TikTok, in Integrations.</p></div>
   <?php else: ?>
-  <form method="post" action="/admin/social" class="sm-form" data-confirm="Publish this post now?"><?= App\Csrf::field() ?>
+  <form method="post" action="/admin/social" class="sm-form" enctype="multipart/form-data" data-confirm="Publish this post now?"><?= App\Csrf::field() ?>
     <label>Post<textarea name="text" rows="5" maxlength="3000" required placeholder="What do you want to share?" data-count></textarea><small data-counter>0 characters · X allows 280</small></label>
     <div class="pz-2"><label>Link (optional)<input type="url" name="link" placeholder="https://818digitalagency.com/…"></label><label>Picture address (needed for Instagram)<input type="url" name="image_url" placeholder="https://…"></label></div>
+    <label>Or upload a picture <small>(needed for TikTok · JPG, PNG or WebP, up to 15 MB · hosted on your website)</small><input type="file" name="picture" accept="image/jpeg,image/png,image/webp"></label>
+    <?php if (isset($live['tiktok'])): ?><label>TikTok audience<select name="tiktok_privacy"><option value="">Choose who can see it…</option><?php foreach (App\TikTok::PRIVACY as $pv => $pl): ?><option value="<?= e($pv) ?>"><?= e($pl) ?></option><?php endforeach; ?></select>
+      <small>By posting to TikTok you agree to TikTok's <a href="https://www.tiktok.com/legal/page/global/music-usage-confirmation/en" target="_blank" rel="noopener">Music Usage Confirmation</a>.<?= App\Integrations::setting('tiktok', 'post_mode', 'direct') === 'inbox' ? ' TikTok posts go to your TikTok inbox to finish in the app.' : '' ?></small></label><?php endif; ?>
     <fieldset class="sm-nets"><legend>Post to</legend><?php foreach ($live as $slug => $a): ?><label class="se-check"><input type="checkbox" name="networks[]" value="<?= e($slug) ?>" checked> <?= e($a['label']) ?></label><?php endforeach; ?></fieldset>
     <button class="btn btn-primary">Publish</button>
   </form>

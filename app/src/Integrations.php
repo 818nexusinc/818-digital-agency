@@ -60,7 +60,7 @@ final class Integrations
         'linkedin' => ['social', 'LinkedIn company page', ['access_token' => 'LINKEDIN_TOKEN'], 'Page link shows on the website. With a token and organization ID, posts can be published.'],
         'x' => ['social', 'X (Twitter)', ['access_token' => 'X_ACCESS_TOKEN'], 'Profile link shows on the website. With a user access token, posts can be published.'],
         'youtube' => ['social', 'YouTube', ['api_key' => 'YOUTUBE_API_KEY'], 'Channel link shows on the website. The API key lets us check the channel.'],
-        'tiktok' => ['social', 'TikTok', ['access_token' => 'TIKTOK_TOKEN'], 'Profile link shows on the website.'],
+        'tiktok' => ['social', 'TikTok', ['access_token' => 'TIKTOK_TOKEN', 'client_key' => 'TIKTOK_CLIENT_KEY', 'client_secret' => 'TIKTOK_CLIENT_SECRET'], 'Profile link shows on the website. Add the client key and secret from your TikTok developer app, save, then use Connect TikTok — the access token is filled in and refreshed automatically.'],
         'google_business' => ['social', 'Google Business Profile', ['place_id' => 'GOOGLE_PLACE_ID'], 'Profile link shows on the website and helps local search.'],
     ];
 
@@ -114,6 +114,22 @@ final class Integrations
         Audit::log('integration.save', 'integration', $slug, ['fields' => array_keys(array_filter($secrets)), 'settings' => array_keys($settings)]);
     }
 
+    /**
+     * Store machine-issued secrets (e.g. OAuth tokens) that are not owner-editable fields.
+     * Values are encrypted like every other secret; null removes a key.
+     */
+    public static function putSecrets(string $slug, array $secrets, array $settings = []): void
+    {
+        if (!isset(self::DEFS[$slug])) throw new UserError('Unknown integration.');
+        $row = Db::one('SELECT * FROM integrations WHERE slug = ?', [$slug]);
+        $cur = jdec(Crypto::decrypt($row['secrets_enc'] ?? null) ?? '{}');
+        foreach ($secrets as $k => $v) { if ($v === null || $v === '') unset($cur[$k]); else $cur[$k] = (string)$v; }
+        $s = jdec($row['settings'] ?? '{}');
+        foreach ($settings as $k => $v) { if ($v === null) unset($s[$k]); else $s[$k] = mb_substr((string)$v, 0, 300); }
+        Db::update('integrations', ['secrets_enc' => Crypto::encrypt(jenc($cur)), 'settings' => jenc($s), 'enabled' => 1, 'updated_at' => now()], 'slug = ?', [$slug]);
+        Audit::log('integration.tokens', 'integration', $slug, ['fields' => array_keys($secrets)]);
+    }
+
     public static function record(string $slug, string $action, bool $ok, string $detail = ''): void
     {
         Db::insert('integration_logs', ['slug' => $slug, 'action' => $action, 'ok' => $ok ? 1 : 0, 'detail' => mb_substr(Log::redact($detail), 0, 500),
@@ -155,7 +171,7 @@ final class Integrations
             'openai' => self::http('GET', 'https://api.openai.com/v1/models', ['Authorization: Bearer ' . self::secret('openai', 'api_key')], null, 15),
             'stripe' => self::http('GET', 'https://api.stripe.com/v1/balance', [], null, 15, self::secret('stripe', 'secret_key') . ':'),
             'resend' => self::http('GET', 'https://api.resend.com/domains', ['Authorization: Bearer ' . self::secret('resend', 'api_key')], null, 15),
-            'twentyi' => self::http('GET', 'https://api.20i.com/package', ['Authorization: Bearer ' . self::secret('twentyi', 'api_key')], null, 15),
+            'twentyi' => self::http('GET', 'https://api.20i.com/package', ['Authorization: Bearer ' . base64_encode(trim((string)self::secret('twentyi', 'api_key')))], null, 15),
             'porkbun' => self::http('POST', 'https://api.porkbun.com/api/json/v3/ping', ['Content-Type: application/json'], jenc(['apikey' => self::secret('porkbun', 'api_key'), 'secretapikey' => self::secret('porkbun', 'secret_key')]), 15),
             'facebook', 'instagram', 'linkedin', 'x', 'youtube', 'tiktok', 'google_business' => Social::test($slug),
             default => ['status' => 200, 'body' => 'stored', 'error' => null],

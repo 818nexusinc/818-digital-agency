@@ -848,5 +848,115 @@ tcase('passwords and deletes: set by admin forces a change, own change needs the
     throws(fn() => App\Users::delete($owner, (int)$owner['id'], (string)$owner['email']));   // never yourself
 });
 
+echo "\nTikTok Login Kit\n";
+tcase('tiktok: connect needs app keys, state is single-use, code exchange stores encrypted tokens', function () {
+    App\Integrations::seed();
+    App\Db::update('integrations', ['secrets_enc' => null, 'settings' => '{}'], 'slug = ?', ['tiktok']);
+    throws(fn() => App\TikTok::authorizeUrl());                      // no client key/secret yet
+    App\Integrations::save('tiktok', ['client_key' => 'ck_test', 'client_secret' => 'cs_test'], ['profile_url' => 'https://www.tiktok.com/@818digitalagency']);
+    $u = App\TikTok::authorizeUrl();
+    ok(str_starts_with($u, 'https://www.tiktok.com/v2/auth/authorize/?'), 'consent URL host');
+    parse_str((string)parse_url($u, PHP_URL_QUERY), $q);
+    eq($q['client_key'], 'ck_test'); eq($q['redirect_uri'], 'https://test.818.local/admin/integrations/tiktok/callback'); eq($q['response_type'], 'code');
+    ok(!isset($q['client_secret']), 'secret never leaves the server');
+    $state = $q['state'];
+    // wrong state is refused and consumes the saved one
+    throws(fn() => App\TikTok::handleCallback(['code' => 'c1', 'state' => 'forged']));
+    throws(fn() => App\TikTok::handleCallback(['code' => 'c1', 'state' => $state]));   // already used
+    App\TikTok::authorizeUrl(); $state = $_SESSION['tiktok_oauth_state']['v'];
+    HttpFake::$queue[] = ['status' => 200, 'json' => ['access_token' => 'act.one', 'refresh_token' => 'rft.one', 'expires_in' => 86400, 'refresh_expires_in' => 31536000, 'open_id' => 'oid1', 'scope' => 'user.info.basic', 'token_type' => 'Bearer']];
+    App\TikTok::handleCallback(['code' => 'auth-code', 'state' => $state]);
+    $call = HttpFake::$calls[0]; parse_str((string)$call['body'], $b);
+    eq($call['url'], 'https://open.tiktokapis.com/v2/oauth/token/'); eq($b['grant_type'], 'authorization_code'); eq($b['code'], 'auth-code'); eq($b['client_secret'], 'cs_test');
+    ok(App\TikTok::connected(), 'connected');
+    eq(App\Integrations::secret('tiktok', 'access_token'), 'act.one');
+    $raw = (string)App\Db::val("SELECT secrets_enc FROM integrations WHERE slug = 'tiktok'");
+    ok(!str_contains($raw, 'act.one') && !str_contains($raw, 'rft.one') && !str_contains($raw, 'cs_test'), 'tokens encrypted at rest');
+    eq(App\Integrations::setting('tiktok', 'profile_url'), 'https://www.tiktok.com/@818digitalagency', 'profile link kept');
+    eq(App\Integrations::setting('tiktok', 'open_id'), 'oid1');
+});
+tcase('tiktok: TikTok errors and denied consent are reported, not stored', function () {
+    App\TikTok::authorizeUrl(); $state = $_SESSION['tiktok_oauth_state']['v'];
+    throws(fn() => App\TikTok::handleCallback(['error' => 'access_denied', 'error_description' => 'User cancelled', 'state' => $state]));
+    App\TikTok::authorizeUrl(); $state = $_SESSION['tiktok_oauth_state']['v'];
+    HttpFake::$queue[] = ['status' => 400, 'json' => ['error' => 'invalid_grant', 'error_description' => 'Authorization code is expired.']];
+    throws(fn() => App\TikTok::handleCallback(['code' => 'old', 'state' => $state]));
+    eq(App\Integrations::secret('tiktok', 'access_token'), 'act.one', 'previous token untouched');
+});
+tcase('tiktok: access token refreshes before expiry, rotates the refresh token, and disconnect clears tokens only', function () {
+    App\Integrations::putSecrets('tiktok', [], ['token_expires_at' => (string)(time() + 7200)]);
+    eq(App\TikTok::accessToken(), 'act.one');                         // still valid: no HTTP call
+    eq(count(HttpFake::$calls), 0);
+    App\Integrations::putSecrets('tiktok', [], ['token_expires_at' => (string)(time() + 60)]);
+    HttpFake::$queue[] = ['status' => 200, 'json' => ['access_token' => 'act.two', 'refresh_token' => 'rft.two', 'expires_in' => 86400, 'refresh_expires_in' => 31536000, 'open_id' => 'oid1']];
+    eq(App\TikTok::accessToken(), 'act.two');
+    parse_str((string)HttpFake::$calls[0]['body'], $b); eq($b['grant_type'], 'refresh_token'); eq($b['refresh_token'], 'rft.one');
+    eq(App\Integrations::secret('tiktok', 'refresh_token'), 'rft.two', 'rotated refresh token saved');
+    ok((int)App\Integrations::setting('tiktok', 'token_expires_at') > time() + 80000, 'new expiry');
+    // Test connection uses the (fresh) token against the user info endpoint
+    HttpFake::$queue[] = ['status' => 200, 'json' => ['data' => ['user' => ['open_id' => 'oid1', 'display_name' => '818 Digital Agency']], 'error' => ['code' => 'ok']]];
+    ok(App\Integrations::test('tiktok')['ok'], 'test connection');
+    ok(str_contains(implode(' ', HttpFake::$calls[1]['url'] ? [HttpFake::$calls[1]['url']] : []), '/v2/user/info/'), 'user info called');
+    App\TikTok::disconnect();
+    ok(!App\TikTok::connected() && App\Integrations::secret('tiktok', 'access_token') === null, 'tokens cleared');
+    eq(App\Integrations::secret('tiktok', 'client_key'), 'ck_test', 'app key kept');
+    ok(App\Integrations::configured('tiktok'), 'still shown via profile link');
+    App\Db::update('integrations', ['secrets_enc' => null, 'settings' => '{}'], 'slug = ?', ['tiktok']);
+});
+
+tcase('tiktok posting: needs own-site media, posts photos directly with the chosen audience, explains TikTok refusals', function () {
+    App\Integrations::seed();
+    App\Db::update('integrations', ['secrets_enc' => null, 'settings' => '{}'], 'slug = ?', ['tiktok']);
+    App\Integrations::save('tiktok', ['client_key' => 'ck', 'client_secret' => 'cs'], ['profile_url' => 'https://www.tiktok.com/@818digitalagency']);
+    App\Integrations::putSecrets('tiktok', ['access_token' => 'act.p', 'refresh_token' => 'rft.p'], ['token_expires_at' => (string)(time() + 80000)]);
+    ok(App\Social::postable('tiktok')[0], 'can post once connected');
+    throws(fn() => App\Social::publish('tiktok', 'Hello'));                                              // no media
+    throws(fn() => App\Social::publish('tiktok', 'Hello', '', 'https://images.example.com/a.jpg'));      // not our verified domain
+    // a stored picture is served from our own domain as JPEG
+    $png = (function () { $im = imagecreatetruecolor(1600, 1600); imagefill($im, 0, 0, imagecolorallocate($im, 14, 35, 64)); ob_start(); imagepng($im); imagedestroy($im); return (string)ob_get_clean(); })();
+    $url = App\SocialMedia::storeBytes($png, 'test');
+    ok(str_starts_with($url, 'https://test.818.local/social/m/') && str_ends_with($url, '.jpg'), 'hosted on our domain');
+    $row = App\SocialMedia::get(basename($url, '.jpg')); eq($row['mime'], 'image/jpeg');
+    $info = getimagesizefromstring(base64_decode($row['data'])); eq([$info[0], $info[1]], [1080, 1080], 'resized to TikTok size');
+    throws(fn() => App\SocialMedia::storeBytes('not a picture', 'test'));
+    // manual post without choosing an audience is refused (TikTok requires an explicit choice)
+    throws(fn() => App\Social::publish('tiktok', 'Hi', '', $url, 'owner', ['tiktok_privacy' => '']));
+    // direct photo post
+    HttpFake::$queue[] = ['status' => 200, 'json' => ['data' => ['privacy_level_options' => ['PUBLIC_TO_EVERYONE', 'SELF_ONLY'], 'comment_disabled' => false], 'error' => ['code' => 'ok']]];
+    HttpFake::$queue[] = ['status' => 200, 'json' => ['data' => ['publish_id' => 'p_pub_1'], 'error' => ['code' => 'ok']]];
+    eq(App\Social::publish('tiktok', 'Register your business today', 'https://818digitalagency.com', $url, 'owner', ['tiktok_privacy' => 'SELF_ONLY']), 'p_pub_1');
+    eq(HttpFake::$calls[0]['url'], 'https://open.tiktokapis.com/v2/post/publish/creator_info/query/');
+    eq(HttpFake::$calls[1]['url'], 'https://open.tiktokapis.com/v2/post/publish/content/init/');
+    $b = json_decode((string)HttpFake::$calls[1]['body'], true);
+    eq($b['media_type'], 'PHOTO'); eq($b['post_mode'], 'DIRECT_POST'); eq($b['post_info']['privacy_level'], 'SELF_ONLY'); eq($b['source_info']['photo_images'], [$url]);
+    ok(str_contains((string)$b['post_info']['description'], 'https://818digitalagency.com'), 'link in caption');
+    eq(App\Db::val("SELECT status FROM social_posts WHERE external_id = 'p_pub_1'"), 'published');
+    // audience not allowed for this account
+    HttpFake::$queue[] = ['status' => 200, 'json' => ['data' => ['privacy_level_options' => ['SELF_ONLY']], 'error' => ['code' => 'ok']]];
+    throws(fn() => App\Social::publish('tiktok', 'x', '', $url, 'owner', ['tiktok_privacy' => 'PUBLIC_TO_EVERYONE']));
+    // unaudited app: clear explanation, logged as failed
+    HttpFake::$queue[] = ['status' => 200, 'json' => ['data' => ['privacy_level_options' => ['PUBLIC_TO_EVERYONE']], 'error' => ['code' => 'ok']]];
+    HttpFake::$queue[] = ['status' => 403, 'json' => ['error' => ['code' => 'unaudited_client_can_only_post_to_private_accounts', 'message' => 'Please review our integration guidelines']]];
+    try { App\Social::publish('tiktok', 'x', '', $url, 'social'); ok(false, 'should fail'); } catch (UserError $e) { ok(str_contains($e->getMessage(), 'private TikTok account'), 'explains audit limit'); }
+    eq(App\Db::val("SELECT status FROM social_posts WHERE network = 'tiktok' ORDER BY id DESC LIMIT 1"), 'failed');
+});
+tcase('tiktok posting: inbox mode and videos use the right endpoints; agents can post to TikTok', function () {
+    App\Integrations::save('tiktok', [], ['post_mode' => 'inbox']);
+    $vid = 'https://test.818.local/media/desk.mp4';
+    HttpFake::$queue[] = ['status' => 200, 'json' => ['data' => ['publish_id' => 'p_inbox_v'], 'error' => ['code' => 'ok']]];
+    eq(App\Social::publish('tiktok', 'Video caption', '', $vid, 'social'), 'p_inbox_v');
+    eq(HttpFake::$calls[0]['url'], 'https://open.tiktokapis.com/v2/post/publish/inbox/video/init/');   // no creator query, no privacy in inbox mode
+    App\Integrations::save('tiktok', [], ['post_mode' => 'direct', 'privacy_level' => 'PUBLIC_TO_EVERYONE']);
+    HttpFake::$queue[] = ['status' => 200, 'json' => ['data' => ['privacy_level_options' => ['PUBLIC_TO_EVERYONE', 'SELF_ONLY'], 'duet_disabled' => true], 'error' => ['code' => 'ok']]];
+    HttpFake::$queue[] = ['status' => 200, 'json' => ['data' => ['publish_id' => 'p_dir_v'], 'error' => ['code' => 'ok']]];
+    $out = App\Tools::publishSocialPost(['network' => 'tiktok', 'text' => 'From the agent', 'image_url' => $vid], [], ['slug' => 'social']);
+    eq($out['post_id'], 'p_dir_v');
+    $b = json_decode((string)HttpFake::$calls[2]['body'], true);
+    eq(HttpFake::$calls[2]['url'], 'https://open.tiktokapis.com/v2/post/publish/video/init/');
+    eq($b['post_info']['privacy_level'], 'PUBLIC_TO_EVERYONE', 'agent posts use the saved default audience'); eq($b['post_info']['disable_duet'], true); eq($b['source_info']['video_url'], $vid);
+    ok(str_contains(App\TikTok::SCOPES, 'video.publish') && str_contains(App\TikTok::SCOPES, 'video.upload'), 'posting scopes requested');
+    App\Db::update('integrations', ['secrets_enc' => null, 'settings' => '{}'], 'slug = ?', ['tiktok']);
+});
+
 echo "\n" . ($fail ? "\033[31m{$fail} failed\033[0m, " : '') . "\033[32m{$pass} passed\033[0m\n";
 exit($fail ? 1 : 0);

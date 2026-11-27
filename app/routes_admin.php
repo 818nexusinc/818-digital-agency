@@ -481,7 +481,12 @@ $r->post('/admin/social', function () use ($me) {
     $nets = array_values(array_intersect((array)Request::input('networks', []), array_keys(App\Social::NETWORKS)));
     if (!$nets) { Session::flash('error', 'Choose at least one account to post to.'); View::redirect('/admin/social'); }
     $ok = []; $bad = [];
-    foreach ($nets as $n) { try { App\Social::publish($n, Request::str('text', 3000), Request::str('link', 500), Request::str('image_url', 500), (string)$me()['email']); $ok[] = App\Social::NETWORKS[$n][0]; } catch (UserError $e) { $bad[] = $e->getMessage(); } }
+    $image = Request::str('image_url', 500);
+    if (!empty($_FILES['picture']['name'])) {
+        try { $image = App\SocialMedia::store($_FILES['picture'], (string)$me()['email']); } catch (UserError $e) { Session::flash('error', $e->getMessage()); View::redirect('/admin/social'); }
+    }
+    $opts = ['tiktok_privacy' => Request::str('tiktok_privacy', 40)];
+    foreach ($nets as $n) { try { App\Social::publish($n, Request::str('text', 3000), Request::str('link', 500), $image, (string)$me()['email'], $opts); $ok[] = App\Social::NETWORKS[$n][0]; } catch (UserError $e) { $bad[] = $e->getMessage(); } }
     if ($ok) Session::flash('success', 'Posted to ' . implode(', ', $ok) . '.');
     if ($bad) Session::flash('error', implode(' ', $bad));
     View::redirect('/admin/social');
@@ -654,6 +659,23 @@ $r->get('/admin/integrations', function () {
     $tab = (string)($_GET['tab'] ?? ''); if (!in_array($tab, ['connected', 'available'], true)) $tab = $nOn ? 'connected' : 'available';
     View::page('admin/integrations', ['title' => 'Integrations', 'rows' => $rows, 'tab' => $tab, 'nOn' => $nOn]);
 }, $P('integrations.read'));
+/* TikTok Login Kit: connect (POST + CSRF) → tiktok.com consent → callback (state-checked) */
+$r->post('/admin/integrations/tiktok/connect', function () {
+    $to = App\TikTok::authorizeUrl();
+    if (PHP_SAPI === 'cli') { View::$shared['_redirect'] = $to; throw new App\Redirected($to); }
+    header('Location: ' . $to, true, 303); // fixed host www.tiktok.com — not user-controlled
+    exit;
+}, $P('integrations.write'));
+$r->get('/admin/integrations/tiktok/callback', function () {
+    try { App\TikTok::handleCallback($_GET); Session::flash('success', 'TikTok connected. The access token is stored encrypted and refreshes automatically.'); }
+    catch (UserError $e) { Integrations::record('tiktok', 'connect', false, $e->getMessage()); Session::flash('error', $e->getMessage()); }
+    View::redirect('/admin/integrations?tab=connected#tiktok');
+}, $P('integrations.write'));
+$r->post('/admin/integrations/tiktok/disconnect', function () {
+    App\TikTok::disconnect();
+    Session::flash('success', 'TikTok disconnected. The profile link and app keys are kept.');
+    View::redirect('/admin/integrations?tab=connected#tiktok');
+}, $P('integrations.write'));
 $r->post('/admin/integrations/{slug}', function ($p) {
     if (Request::input('test')) { $res = Integrations::test($p['slug']); Session::flash($res['ok'] ? 'success' : 'error', $res['message']); }
     else {

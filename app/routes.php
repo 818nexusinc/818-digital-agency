@@ -169,6 +169,12 @@ $serveLogo = function (string $key) {
     echo base64_decode((string)$a['data']);
 };
 $r->get('/brand/logo', fn() => $serveLogo('logo'));
+$r->get('/social/m/{key}.jpg', function ($p) {   // pictures uploaded for social posts (TikTok pulls them from here)
+    $a = App\SocialMedia::get((string)$p['key']);
+    if (!$a) { http_response_code(404); header('Content-Type: text/plain'); echo 'Not found'; return; }
+    header('Content-Type: ' . $a['mime']); header('Cache-Control: public, max-age=2592000, immutable'); header('X-Content-Type-Options: nosniff');
+    echo base64_decode((string)$a['data']);
+});
 $r->get('/brand/img/{key}', function ($p) {
     $k = (string)$p['key'];
     $a = preg_match('/^[0-9a-f]{40}$/', $k) ? App\SiteText::image($k) : null;
